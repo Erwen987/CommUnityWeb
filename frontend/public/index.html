@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CommUnity</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/png" href="images/CommUnity Logo.png" />
+    <link rel="stylesheet" href="src/index.css" />
+  </head>
+
+  <body>
+    <!-- HERO + NAV WRAPPER -->
+    <div class="hero-wrapper">
+      <header>
+        <nav>
+          <div class="logo" id="logo">
+            <img src="images/CommUnity Logo.png" alt="Logo" />
+            <span class="logo-text">CommUnity</span>
+          </div>
+
+          <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#get-started">Get Started</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <section id="home" class="hero-section">
+        <h1>CommUnity: Report, Request, Reward</h1>
+        <p>Make your barangay better</p>
+      </section>
+    </div>
+
+    <!-- ABOUT -->
+    <section id="about" class="section fade-element">
+      <h2>How CommUnity Works</h2>
+      <p>Explore the powerful features of CommUnity</p>
+      <p class="section-text">
+      <span class="highlight">CommUnity</span> is a platform is a platform designed to help neighborhoods and communities thrive. Our app allows residents to report issues, request, services, and earn rewards, fostering a safer and more connected.
+      </p>
+    </section>
+
+    <!-- WHO CAN USE -->
+    <section class="section light fade-element">
+      <h2>Who Can Use It?</h2>
+      <div class="card-row">
+        <div class="card">Residents</div>
+        <div class="card">Barangay Officials</div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="section fade-element">
+      <h2>Features</h2>
+      <p>Everything you need to report, track, and improve your community</p>
+      <div class="card-grid">
+        <div class="card">Report Issues</div>
+        <div class="card">Request Assistance</div>
+        <div class="card">Earn Rewards</div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="section light fade-element">
+      <h2>Contact Us</h2>
+      <div class="contact-box">Design here</div>
+    </section>
+
+    <!-- GET STARTED -->
+    <footer id="get-started" class="get-started fade-element">
+      <h2>Get Started</h2>
+      <p>Join and be part of building a better community.</p>
+      <div class="footer-buttons">
+        <a href="login.html" class="footer-btn">Login</a>
+        <a href="#" class="footer-btn2">Sign Up</a>
+      </div>
+    </footer>
+    <script>
+      window.addEventListener('scroll', function() {
+        const elements = document.querySelectorAll('.fade-element');
+        elements.forEach(element => {
+          const rect = element.getBoundingClientRect();
+          if (rect.top < window.innerHeight && rect.bottom > 0) {
+            element.classList.add('fade-in');
+          }
+        });
+      });
+    </script>
+    <div id="root"></div>
+    <script src="/static/js/bundle.js"></script>
+  </body>
+</html>
