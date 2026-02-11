@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CommUnity Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/admin_dashboard.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">CommUnity</div>
+
+    <nav class="menu">
+      <a class="active">Home</a>
+      <a>User Manager</a>
+      <a>Reports</a>
+      <a>Requests</a>
+      <a>Analytics</a>
+      <a>Settings</a>
+    </nav>
+
+    <div class="logout">Log Out</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HEADER -->
+    <header class="topbar">
+      <div>
+        <h1>Welcome Admin! 👋</h1>
+        <p>Here’s a quick overview of your barangay.</p>
+      </div>
+
+      <div class="top-actions">
+        <input type="text" placeholder="Search..." />
+        <span class="icon">🔔</span>
+        <span class="icon">👤</span>
+      </div>
+    </header>
+
+    <!-- STATS (START AT 0) -->
+    <section class="stats">
+      <div class="card stat">
+        <span>Reports</span>
+        <strong id="reportsCount">0</strong>
+      </div>
+      <div class="card stat">
+        <span>Requests</span>
+        <strong id="requestsCount">0</strong>
+      </div>
+      <div class="card stat">
+        <span>Users</span>
+        <strong id="usersCount">0</strong>
+      </div>
+      <div class="card stat">
+        <span>Active Users</span>
+        <strong id="activeUsersCount">0</strong>
+      </div>
+    </section>
+
+    <!-- CONTENT -->
+    <section class="content">
+
+      <!-- GRAPH -->
+      <div class="card chart">
+        <h3>Reports and Requests per Month</h3>
+
+        <div id="graphEmpty" class="empty-state">
+          No records yet.<br>
+          <small>Graph will appear once data is available.</small>
+        </div>
+
+        <div class="bars" id="graphBars" style="display:none">
+          <div class="bar-group"><div class="bar requests"></div><div class="bar reports"></div><span>Jan</span></div>
+          <div class="bar-group"><div class="bar requests"></div><div class="bar reports"></div><span>Feb</span></div>
+          <div class="bar-group"><div class="bar requests"></div><div class="bar reports"></div><span>Mar</span></div>
+          <div class="bar-group"><div class="bar requests"></div><div class="bar reports"></div><span>Apr</span></div>
+        </div>
+
+        <div class="legend">
+          <span><i class="req"></i> Requests</span>
+          <span><i class="rep"></i> Reports</span>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="right-column">
+
+        <!-- TOP CONTRIBUTORS -->
+        <div class="card contributors">
+          <h3>Top Contributors</h3>
+          <ul id="contributorsList">
+            <li class="empty">
+              No records yet.<br>
+              <small>Points will appear once data is available.</small>
+            </li>
+          </ul>
+        </div>
+
+        <!-- RECENT ACTIVITIES -->
+        <div class="card activities">
+          <h3>Recent Activities</h3>
+          <ul>
+            <li class="empty">
+              No activities yet.<br>
+              <small>Activities will appear once users interact.</small>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- JS -->
+<script>
+async function loadDashboard() {
+  try {
+    const res = await fetch("/api/dashboard");
+    const data = await res.json();
+
+    if (!data || data.total === 0) return;
+
+    document.getElementById("reportsCount").textContent = data.reports || 0;
+    document.getElementById("requestsCount").textContent = data.requests || 0;
+    document.getElementById("usersCount").textContent = data.users || 0;
+    document.getElementById("activeUsersCount").textContent = data.activeUsers || 0;
+
+    if (data.monthly && data.monthly.length > 0) {
+      document.getElementById("graphEmpty").style.display = "none";
+      document.getElementById("graphBars").style.display = "flex";
+    }
+
+    if (data.topContributors && data.topContributors.length > 0) {
+      const list = document.getElementById("contributorsList");
+      list.innerHTML = "";
+      data.topContributors.forEach(u => {
+        const li = document.createElement("li");
+        li.innerHTML = `${u.name} <b>${u.points}</b>`;
+        list.appendChild(li);
+      });
+    }
+
+  } catch {
+    // Stay in empty state
+  }
+}
+
+loadDashboard();
+</script>
+
+</body>
+</html>

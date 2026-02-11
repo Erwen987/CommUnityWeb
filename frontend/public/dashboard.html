@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CommUnity Dashboard</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- DASHBOARD CSS -->
+  <link rel="stylesheet" href="src/dashboard.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ======================
+       SIDEBAR
+  ======================= -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <img src="images/CommUnity Logo.png" alt="CommUnity Logo" class="brand-logo" />
+      <span>CommUnity</span>
+    </div>
+
+    <nav class="menu">
+      <a class="active">
+        <img src="icons/home.png" class="menu-icon" />
+        <span>Home</span>
+      </a>
+      <a>
+        <img src="icons/reports.png" class="menu-icon" />
+        <span>Reports</span>
+      </a>
+      <a>
+        <img src="icons/requests.png" class="menu-icon" />
+        <span>Requests</span>
+      </a>
+      <a>
+        <img src="icons/rewards.png" class="menu-icon" />
+        <span>Rewards</span>
+      </a>
+      <a>
+        <img src="icons/analytics.png" class="menu-icon" />
+        <span>Analytics</span>
+      </a>
+    </nav>
+
+    <div class="logout">Log Out</div>
+  </aside>
+
+  <!-- ======================
+       MAIN CONTENT
+  ======================= -->
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1>Hello, Barangay Officials 👋</h1>
+        <p>Here’s what’s happening in your barangay today.</p>
+      </div>
+
+      <div class="top-actions">
+        <input type="text" placeholder="Search..." />
+        <span class="bell">🔔</span>
+        <div class="avatar"></div>
+      </div>
+    </header>
+
+    <section class="grid">
+
+      <!-- ANNOUNCEMENT -->
+      <div class="card announcement">
+        <h3>Create an Announcement</h3>
+        <div class="announcement-box">
+          <textarea placeholder="Create an Announcement..."></textarea>
+          <label class="attach">
+            📎
+            <input type="file" accept="image/*" hidden />
+          </label>
+        </div>
+        <button>Post Announcement</button>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats">
+        <div class="card stat">
+          <span>Reports</span>
+          <strong id="reportsCount">0</strong>
+        </div>
+        <div class="card stat">
+          <span>Requests</span>
+          <strong id="requestsCount">0</strong>
+        </div>
+      </div>
+
+      <!-- ======================
+           GRAPH
+      ======================= -->
+      <div class="card chart">
+        <h3>Requests and Reports per Month</h3>
+
+        <!-- EMPTY STATE -->
+        <div id="graphEmpty" class="empty-state">
+          No records yet.<br />
+        </div>
+
+        <!-- BAR GRAPH -->
+        <div class="bars" id="graphBars" style="display:none">
+          <div class="group"><div class="bar requests"></div><div class="bar reports"></div><span>Oct</span></div>
+          <div class="group"><div class="bar requests"></div><div class="bar reports"></div><span>Nov</span></div>
+          <div class="group"><div class="bar requests"></div><div class="bar reports"></div><span>Dec</span></div>
+          <div class="group"><div class="bar requests"></div><div class="bar reports"></div><span>Jan</span></div>
+          <div class="group"><div class="bar requests"></div><div class="bar reports"></div><span>Feb</span></div>
+          <div class="group"><div class="bar requests"></div><div class="bar reports"></div><span>Mar</span></div>
+        </div>
+
+        <!-- LINE GRAPH -->
+        <div class="chart-line" id="graphLine" style="display:none">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+
+        <div class="legend">
+          <span><i class="req"></i> Requests</span>
+          <span><i class="rep"></i> Reports</span>
+        </div>
+      </div>
+
+      <!-- ======================
+           LEADERBOARD
+      ======================= -->
+      <div class="card leaderboard">
+        <h3>Most Earned Points</h3>
+        <ul id="leaderboardList">
+          <li class="empty">
+            No records yet.<br />
+          </li>
+        </ul>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- ======================
+     JAVASCRIPT
+======================= -->
+<script>
+async function loadDashboardGraph() {
+  const empty = document.getElementById("graphEmpty");
+  const bars = document.getElementById("graphBars");
+  const line = document.getElementById("graphLine");
+
+  try {
+    const res = await fetch("/api/dashboard-stats");
+    const data = await res.json();
+
+    if (!data || data.requests.length === 0) {
+      empty.style.display = "block";
+      return;
+    }
+
+    empty.style.display = "none";
+    bars.style.display = "flex";
+    line.style.display = "block";
+
+    const max = Math.max(...data.requests, ...data.reports);
+
+    document.getElementById("requestsCount").textContent =
+      data.requests.reduce((a,b)=>a+b,0);
+
+    document.getElementById("reportsCount").textContent =
+      data.reports.reduce((a,b)=>a+b,0);
+
+    const groups = document.querySelectorAll(".group");
+    const points = document.querySelectorAll(".chart-line span");
+
+    groups.forEach((g,i)=>{
+      g.querySelector(".requests").style.setProperty("--h",(data.requests[i]/max*100)+"%");
+      g.querySelector(".reports").style.setProperty("--h",(data.reports[i]/max*100)+"%");
+    });
+
+    points.forEach((p,i)=>{
+      p.style.setProperty("--x",(i/(points.length-1)*100)+"%");
+      p.style.setProperty("--y",(data.reports[i]/max*100)+"%");
+    });
+
+  } catch {
+    empty.style.display = "block";
+  }
+}
+
+async function loadLeaderboard() {
+  const list = document.getElementById("leaderboardList");
+
+  try {
+    const res = await fetch("/api/leaderboard");
+    const data = await res.json();
+
+    if (!data || data.length === 0) {
+      list.innerHTML = `
+        <li class="empty">
+          No records yet.<br />
+        </li>`;
+      return;
+    }
+
+    list.innerHTML = "";
+    data.forEach(u=>{
+      const li=document.createElement("li");
+      li.innerHTML=`<span></span>${u.name}<b>${u.points}</b>`;
+      list.appendChild(li);
+    });
+
+  } catch {
+    list.innerHTML = `
+      <li class="empty">
+        No records yet.<br />
+      </li>`;
+  }
+}
+
+loadDashboardGraph();
+loadLeaderboard();
+</script>
+
+</body>
+</html>
