@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CommUnity Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="reports.css">
+</head>
+<body>
+
+<div class="dashboard-container">
+    
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <h2>CommUnity</h2>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+            </a>
+            <a href="#" class="nav-item active">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Reports</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-folder"></i>
+                <span>Requests</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-gift"></i>
+                <span>Rewards</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-chart-simple"></i>
+                <span>Analytics</span>
+            </a>
+        </nav>
+
+        <div class="logout-container">
+            <i class="fa-solid fa-location-dot watermark-icon"></i>
+            
+            <a href="#" class="logout-btn">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Log Out</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header>
+            <h1 class="page-title">This is for today’s Report!</h1>
+            
+            <div class="header-tools">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <div class="icon-btn notification">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="badge-dot"></span>
+                </div>
+                <div class="profile-avatar"></div>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="card stat-card shadow-effect">
+                <h3>Total Reports</h3>
+                <div class="stat-number">45</div>
+            </div>
+            <div class="card stat-card center shadow-effect">
+                <h3>Reviewed</h3>
+            </div>
+            <div class="card stat-card center shadow-effect">
+                <h3>Assigned</h3>
+            </div>
+            <div class="card stat-card center shadow-effect">
+                <h3>Completed</h3>
+            </div>
+        </div>
+
+        <div class="card map-section shadow-effect">
+            <div class="map-container">
+                <div class="map-bg"></div>
+                
+                <div class="map-pin hall-pin">
+                    <div class="pin-icon blue-box"><i class="fa-solid fa-bars"></i></div>
+                    <div class="pin-info">
+                        <strong>Barangay Hall</strong>
+                        <span>Brgy. Road</span>
+                    </div>
+                </div>
+
+                <div class="map-marker red-marker">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <div class="marker-shadow"></div>
+                </div>
+
+                <div class="map-label progress-label">
+                    <i class="fa-solid fa-circle-exclamation icon-yellow"></i>
+                    <span>In Progress</span>
+                </div>
+
+                <div class="map-label resolved-label">
+                    <i class="fa-solid fa-circle-check icon-green"></i>
+                    <span>Resolved</span>
+                </div>
+
+                <div class="nav-pin">
+                    <i class="fa-solid fa-location-arrow"></i>
+                </div>
+
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <i class="fa-solid fa-triangle-exclamation icon-yellow"></i> Issues
+                    </div>
+                    <div class="legend-item">
+                        <i class="fa-solid fa-folder icon-blue"></i> Documents
+                    </div>
+                </div>
+
+                <div class="google-attrib">Google <span style="color:#777; font-weight:400;">Map data ©2024 Google</span></div>
+            </div>
+        </div>
+
+        <div class="overview-grid">
+            
+            <div class="card chart-card shadow-effect">
+                <div class="card-header">
+                    <h3>Reports Overview</h3>
+                </div>
+                <div class="chart-content-wrapper">
+                    <div class="sub-card chart-box">
+                        <h4>Reports by Status</h4>
+                        <div class="chart-area">
+                            <div class="y-axis">
+                                <span>60</span>
+                                <span>40</span>
+                                <span>20</span>
+                                <span>10</span>
+                            </div>
+                            <div class="bars-container">
+                                <div class="bar-col">
+                                    <div class="bar bg-navy" style="height: 40%;"></div>
+                                    <span class="x-label">To Review</span>
+                                </div>
+                                <div class="bar-col">
+                                    <div class="bar bg-blue" style="height: 70%;"></div>
+                                    <span class="x-label">In Progress</span>
+                                </div>
+                                <div class="bar-col">
+                                    <div class="bar bg-yellow" style="height: 55%;"></div>
+                                    <span class="x-label">Resolved</span>
+                                </div>
+                                <div class="bar-col">
+                                    <div class="bar bg-green" style="height: 45%;"></div>
+                                    <span class="x-label">Resolved</span>
+                                </div>
+                                <div class="bar-col">
+                                    <div class="bar bg-red" style="height: 30%;"></div>
+                                    <span class="x-label">Issues</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sub-card officers-box">
+                        <h4>Officer Assignments</h4>
+                        <div class="officers-list">
+                            <div class="officer-row">
+                                <div class="officer-info">
+                                    <div class="avatar-circle"></div>
+                                    <span>P01 Jing Santos</span>
+                                </div>
+                                <span class="pill-badge">8 Reports</span>
+                            </div>
+                            <div class="officer-row">
+                                <div class="officer-info">
+                                    <div class="avatar-circle"></div>
+                                    <span>P03 Jhen Dele Cruz</span>
+                                </div>
+                                <span class="pill-badge">7 Reports</span>
+                            </div>
+                            <div class="officer-row">
+                                <div class="officer-info">
+                                    <div class="avatar-circle"></div>
+                                    <span>SP02 Mark Olivo</span>
+                                </div>
+                                <span class="pill-badge">6 Reports</span>
+                            </div>
+                            <div class="officer-row">
+                                <div class="officer-info">
+                                    <div class="avatar-circle"></div>
+                                    <span>Delby Rob</span>
+                                </div>
+                                <span class="pill-badge">5 Reports</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-card shadow-effect">
+            <div class="table-header-row">
+                <h3>Reports</h3>
+                <div class="search-small">
+                    <input type="text" placeholder="Search reports...">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+            </div>
+            <table class="reports-table">
+                <thead>
+                    <tr>
+                        <th>Report ID</th>
+                        <th>Title</th>
+                        <th>Reporter</th>
+                        <th>Officer Assigned</th>
+                        <th>Status</th>
+                        <th>Date Submitted</th>
+                        <th style="text-align: right;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>RPT-001-2026</strong></td>
+                        <td>Illegal Dumping</td>
+                        <td>Toni Fowler</td>
+                        <td>Kgwd. Daddy Rob</td>
+                        <td><span class="status-pill in-progress">In-Progress</span></td>
+                        <td>January 02, 2026</td>
+                        <td style="text-align: right;"><button class="view-btn">View</button></td>
+                    </tr>
+                    <tr class="empty-row">
+                        <td><strong>RPT-001-2026</strong></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                     <tr class="empty-line">
+                        <td colspan="7"></td>
+                    </tr>
+                     <tr class="empty-line">
+                        <td colspan="7"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="spacer-bottom"></div>
+
+    </main>
+</div>
+
+</body>
+</html>
