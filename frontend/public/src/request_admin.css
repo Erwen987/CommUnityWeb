@@ -1,0 +1,290 @@
+/* ===============================
+   ROOT VARIABLES
+================================ */
+:root {
+  --primary: #1E4FD7;
+  --bg: #F5F7FB;
+  --card: #FFFFFF;
+  --sidebar: #0F2A5F;
+
+  --blue: #3B82F6;
+  --amber: #F59E0B;
+  --green: #10B981;
+  --gray: #6B7280;
+}
+
+/* ===============================
+   RESET
+================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: #1F2937;
+}
+
+/* ===============================
+   APP LAYOUT
+================================ */
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ===============================
+   SIDEBAR
+================================ */
+.sidebar {
+  width: 240px;
+  background: var(--sidebar);
+  color: #ffffff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+.nav a {
+  display: block;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  color: #CBD5E1;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.nav a:hover,
+.nav a.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.logout {
+  margin-top: auto;
+  padding: 12px;
+  color: #CBD5E1;
+  cursor: pointer;
+}
+
+/* ===============================
+   MAIN CONTENT
+================================ */
+.main {
+  flex: 1;
+  padding: 24px;
+}
+
+/* ===============================
+   TOP BAR
+================================ */
+.topbar {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.topbar input {
+  width: 280px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  outline: none;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ===============================
+   STATS CARDS
+================================ */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--card);
+  padding: 18px;
+  border-radius: 14px;
+  border-left: 5px solid var(--primary);
+}
+
+.stat-card h2 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stat-card span {
+  font-size: 13px;
+  color: #6B7280;
+}
+
+.stat-card.blue {
+  border-color: var(--blue);
+}
+
+.stat-card.reviewing {
+  border-color: var(--blue);
+}
+
+.stat-card.amber {
+  border-color: var(--amber);
+}
+
+.stat-card.green {
+  border-color: var(--green);
+}
+
+.stat-card.gray {
+  border-color: var(--gray);
+}
+
+/* ===============================
+   FILTERS
+================================ */
+.filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.filters select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+}
+
+/* ===============================
+   TABLE
+================================ */
+.table-card {
+  background: var(--card);
+  padding: 16px;
+  border-radius: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 14px;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  color: #6B7280;
+  font-weight: 600;
+}
+
+tbody tr:not(:last-child) {
+  border-bottom: 1px solid #E5E7EB;
+}
+
+tbody tr:hover {
+  background: #F9FAFB;
+}
+
+/* ===============================
+   STATUS BADGES
+================================ */
+.badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.badge.processing {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.badge.reviewing {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.badge.ready {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.badge.released {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+/* ===============================
+   EMPTY STATE
+================================ */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #6B7280;
+  font-size: 14px;
+  display: none;
+}
+
+/* ===============================
+   PAGINATION
+================================ */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #6B7280;
+}
+
+.pagination button {
+  padding: 8px 12px;
+  border: none;
+  background: #E5E7EB;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===============================
+   RESPONSIVE
+================================ */
+@media (max-width: 900px) {
+  .sidebar {
+    display: none;
+  }
+
+  .topbar input {
+    width: 180px;
+  }
+}

@@ -2,74 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CommUnity – Login</title>
   <link rel="stylesheet" href="src/login.css" />
 </head>
 <body>
 
   <!-- ================= NAVBAR ================= -->
-  <header>
+  <header class="navbar">
+    <div class="logo">CommUnity.</div>
     <nav>
-      <div class="logo">
-        <img src="images/CommUnity Logo.png" alt="CommUnity Logo" />
-        <span class="logo-text">CommUnity</span>
-      </div>
-
-      <ul class="nav-links">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#contact">Contact</a></li>
-        <li><a href="#get-started" class="get-started">Get Started</a></li>
-      </ul>
+      <a href="index.html">Home</a>
+      <a href="#">About</a>
+      <a href="#">Features</a>
+      <a href="#">Contact</a>
+      <a href="#" class="btn-primary">Get Started</a>
     </nav>
   </header>
 
   <!-- ================= MAIN ================= -->
-  <main class="login-wrapper">
+  <main class="hero">
 
-    <div class="login-container">
+    <!-- Background Illustration -->
+    <div class="hero-bg"></div>
 
-      <!-- LEFT SIDE -->
-      <div class="login-overview">
-        <h2>Welcome to CommUnity</h2>
-        <p>
-          CommUnity helps residents connect, report issues,
-          request services, and build a stronger barangay together.
-        </p>
+    <div class="login-wrapper">
+  <div class="login-container">
 
-        <ul class="overview-points">
-          <li>✔ Report community concerns</li>
-          <li>✔ Request barangay services</li>
-          <li>✔ Earn rewards for participation</li>
-        </ul>
-      </div>
+    <!-- LEFT SIDE: OVERVIEW -->
+    <div class="login-overview">
+      <h2>Welcome to CommUnity</h2>
+      <p>
+        CommUnity helps residents connect, report issues,
+        request services, and build a stronger barangay together.
+      </p>
 
-      <!-- RIGHT SIDE -->
-      <div class="login-form">
-        <h2>WELCOME BACK!</h2>
-
-        <form>
-          <label>Email / Phone Number</label>
-          <input type="text" placeholder="Enter your email or phone number" />
-
-          <label>Password</label>
-          <input type="password" placeholder="Enter password" />
-
-          <a href="forgot_password.html" class="forgot-link">Forgot Password?</a>
-
-          <button type="submit" onclick="loginUser()">LOGIN</button>
-
-          <p class="signup-text">
-            Don’t have an account? <a href="signup.html">Sign up</a>
-          </p>
-        </form>
-      </div>
-
+      <ul class="overview-points">
+        <li>✔ Report community concerns</li>
+        <li>✔ Request barangay services</li>
+        <li>✔ Earn rewards for participation</li>
+      </ul>
     </div>
 
+    <!-- RIGHT SIDE: LOGIN FORM -->
+    <div class="login-form">
+      <h2>WELCOME BACK!</h2>
+
+      <form>
+        <label>Email / Phone Number</label>
+        <input type="text" placeholder="Enter your email or phone number" />
+
+        <label>Password</label>
+        <input type="password" placeholder="Enter password" />
+
+        <a href="#" class="forgot-link">Forgot Password?</a>
+
+        <button type="submit">LOGIN</button>
+
+        <p class="signup-text">
+          Don’t have an account? <a href="#">Sign up</a>
+        </p>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+
   </main>
+  
 
 </body>
 </html>

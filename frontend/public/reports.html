@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CommUnity Dashboard</title>
+
+  <!-- FONT -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- ICONS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="src/reports.css">
+</head>
+<body>
+
+<div class="dashboard-container">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <img src="images/CommUnity Logo.png" alt="CommUnity Logo" class="brand-logo" />
+      <span>CommUnity</span>
+    </div>
+
+    <nav class="menu">
+      <a href="dashboard.html">
+        <img src="icons/home.png" class="menu-icon" />
+        <span>Home</span>
+      </a>
+      <a class="active" href="reports.html">
+        <img src="icons/reports.png" class="menu-icon" />
+        <span>Reports</span>
+      </a>
+      <a href="request.html">
+        <img src="icons/requests.png" class="menu-icon" />
+        <span>Requests</span>
+      </a>
+      <a>
+        <img src="icons/rewards.png" class="menu-icon" />
+        <span>Rewards</span>
+      </a>
+      <a>
+        <img src="icons/analytics.png" class="menu-icon" />
+        <span>Analytics</span>
+      </a>
+    </nav>
+
+    <div class="logout">Log Out</div>
+  </aside>
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="main-content">
+
+    <!-- HEADER -->
+    <header>
+      <h1 class="page-title">Today’s Reports</h1>
+
+      <div class="header-tools">
+        <div class="search-bar">
+          <input
+            type="text"
+            id="globalSearch"
+            placeholder="Search..."
+            autocomplete="off"
+          >
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+
+        <button class="notification" id="notificationBtn">
+          <i class="fa-solid fa-bell"></i>
+          <span class="badge-dot" id="notificationBadge" hidden></span>
+        </button>
+
+        <div class="profile-avatar" id="profileAvatar"></div>
+      </div>
+    </header>
+
+    <!-- ================= STATS (ZERO DEFAULTS) ================= -->
+    <section class="stats-grid">
+      <div class="card stat-card shadow-effect">
+        <h3>Total Reports</h3>
+        <div class="stat-number" id="statTotal">0</div>
+      </div>
+
+      <div class="card stat-card center shadow-effect">
+        <h3>Reviewed</h3>
+        <div class="stat-number" id="statReviewed">0</div>
+      </div>
+
+      <div class="card stat-card center shadow-effect">
+        <h3>Assigned</h3>
+        <div class="stat-number" id="statAssigned">0</div>
+      </div>
+
+      <div class="card stat-card center shadow-effect">
+        <h3>Completed</h3>
+        <div class="stat-number" id="statCompleted">0</div>
+      </div>
+    </section>
+
+    <!-- ================= MAP (BACKEND-READY) ================= -->
+    <section class="card map-section shadow-effect">
+      <!-- Backend can inject coordinates via data-lat / data-lng -->
+      <div
+        class="map-container"
+        id="googleMap"
+        data-lat=""
+        data-lng=""
+      ></div>
+    </section>
+
+    <!-- ================= REPORTS TABLE ================= -->
+    <section class="card table-card shadow-effect">
+
+      <div class="table-header-row">
+        <h3>Reports</h3>
+        <div class="search-small">
+          <input
+            type="text"
+            id="tableSearch"
+            placeholder="Search reports..."
+            autocomplete="off"
+          >
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+      </div>
+
+      <table class="reports-table">
+        <thead>
+          <tr>
+            <th>Report ID</th>
+            <th>Title</th>
+            <th>Reporter</th>
+            <th>Officer Assigned</th>
+            <th>Status</th>
+            <th>Date Submitted</th>
+            <th></th>
+          </tr>
+        </thead>
+
+        <!-- BACKEND / JS WILL POPULATE -->
+        <tbody id="reportsTableBody">
+          <!-- intentionally empty -->
+        </tbody>
+      </table>
+
+      <!-- EMPTY STATE (VISIBLE BY DEFAULT WHEN NO DATA) -->
+      <div class="empty-state" id="reportsEmptyState">
+        No reports available.
+      </div>
+
+    </section>
+
+    <div class="spacer-bottom"></div>
+
+  </main>
+</div>
+
+<!-- ================= GOOGLE MAP (OPTIONAL, BACKEND-READY) ================= -->
+<script>
+  function initMap() {
+    const mapEl = document.getElementById("googleMap");
+    if (!mapEl) return;
+
+    const lat = parseFloat(mapEl.dataset.lat);
+    const lng = parseFloat(mapEl.dataset.lng);
+
+    // If backend hasn't provided coordinates yet, do nothing
+    if (!lat || !lng) return;
+
+    const map = new google.maps.Map(mapEl, {
+      center: { lat, lng },
+      zoom: 15,
+      disableDefaultUI: true
+    });
+
+    new google.maps.Marker({
+      position: { lat, lng },
+      map
+    });
+  }
+</script>
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&callback=initMap"
+  async
+  defer>
+</script>
+
+</body>
+</html>

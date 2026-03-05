@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Community | Requests</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- FONT -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="src/request_admin.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">CommUnity</div>
+    <nav class="nav">
+      <a  href="admin_dashboard.html"class="active">Home</a>
+      <a href="user_management.html">User Manager</a>
+      <a href="report.html">Reports</a>
+      <a href="request.html">Requests</a>
+      <a>Analytics</a>
+      <a>Settings</a>
+    </nav>
+    <div class="logout">Log Out</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <input id="searchInput" type="text" placeholder="Search requests..." />
+      <div class="top-actions">🔔 <span>Admin</span></div>
+    </header>
+
+    <!-- STATS -->
+    <section class="stats">
+      <div class="stat-card blue">
+        <h2 id="totalRequests">0</h2>
+        <span>Total Requests</span>
+      </div>
+      <div class="stat-card reviewing">
+        <h2 id="reviewingCount">0</h2>
+        <span>Reviewing</span>
+      </div>
+      <div class="stat-card amber">
+        <h2 id="processingCount">0</h2>
+        <span>Processing</span>
+      </div>
+      <div class="stat-card green">
+        <h2 id="readyCount">0</h2>
+        <span>Ready for Pickup</span>
+      </div>
+      <div class="stat-card gray">
+        <h2 id="releasedCount">0</h2>
+        <span>Released</span>
+      </div>
+    </section>
+
+    <!-- FILTERS -->
+    <section class="filters">
+      <strong>Requests</strong>
+      <select id="statusFilter">
+        <option value="">All Status</option>
+        <option value="reviewing">Reviewing</option>
+        <option value="processing">Processing</option>
+        <option value="ready">Ready for Pickup</option>
+        <option value="released">Released</option>
+      </select>
+    </section>
+
+    <!-- TABLE -->
+    <section class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Document</th>
+            <th>Resident</th>
+            <th>Status</th>
+            <th>Date Submitted</th>
+          </tr>
+        </thead>
+        <tbody id="requestsTable">
+          <!-- DATA FROM DB -->
+        </tbody>
+      </table>
+
+      <!-- EMPTY STATE -->
+      <div id="emptyState" class="empty-state">
+        No requests found.
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="pagination">
+        <span id="paginationInfo">Showing 0 of 0 requests</span>
+        <div>
+          <button disabled>Prev</button>
+          <button disabled>Next</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===============================
+     INLINE DATABASE-READY SCRIPT
+================================ -->
+<script>
+/* ===============================
+   STATE (POPULATED FROM DB)
+================================ */
+let requests = []; // fetched from API
+
+/* ===============================
+   ELEMENTS
+================================ */
+const tableBody = document.getElementById("requestsTable");
+const emptyState = document.getElementById("emptyState");
+
+const totalEl = document.getElementById("totalRequests");
+const reviewingEl = document.getElementById("reviewingCount");
+const processingEl = document.getElementById("processingCount");
+const readyEl = document.getElementById("readyCount");
+const releasedEl = document.getElementById("releasedCount");
+
+const statusFilter = document.getElementById("statusFilter");
+const searchInput = document.getElementById("searchInput");
+
+/* ===============================
+   RENDER FUNCTIONS
+================================ */
+function renderStats(data) {
+  totalEl.textContent = data.length;
+  reviewingEl.textContent = data.filter(r => r.status === "reviewing").length;
+  processingEl.textContent = data.filter(r => r.status === "processing").length;
+  readyEl.textContent = data.filter(r => r.status === "ready").length;
+  releasedEl.textContent = data.filter(r => r.status === "released").length;
+}
+
+function renderTable(data) {
+  tableBody.innerHTML = "";
+
+  if (data.length === 0) {
+    emptyState.style.display = "block";
+    return;
+  }
+
+  emptyState.style.display = "none";
+
+  data.forEach(req => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${req.requestId}</td>
+      <td>${req.document}</td>
+      <td>${req.resident}</td>
+      <td>
+        <span class="badge ${req.status}">
+          ${formatStatus(req.status)}
+        </span>
+      </td>
+      <td>${req.dateSubmitted}</td>
+    `;
+
+    tableBody.appendChild(row);
+  });
+}
+
+function formatStatus(status) {
+  return {
+    reviewing: "Reviewing",
+    processing: "Processing",
+    ready: "Ready for Pickup",
+    released: "Released"
+  }[status] || status;
+}
+
+/* ===============================
+   FILTERING
+================================ */
+function applyFilters() {
+  const keyword = searchInput.value.toLowerCase();
+  const status = statusFilter.value;
+
+  const filtered = requests.filter(r => {
+    const searchMatch =
+      r.requestId.toLowerCase().includes(keyword) ||
+      r.resident.toLowerCase().includes(keyword);
+
+    const statusMatch = !status || r.status === status;
+    return searchMatch && statusMatch;
+  });
+
+  renderStats(filtered);
+  renderTable(filtered);
+}
+
+/* ===============================
+   EVENTS
+================================ */
+statusFilter.addEventListener("change", applyFilters);
+searchInput.addEventListener("input", applyFilters);
+
+/* ===============================
+   API PLACEHOLDER
+================================ */
+async function loadRequests() {
+  /*
+  const res = await fetch("/api/requests");
+  requests = await res.json();
+  */
+
+  // EMPTY INITIAL STATE
+  requests = [];
+
+  renderStats(requests);
+  renderTable(requests);
+}
+
+loadRequests();
+</script>
+
+</body>
+</html>

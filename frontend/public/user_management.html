@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/user_management.css" />
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <img src="images/CommUnity Logo.png" alt="CommUnity Logo" class="brand-logo" />
+      <span>CommUnity</span>
+    </div>
+
+    <nav class="menu">
+      <a href="admin_dashboard.html">
+        <img src="icons/home.png" class="menu-icon" />
+        <span>Home</span>
+      </a>
+      <a href="user_management.html" class="active">
+        <img src="icons/users.png" class="menu-icon" />
+        <span>User Management</span>
+      </a>
+      <a href="report_admin.html">
+        <img src="icons/reports.png" class="menu-icon" />
+        <span>Reports</span>
+      </a>
+      <a href="request_admin.html">
+        <img src="icons/requests.png" class="menu-icon" />
+        <span>Requests</span>
+      </a>
+      <a href="analytics.html">
+        <img src="icons/analytics.png" class="menu-icon" />
+        <span>Analytics</span>
+      </a>
+      <a href="settings.html">
+        <img src="icons/settings.png" class="menu-icon" />
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="logout">
+      <a href="logout.html">Log Out</a>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="content">
+
+   <header class="topbar">
+
+  <div class="topbar-left">
+    <h1>User Management</h1>
+    <p>Manage and monitor the users of the barangay</p>
+  </div>
+
+  <div class="top-actions">
+    <div class="search-box">
+      <input type="text" placeholder="Search..." />
+      <svg class="search-icon" viewBox="0 0 24 24">
+        <path d="M10 2a8 8 0 105.293 14.293l4.207 4.207 1.414-1.414-4.207-4.207A8 8 0 0010 2zm0 2a6 6 0 110 12 6 6 0 010-12z"/>
+      </svg>
+    </div>
+
+    <div class="notif"></div>
+    <div class="profile"></div>
+  </div>
+
+
+    </header>
+
+    <!-- STATS -->
+    <section class="stats">
+      <div class="card">
+        <span>All Users</span>
+        <strong id="allCount">0</strong>
+      </div>
+      <div class="card">
+        <span>Active Users</span>
+        <strong id="activeCount">0</strong>
+      </div>
+      <div class="card">
+        <span>Inactive Users</span>
+        <strong id="inactiveCount">0</strong>
+      </div>
+      <div class="card">
+        <span>Blocked Users</span>
+        <strong id="blockedCount">0</strong>
+      </div>
+    </section>
+
+    <!-- TABLE -->
+    <section class="table-card">
+
+      <input class="table-search" id="tableSearch" placeholder="Search users..." />
+
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;">Name</th>
+            <th style="text-align:left;">Status</th>
+            <th style="text-align:left;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="userTable"></tbody>
+      </table>
+
+    </section>
+
+  </main>
+</div>
+
+<script>
+
+/* ===========================
+   MOCK DATA
+=========================== */
+let mockUsers = [
+  { id: 1, name: "Juan Dela Cruz", email: "juan@email.com", status: "Active" },
+  { id: 2, name: "Maria Santos", email: "maria@email.com", status: "Inactive" },
+  { id: 3, name: "Pedro Reyes", email: "pedro@email.com", status: "Blocked" },
+  { id: 4, name: "Ana Lopez", email: "ana@email.com", status: "Active" }
+];
+
+/* ===========================
+   LOAD STATS
+=========================== */
+function loadStats() {
+  const all = mockUsers.length;
+  const active = mockUsers.filter(u => u.status === "Active").length;
+  const inactive = mockUsers.filter(u => u.status === "Inactive").length;
+  const blocked = mockUsers.filter(u => u.status === "Blocked").length;
+
+  document.getElementById("allCount").textContent = all;
+  document.getElementById("activeCount").textContent = active;
+  document.getElementById("inactiveCount").textContent = inactive;
+  document.getElementById("blockedCount").textContent = blocked;
+}
+
+/* ===========================
+   RENDER USERS
+=========================== */
+function renderUsers(users) {
+  const tbody = document.getElementById("userTable");
+  tbody.innerHTML = "";
+
+  if (users.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3" style="text-align:center; padding:20px;">
+          No users found
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  users.forEach(user => {
+    tbody.innerHTML += `
+      <tr data-id="${user.id}">
+        <td>
+          <div class="user">
+            <div class="avatar"></div>
+            <div>
+              <strong>${user.name}</strong><br>
+              <small>${user.email}</small>
+            </div>
+          </div>
+        </td>
+        <td class="status ${user.status.toLowerCase()}">
+          ${user.status}
+        </td>
+        <td class="actions">
+          <button class="action-btn">⋯</button>
+          <div class="dropdown-menu">
+            <span>View</span>
+            <span>Edit</span>
+            ${
+              user.status === "Blocked"
+                ? `<span data-action="unblock">Unblock User</span>`
+                : `<span class="danger" data-action="block">Block User</span>`
+            }
+            <span class="danger" data-action="delete">Delete</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+/* ===========================
+   SEARCH USERS
+=========================== */
+document.getElementById("tableSearch").addEventListener("input", function () {
+  const value = this.value.toLowerCase();
+
+  const filtered = mockUsers.filter(user =>
+    user.name.toLowerCase().includes(value) ||
+    user.email.toLowerCase().includes(value)
+  );
+
+  renderUsers(filtered);
+});
+
+/* ===========================
+   DROPDOWN + ACTIONS
+=========================== */
+document.addEventListener("click", function (e) {
+
+  if (e.target.classList.contains("action-btn")) {
+    e.stopPropagation();
+    const menu = e.target.nextElementSibling;
+
+    document.querySelectorAll(".dropdown-menu").forEach(m => {
+      if (m !== menu) m.style.display = "none";
+    });
+
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+    return;
+  }
+
+  if (e.target.dataset.action) {
+    const row = e.target.closest("tr");
+    const id = parseInt(row.dataset.id);
+    const user = mockUsers.find(u => u.id === id);
+
+    if (e.target.dataset.action === "block") {
+      user.status = "Blocked";
+    }
+
+    if (e.target.dataset.action === "unblock") {
+      user.status = "Active";
+    }
+
+    if (e.target.dataset.action === "delete") {
+      mockUsers = mockUsers.filter(u => u.id !== id);
+    }
+
+    renderUsers(mockUsers);
+    loadStats();
+  }
+
+  document.querySelectorAll(".dropdown-menu").forEach(menu => {
+    menu.style.display = "none";
+  });
+
+});
+
+/* INIT */
+loadStats();
+renderUsers(mockUsers);
+
+</script>
+
+</body>
+</html>
