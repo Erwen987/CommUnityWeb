@@ -1,271 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CommUnity Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CommUnity Dashboard</title>
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/admin_dashboard.css">
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="src/admin_dashboard.css">
 </head>
 
 <body>
 
 <div class="app">
 
-  <!-- ================= SIDEBAR ================= -->
-  <aside class="sidebar">
+  <!-- SIDEBAR -->
+  <div id="sidebar-container"></div>
 
-    <div class="brand">
-      <img src="images/CommUnity Logo.png" alt="CommUnity Logo" class="brand-logo" />
-      <span>CommUnity</span>
-    </div>
-
-    <nav class="menu">
-      <a href="admin_dashboard.html">
-        <img src="icons/home.png" class="menu-icon" />
-        <span>Home</span>
-      </a>
-
-      <a href="user_management.html">
-        <img src="icons/users.png" class="menu-icon" />
-        <span>User Management</span>
-      </a>
-
-      <a href="report_admin.html">
-        <img src="icons/reports.png" class="menu-icon" />
-        <span>Reports</span>
-      </a>
-
-      <a href="request_admin.html">
-        <img src="icons/requests.png" class="menu-icon" />
-        <span>Requests</span>
-      </a>
-
-      <a href="analytics.html">
-        <img src="icons/analytics.png" class="menu-icon" />
-        <span>Analytics</span>
-      </a>
-
-      <a href="settings.html">
-        <img src="icons/settings.png" class="menu-icon" />
-        <span>Settings</span>
-      </a>
-    </nav>
-
-    <div class="logout">
-      <a href="logout.html">Log Out</a>
-    </div>
-
-  </aside>
-
-  <!-- ================= MAIN ================= -->
+  <!-- MAIN CONTENT -->
   <main class="main">
 
-    <!-- HEADER -->
-    <header class="topbar">
+    <!-- CONTENT LOADER -->
+    <div id="content-loader">
+      <div class="loader-spinner"></div>
+    </div>
 
-      <div>
-        <h1>Welcome Admin 👋</h1>
-        <p>Here’s a quick overview of your barangay.</p>
-      </div>
+    <!-- PAGE CONTENT -->
+    <div id="page-content">
 
-      <div class="top-actions">
+      <!-- HEADER INCLUDE -->
+      <div id="header-container"></div>
 
-        <!-- SEARCH -->
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Search..." />
-          <svg class="search-icon" viewBox="0 0 24 24">
-            <path d="M10 2a8 8 0 105.293 14.293l4.207 4.207 1.414-1.414-4.207-4.207A8 8 0 0010 2zm0 2a6 6 0 110 12 6 6 0 010-12z"/>
-          </svg>
+      <!-- STATS -->
+      <section class="stats">
+
+        <div class="card stat">
+          <span>Reports</span>
+          <strong id="reportsCount">0</strong>
         </div>
 
-        <!-- NOTIFICATION -->
-        <div class="notif">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 2a6 6 0 00-6 6v4.586L4.293 15.293A1 1 0 005 17h14a1 1 0 00.707-1.707L18 12.586V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/>
-          </svg>
+        <div class="card stat">
+          <span>Requests</span>
+          <strong id="requestsCount">0</strong>
         </div>
 
-        <!-- PROFILE -->
-        <div class="profile"></div>
-
-      </div>
-
-    </header>
-
-    <!-- ================= STATS ================= -->
-    <section class="stats">
-      <div class="card stat">
-        <span>Reports</span>
-        <strong id="reportsCount">0</strong>
-      </div>
-
-      <div class="card stat">
-        <span>Requests</span>
-        <strong id="requestsCount">0</strong>
-      </div>
-
-      <div class="card stat">
-        <span>Users</span>
-        <strong id="usersCount">0</strong>
-      </div>
-
-      <div class="card stat">
-        <span>Active Users</span>
-        <strong id="activeUsersCount">0</strong>
-      </div>
-    </section>
-
-    <!-- ================= CONTENT ================= -->
-    <section class="content">
-
-      <!-- GRAPH -->
-      <div class="card chart">
-        <h3>Reports and Requests per Month</h3>
-
-        <div id="graphEmpty" class="empty-state">
-          No records yet.<br>
-          <small>Graph will appear once data is available.</small>
+        <div class="card stat">
+          <span>Users</span>
+          <strong id="usersCount">0</strong>
         </div>
 
-        <div class="bars" id="graphBars" style="display:none">
-          <!-- Backend will update heights -->
-          <div class="bar-group">
-            <div class="bar requests"></div>
-            <div class="bar reports"></div>
-            <span>Jan</span>
+        <div class="card stat">
+          <span>Active Users</span>
+          <strong id="activeUsersCount">0</strong>
+        </div>
+
+      </section>
+
+      <!-- CONTENT -->
+      <section class="content">
+
+        <div class="card chart">
+
+          <h3>Reports and Requests per Month</h3>
+
+          <div id="graphEmpty" class="empty-state">
+            No records yet.<br>
+            <small>Graph will appear once data is available.</small>
           </div>
-          <div class="bar-group">
-            <div class="bar requests"></div>
-            <div class="bar reports"></div>
-            <span>Feb</span>
+
+          <div class="bars" id="graphBars" style="display:none">
+
+            <div class="bar-group">
+              <div class="bar requests"></div>
+              <div class="bar reports"></div>
+              <span>Jan</span>
+            </div>
+
+            <div class="bar-group">
+              <div class="bar requests"></div>
+              <div class="bar reports"></div>
+              <span>Feb</span>
+            </div>
+
           </div>
-          <div class="bar-group">
-            <div class="bar requests"></div>
-            <div class="bar reports"></div>
-            <span>Mar</span>
+
+          <div class="legend">
+            <span><i class="req"></i> Requests</span>
+            <span><i class="rep"></i> Reports</span>
           </div>
-          <div class="bar-group">
-            <div class="bar requests"></div>
-            <div class="bar reports"></div>
-            <span>Apr</span>
+
+        </div>
+
+        <div class="right-column">
+
+          <div class="card contributors">
+            <h3>Top Contributors</h3>
+            <ul id="contributorsList"></ul>
           </div>
+
+          <div class="card activities">
+            <h3>Recent Activities</h3>
+            <ul id="activitiesList"></ul>
+          </div>
+
         </div>
 
-        <div class="legend">
-          <span><i class="req"></i> Requests</span>
-          <span><i class="rep"></i> Reports</span>
-        </div>
-      </div>
+      </section>
 
-      <!-- RIGHT COLUMN -->
-      <div class="right-column">
-
-        <!-- TOP CONTRIBUTORS -->
-        <div class="card contributors">
-          <h3>Top Contributors</h3>
-          <ul id="contributorsList">
-            <!-- Backend will inject -->
-          </ul>
-        </div>
-
-        <!-- RECENT ACTIVITIES -->
-        <div class="card activities">
-          <h3>Recent Activities</h3>
-          <ul id="activitiesList">
-            <!-- Backend will inject -->
-          </ul>
-        </div>
-
-      </div>
-
-    </section>
+    </div>
 
   </main>
 
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
 
-/* ACTIVE MENU */
-const links = document.querySelectorAll(".menu a");
-const current = window.location.pathname.split("/").pop();
-links.forEach(link => {
-  if (link.getAttribute("href") === current) {
-    link.classList.add("active");
-  }
-});
+/* LOAD SIDEBAR */
+async function loadSidebar(){
 
-/* EMPTY STATE RENDER */
-function renderEmptyState(container, message) {
-  container.innerHTML = `<li class="empty">${message}</li>`;
+  const res = await fetch("includes/sidebar.html")
+  const html = await res.text()
+
+  document.getElementById("sidebar-container").innerHTML = html
+
+  const links = document.querySelectorAll(".menu a")
+  const current = window.location.pathname.split("/").pop()
+
+  links.forEach(link=>{
+    if(link.getAttribute("href") === current){
+      link.classList.add("active")
+    }
+  })
+
 }
 
-/* RENDER CONTRIBUTORS */
-function renderTopContributors(data) {
-  const container = document.getElementById("contributorsList");
-  container.innerHTML = "";
+/* LOAD HEADER */
+async function loadHeader(){
 
-  if (!data || data.length === 0) {
-    renderEmptyState(container, "No contributors yet.");
-    return;
-  }
+  const res = await fetch("includes/header.html")
+  const html = await res.text()
 
-  data.forEach(user => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <span>${user.name}</span>
-      <b>${user.points}</b>
-    `;
-    container.appendChild(li);
-  });
+  document.getElementById("header-container").innerHTML = html
+
+  document.getElementById("page-title").textContent = "Welcome Admin 👋"
+  document.getElementById("page-description").textContent =
+  "Here’s a quick overview of your barangay"
+
 }
 
-/* RENDER ACTIVITIES */
-function renderRecentActivities(data) {
-  const container = document.getElementById("activitiesList");
-  container.innerHTML = "";
+/* DASHBOARD DATA */
+async function loadDashboard(){
 
-  if (!data || data.length === 0) {
-    renderEmptyState(container, "No activities yet.");
-    return;
+  try{
+
+    const res = await fetch("/api/dashboard")
+    const data = await res.json()
+
+    if(!data) return
+
+    document.getElementById("reportsCount").textContent = data.reports ?? 0
+    document.getElementById("requestsCount").textContent = data.requests ?? 0
+    document.getElementById("usersCount").textContent = data.users ?? 0
+    document.getElementById("activeUsersCount").textContent = data.activeUsers ?? 0
+
+  }catch(err){
+
+    console.error("Dashboard error:",err)
+
   }
 
-  data.forEach(activity => {
-    const li = document.createElement("li");
-    li.textContent = activity.description;
-    container.appendChild(li);
-  });
 }
 
-/* LOAD DASHBOARD */
-async function loadDashboard() {
-  try {
-    const res = await fetch("/api/dashboard");
-    const data = await res.json();
-    if (!data) return;
+/* CONTENT LOADING */
+window.addEventListener("load",()=>{
 
-    document.getElementById("reportsCount").textContent = data.reports ?? 0;
-    document.getElementById("requestsCount").textContent = data.requests ?? 0;
-    document.getElementById("usersCount").textContent = data.users ?? 0;
-    document.getElementById("activeUsersCount").textContent = data.activeUsers ?? 0;
+  const loader = document.getElementById("content-loader")
+  const content = document.getElementById("page-content")
 
-    renderTopContributors(data.topContributors);
-    renderRecentActivities(data.recentActivities);
+  setTimeout(()=>{
+    loader.style.display="none"
+    content.style.opacity="1"
+  },2000)
 
-  } catch (err) {
-    console.error("Dashboard error:", err);
-    renderTopContributors([]);
-    renderRecentActivities([]);
-  }
-}
+})
 
-loadDashboard();
+/* INIT */
+loadSidebar()
+loadHeader()
+loadDashboard()
 
 </script>
 

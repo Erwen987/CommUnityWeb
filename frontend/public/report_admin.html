@@ -1,339 +1,405 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>CommUnity | Reports</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="src/admin_dashboard.css">
+<link rel="stylesheet" href="src/report_admin.css">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<style>
-/* Additional small layout tweaks to match screenshot */
-.reports-grid{
-  display:grid;
-  grid-template-columns:2fr 1fr;
-  gap:20px;
-}
-
-.map-card{
-  height:300px;
-}
-
-#map{
-  height:230px;
-  border-radius:12px;
-}
-
-.overview-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:20px;
-  align-items:center;
-}
-
-.officer-list{
-  list-style:none;
-  padding:0;
-  margin:0;
-}
-
-.officer-list li{
-  display:flex;
-  justify-content:space-between;
-  padding:8px 0;
-  font-size:13px;
-  border-bottom:1px solid #eee;
-}
-
-.badge-count{
-  background:#2d66ca;
-  color:white;
-  padding:4px 8px;
-  border-radius:20px;
-  font-size:12px;
-}
-</style>
 </head>
 
 <body>
 
+<!-- PAGE LOADER -->
+<div id="page-loader">
+<div class="loader-spinner"></div>
+</div>
+
+
 <div class="app">
 
-  <aside class="sidebar">
+<!-- SIDEBAR -->
+<div id="sidebar-container"></div>
 
-    <div class="brand">
-      <img src="images/CommUnity Logo.png" alt="CommUnity Logo" class="brand-logo" />
-      <span>CommUnity</span>
-    </div>
 
-    <nav class="menu">
-      <a href="admin_dashboard.html">
-        <img src="icons/home.png" class="menu-icon" />
-        <span>Home</span>
-      </a>
-
-      <a href="user_management.html">
-        <img src="icons/users.png" class="menu-icon" />
-        <span>User Management</span>
-      </a>
-
-      <a href="report_admin.html">
-        <img src="icons/reports.png" class="menu-icon" />
-        <span>Reports</span>
-      </a>
-
-      <a href="request_admin.html">
-        <img src="icons/requests.png" class="menu-icon" />
-        <span>Requests</span>
-      </a>
-
-      <a href="analytics.html">
-        <img src="icons/analytics.png" class="menu-icon" />
-        <span>Analytics</span>
-      </a>
-
-      <a href="settings.html">
-        <img src="icons/settings.png" class="menu-icon" />
-        <span>Settings</span>
-      </a>
-    </nav>
-
-    <div class="logout">
-      <a href="logout.html">Log Out</a>
-    </div>
-
-  </aside>
-
+<!-- MAIN -->
 <main class="main">
 
-<header class="topbar">
-  <div>
-    <h1>Reports</h1>
-    <p>View and manage all reports submitted by residents of the barangay.</p>
-  </div>
-</header>
+<!-- HEADER -->
+<div id="header-container"></div>
+
 
 <!-- STATS -->
 <section class="stats">
-  <div class="card stat">
-    <span>Total Reports</span>
-    <strong id="totalReports">0</strong>
-  </div>
-  <div class="card stat">
-    <span>Reviewed</span>
-    <strong id="reviewedReports">0</strong>
-  </div>
-  <div class="card stat">
-    <span>Assigned</span>
-    <strong id="assignedReports">0</strong>
-  </div>
-  <div class="card stat">
-    <span>Fixed</span>
-    <strong id="fixedReports">0</strong>
-  </div>
+
+<div class="card stat">
+<span>Total Reports</span>
+<strong id="totalReports">0</strong>
+</div>
+
+<div class="card stat">
+<span>Reviewed</span>
+<strong id="reviewedReports">0</strong>
+</div>
+
+<div class="card stat">
+<span>Assigned</span>
+<strong id="assignedReports">0</strong>
+</div>
+
+<div class="card stat">
+<span>Fixed</span>
+<strong id="fixedReports">0</strong>
+</div>
+
 </section>
+
 
 <!-- MAP -->
-<section class="card map-card" style="padding:20px;">
-  <div id="map"></div>
+<section class="card" style="padding:20px;margin-top:20px;">
+<div id="map" style="height:300px;border-radius:12px;"></div>
 </section>
 
-<!-- REPORTS OVERVIEW -->
-<section class="card" style="padding:20px; margin-top:20px;">
-  <h3 style="margin-bottom:20px;">Reports Overview</h3>
 
-  <div class="overview-grid">
+<!-- OVERVIEW -->
+<section class="card" style="padding:20px;margin-top:20px;">
 
-    <div>
-      <canvas id="statusChart"></canvas>
-    </div>
+<h3 style="margin-bottom:20px;">Reports Overview</h3>
 
-    <div>
-      <h4 style="margin-bottom:10px;">Officer Assignments</h4>
-      <ul class="officer-list" id="officerList"></ul>
-    </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
 
-  </div>
+<div>
+<canvas id="statusChart"></canvas>
+</div>
+
+<div>
+
+<h4 style="margin-bottom:10px;">Officer Assignments</h4>
+
+<ul id="officerList" class="officer-list"></ul>
+
+</div>
+
+</div>
+
 </section>
 
-<!-- REPORT TABLE -->
-<section class="card" style="margin-top:30px; padding:25px;">
-  <h3 style="margin-bottom:20px;">Reports List</h3>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Report ID</th>
-        <th>Title</th>
-        <th>Reporter</th>
-        <th>Officer Assigned</th>
-        <th>Status</th>
-        <th>Date Submitted</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="reportsTable"></tbody>
-  </table>
+<!-- TABLE -->
+<section class="card" style="margin-top:30px;padding:25px;">
+
+<h3 style="margin-bottom:20px;">Reports List</h3>
+
+<table>
+
+<thead>
+<tr>
+<th>Report ID</th>
+<th>Title</th>
+<th>Reporter</th>
+<th>Officer Assigned</th>
+<th>Status</th>
+<th>Date Submitted</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="reportsTable"></tbody>
+
+</table>
+
 </section>
 
 </main>
 </div>
 
+
 <script>
 
+/* LOAD SIDEBAR */
+
+async function loadSidebar(){
+
+const res = await fetch("includes/sidebar.html")
+const html = await res.text()
+
+document.getElementById("sidebar-container").innerHTML = html
+
+const links = document.querySelectorAll(".menu a")
+const current = window.location.pathname.split("/").pop()
+
+links.forEach(link=>{
+if(link.getAttribute("href") === current){
+link.classList.add("active")
+}
+})
+
+}
+
+
+/* LOAD HEADER */
+
+async function loadHeader(){
+
+const res = await fetch("includes/header.html")
+const html = await res.text()
+
+document.getElementById("header-container").innerHTML = html
+
+document.getElementById("page-title").textContent = "Reports"
+document.getElementById("page-description").textContent =
+"View and manage all reports submitted by residents."
+
+}
+
+
+/* PAGE LOADER */
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+document.getElementById("page-loader").style.display="none"
+},1200)
+
+})
+
+
+
 /* MOCK DATA */
+
 let reports = [
-  {
-    reportId:"RPT-001-2026",
-    title:"Illegal Dumping",
-    reporter:"Toni Fowler",
-    officer:"Kgw. Daddy Rob",
-    status:"in_progress",
-    dateSubmitted:"January 02, 2026",
-    lat:14.6091,
-    lng:121.0223
-  },
-  {
-    reportId:"RPT-002-2026",
-    title:"Broken Street Light",
-    reporter:"Juan Dela Cruz",
-    officer:"Kgw. Maria Santos",
-    status:"reviewed",
-    dateSubmitted:"January 05, 2026",
-    lat:14.6105,
-    lng:121.0198
-  }
-];
+
+{
+reportId:"RPT-001-2026",
+title:"Illegal Dumping",
+reporter:"Toni Fowler",
+officer:"Kgw. Daddy Rob",
+status:"in_progress",
+dateSubmitted:"January 02, 2026",
+lat:14.6091,
+lng:121.0223
+},
+
+{
+reportId:"RPT-002-2026",
+title:"Broken Street Light",
+reporter:"Juan Dela Cruz",
+officer:"Kgw. Maria Santos",
+status:"reviewed",
+dateSubmitted:"January 05, 2026",
+lat:14.6105,
+lng:121.0198
+}
+
+]
+
 
 /* STATS */
+
 function renderStats(){
-  document.getElementById("totalReports").textContent=reports.length;
-  document.getElementById("reviewedReports").textContent=
-    reports.filter(r=>r.status==="reviewed").length;
-  document.getElementById("assignedReports").textContent=
-    reports.filter(r=>r.status==="assigned").length;
-  document.getElementById("fixedReports").textContent=
-    reports.filter(r=>r.status==="fixed").length;
+
+document.getElementById("totalReports").textContent = reports.length
+
+document.getElementById("reviewedReports").textContent =
+reports.filter(r=>r.status==="reviewed").length
+
+document.getElementById("assignedReports").textContent =
+reports.filter(r=>r.status==="assigned").length
+
+document.getElementById("fixedReports").textContent =
+reports.filter(r=>r.status==="fixed").length
+
 }
+
+
 
 /* TABLE */
+
 function renderTable(){
-  const tbody=document.getElementById("reportsTable");
-  tbody.innerHTML="";
-  reports.forEach(r=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${r.reportId}</td>
-      <td>${r.title}</td>
-      <td>${r.reporter}</td>
-      <td>${r.officer}</td>
-      <td><span class="badge ${r.status}">${r.status.replace("_"," ")}</span></td>
-      <td>${r.dateSubmitted}</td>
-      <td><button class="view-btn">View</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
+
+const tbody = document.getElementById("reportsTable")
+
+tbody.innerHTML = ""
+
+reports.forEach(r=>{
+
+const tr = document.createElement("tr")
+
+tr.innerHTML = `
+
+<td>${r.reportId}</td>
+<td>${r.title}</td>
+<td>${r.reporter}</td>
+<td>${r.officer}</td>
+<td><span class="badge ${r.status}">${r.status.replace("_"," ")}</span></td>
+<td>${r.dateSubmitted}</td>
+
+<td class="action">
+
+<button class="action-btn">
+
+<svg viewBox="0 0 24 24" width="18" height="18">
+<circle cx="12" cy="5" r="2"></circle>
+<circle cx="12" cy="12" r="2"></circle>
+<circle cx="12" cy="19" r="2"></circle>
+</svg>
+
+</button>
+
+<div class="dropdown-menu">
+
+<button class="dropdown-item">👁 View Report</button>
+<button class="dropdown-item">✏ Edit Report</button>
+<button class="dropdown-item">📌 Assign Officer</button>
+
+<div class="dropdown-divider"></div>
+
+<button class="dropdown-item danger">🗑 Delete Report</button>
+
+</div>
+
+</td>
+`
+
+tbody.appendChild(tr)
+
+})
+
 }
+
+
+
+/* DROPDOWN ACTIONS */
+
+document.addEventListener("click", function(e){
+
+const btn = e.target.closest(".action-btn");
+
+if(btn){
+
+const menu = btn.nextElementSibling;
+
+document.querySelectorAll(".dropdown-menu").forEach(m=>{
+if(m !== menu){
+m.classList.remove("active");
+}
+});
+
+menu.classList.toggle("active");
+
+e.stopPropagation();
+
+return;
+}
+
+document.querySelectorAll(".dropdown-menu").forEach(menu=>{
+menu.classList.remove("active");
+});
+
+});
+
 
 /* MAP */
-function renderMap(){
-  const map=L.map("map").setView([14.6091,121.0223],15);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-    attribution:"© OpenStreetMap contributors"
-  }).addTo(map);
 
-  reports.forEach(r=>{
-    L.marker([r.lat,r.lng])
-      .addTo(map)
-      .bindPopup(`<b>${r.title}</b><br>${r.status}`);
-  });
+function renderMap(){
+
+const map = L.map("map").setView([14.6091,121.0223],15)
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+attribution:"© OpenStreetMap contributors"
+}).addTo(map)
+
+reports.forEach(r=>{
+L.marker([r.lat,r.lng])
+.addTo(map)
+.bindPopup(`<b>${r.title}</b><br>${r.status}`)
+})
+
 }
+
 
 /* CHART */
+
 function renderChart(){
 
-  const reviewed = reports.filter(r=>r.status==="reviewed").length;
-  const assigned = reports.filter(r=>r.status==="assigned").length;
-  const fixed = reports.filter(r=>r.status==="fixed").length;
-  const inProgress = reports.filter(r=>r.status==="in_progress").length;
+const reviewed = reports.filter(r=>r.status==="reviewed").length
+const assigned = reports.filter(r=>r.status==="assigned").length
+const fixed = reports.filter(r=>r.status==="fixed").length
+const progress = reports.filter(r=>r.status==="in_progress").length
 
-  const ctx = document.getElementById("statusChart");
+const ctx = document.getElementById("statusChart")
 
-  new Chart(ctx,{
-    type:"bar",
-    data:{
-      labels:["Reports"],
-      datasets:[
-        {
-          label:"Reviewed",
-          data:[reviewed],
-          backgroundColor:"#94a3b8" // gray
-        },
-        {
-          label:"Assigned",
-          data:[assigned],
-          backgroundColor:"#f59e0b" // amber
-        },
-        {
-          label:"Fixed",
-          data:[fixed],
-          backgroundColor:"#16a34a" // green
-        },
-        {
-          label:"In Progress",
-          data:[inProgress],
-          backgroundColor:"#2d66ca" // blue
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{
-          display:true,
-          position:"bottom"
-        }
-      },
-      scales:{
-        y:{
-          beginAtZero:true
-        }
-      }
-    }
-  });
+new Chart(ctx,{
+type:"bar",
+data:{
+labels:["Reports"],
+datasets:[
+{label:"Reviewed",data:[reviewed],backgroundColor:"#94a3b8"},
+{label:"Assigned",data:[assigned],backgroundColor:"#f59e0b"},
+{label:"Fixed",data:[fixed],backgroundColor:"#16a34a"},
+{label:"In Progress",data:[progress],backgroundColor:"#2d66ca"}
+]
+},
+options:{
+responsive:true,
+plugins:{legend:{position:"bottom"}},
+scales:{y:{beginAtZero:true}}
+}
+})
 
 }
-/* OFFICER ASSIGNMENTS */
+
+
+/* OFFICERS */
+
 function renderOfficers(){
-  const list=document.getElementById("officerList");
-  const officerCounts={};
 
-  reports.forEach(r=>{
-    officerCounts[r.officer]=(officerCounts[r.officer]||0)+1;
-  });
+const list = document.getElementById("officerList")
 
-  for(const officer in officerCounts){
-    const li=document.createElement("li");
-    li.innerHTML=`
-      <span>${officer}</span>
-      <span class="badge-count">${officerCounts[officer]} Reports</span>
-    `;
-    list.appendChild(li);
-  }
+const counts = {}
+
+reports.forEach(r=>{
+counts[r.officer] = (counts[r.officer] || 0) + 1
+})
+
+for(const officer in counts){
+
+const li = document.createElement("li")
+
+li.innerHTML = `
+<span>${officer}</span>
+<span class="badge-count">${counts[officer]} Reports</span>
+`
+
+list.appendChild(li)
+
 }
 
-renderStats();
-renderTable();
-renderMap();
-renderChart();
-renderOfficers();
+}
+
+
+/* INIT */
+
+loadSidebar()
+loadHeader()
+
+renderStats()
+renderTable()
+renderMap()
+renderChart()
+renderOfficers()
 
 </script>
+<script src="../src/report_actions.js"></script>
 
 </body>
 </html>
