@@ -80,18 +80,43 @@
 
 <svg width="200" height="200" viewBox="0 0 36 36" style="margin:auto;display:block">
 
-<circle cx="18" cy="18" r="16" fill="none" stroke="#64748b" stroke-width="4" stroke-dasharray="25 75"></circle>
+<!-- base -->
+<circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" stroke-width="4"></circle>
 
-<circle cx="18" cy="18" r="16" fill="none" stroke="#facc15" stroke-width="4"
-stroke-dasharray="20 80"
+<!-- reviewing -->
+<circle class="pie reviewing"
+cx="18" cy="18" r="16"
+fill="none"
+stroke="#64748b"
+stroke-width="4"
+stroke-dasharray="0 100"
+stroke-dashoffset="0"></circle>
+
+<!-- processing -->
+<circle class="pie processing"
+cx="18" cy="18" r="16"
+fill="none"
+stroke="#facc15"
+stroke-width="4"
+stroke-dasharray="0 100"
 stroke-dashoffset="-25"></circle>
 
-<circle cx="18" cy="18" r="16" fill="none" stroke="#ef4444" stroke-width="4"
-stroke-dasharray="15 85"
+<!-- ready -->
+<circle class="pie ready"
+cx="18" cy="18" r="16"
+fill="none"
+stroke="#ef4444"
+stroke-width="4"
+stroke-dasharray="0 100"
 stroke-dashoffset="-45"></circle>
 
-<circle cx="18" cy="18" r="16" fill="none" stroke="#16a34a" stroke-width="4"
-stroke-dasharray="40 60"
+<!-- released -->
+<circle class="pie released"
+cx="18" cy="18" r="16"
+fill="none"
+stroke="#16a34a"
+stroke-width="4"
+stroke-dasharray="0 100"
 stroke-dashoffset="-60"></circle>
 
 </svg>
@@ -100,22 +125,22 @@ stroke-dashoffset="-60"></circle>
 
 <li>
 <span>Reviewing</span>
-<strong>25%</strong>
+<strong class="percent" data-value="25">0%</strong>
 </li>
 
 <li>
 <span>Processing</span>
-<strong>20%</strong>
+<strong class="percent" data-value="20">0%</strong>
 </li>
 
 <li>
 <span>Ready</span>
-<strong>15%</strong>
+<strong class="percent" data-value="15">0%</strong>
 </li>
 
 <li>
 <span>Released</span>
-<strong>40%</strong>
+<strong class="percent" data-value="40">0%</strong>
 </li>
 
 </ul>
@@ -206,20 +231,17 @@ document.getElementById("page-description").textContent =
 }
 
 
-
 /* =========================
 MOCK DATA
 ========================= */
 
 const reports = [12,18,9,14,11,16]
 const requests = [10,14,6,12,8,13]
-
 const months = ["Jan","Feb","Mar","Apr","May","Jun"]
 
 
-
 /* =========================
-UPDATE STATS
+STATIC STATS
 ========================= */
 
 document.getElementById("totalReports").textContent =
@@ -231,11 +253,12 @@ requests.reduce((a,b)=>a+b,0)
 
 
 /* =========================
-BAR GRAPH
+BAR GRAPH ANIMATION
 ========================= */
 
-const container = document.getElementById("barsContainer")
+function renderBars(){
 
+const container = document.getElementById("barsContainer")
 const max = Math.max(...reports,...requests)
 
 months.forEach((m,i)=>{
@@ -250,8 +273,8 @@ group.innerHTML = `
 
 <div style="display:flex;gap:6px">
 
-<div class="bar requests" style="height:${reqHeight}px"></div>
-<div class="bar reports" style="height:${repHeight}px"></div>
+<div class="bar requests" style="height:0"></div>
+<div class="bar reports" style="height:0"></div>
 
 </div>
 
@@ -261,13 +284,83 @@ group.innerHTML = `
 
 container.appendChild(group)
 
+const bars = group.querySelectorAll(".bar")
+
+setTimeout(()=>{
+bars[0].style.height=reqHeight+"px"
+bars[1].style.height=repHeight+"px"
+},200)
+
 })
 
+}
 
-/* INIT */
+
+
+/* =========================
+PIE CHART ANIMATION
+========================= */
+
+function animatePie(){
+
+const values=[25,20,15,40]
+const circles=document.querySelectorAll(".pie")
+
+circles.forEach((circle,i)=>{
+
+const val=values[i]
+
+setTimeout(()=>{
+circle.style.strokeDasharray = val + " " + (100-val)
+},300)
+
+})
+
+}
+
+
+
+/* =========================
+PERCENTAGE ANIMATION
+========================= */
+
+function animatePercent(){
+
+document.querySelectorAll(".percent").forEach(el=>{
+
+const target=parseInt(el.dataset.value)
+let count=0
+
+const interval=setInterval(()=>{
+
+count++
+
+el.textContent=count+"%"
+
+if(count>=target) clearInterval(interval)
+
+},25)
+
+})
+
+}
+
+
+
+/* =========================
+INIT
+========================= */
+
+document.addEventListener("DOMContentLoaded",()=>{
 
 loadSidebar()
 loadHeader()
+
+renderBars()
+animatePie()
+animatePercent()
+
+})
 
 </script>
 

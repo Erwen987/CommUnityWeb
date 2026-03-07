@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CommUnity | Settings</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/settings.css">
+
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div id="sidebar-container"></div>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- HEADER -->
+<div id="header-container"></div>
+
+
+<!-- ================= SETTINGS TITLE ================= -->
+
+<section class="settings-header">
+
+<h2>System Settings</h2>
+<p>Manage system backup, recovery and data protection.</p>
+
+</section>
+
+
+<!-- ================= BACKUP SECTION ================= -->
+
+<section class="card">
+
+<h3>Database Backup</h3>
+
+<p class="settings-desc">
+Create a backup of the entire system database including residents, requests, and reports.
+</p>
+
+<div class="backup-actions">
+
+<button class="primary-btn" onclick="createBackup()">
+Create Backup
+</button>
+
+<button class="secondary-btn" onclick="downloadBackup()">
+Download Latest Backup
+</button>
+
+</div>
+
+</section>
+
+
+
+<!-- ================= AUTO BACKUP ================= -->
+
+<section class="card">
+
+<h3>Automatic Backup</h3>
+
+<p class="settings-desc">
+Enable automatic scheduled backups to protect system data.
+</p>
+
+<div class="form-group">
+
+<label>Backup Frequency</label>
+
+<select id="backupFrequency">
+
+<option value="daily">Daily</option>
+<option value="weekly">Weekly</option>
+<option value="monthly">Monthly</option>
+
+</select>
+
+</div>
+
+<div class="form-group">
+
+<label>
+<input type="checkbox" id="enableAutoBackup">
+Enable Automatic Backup
+</label>
+
+</div>
+
+<button class="primary-btn" onclick="saveBackupSettings()">
+Save Settings
+</button>
+
+</section>
+
+
+
+<!-- ================= RESTORE DATA ================= -->
+
+<section class="card">
+
+<h3>Restore Data</h3>
+
+<p class="settings-desc">
+Restore the system using a previous backup file.
+</p>
+
+<input type="file" id="restoreFile">
+
+<button class="danger-btn" onclick="restoreBackup()">
+Restore Backup
+</button>
+
+</section>
+
+
+
+<!-- ================= STORAGE INFO ================= -->
+
+<section class="card">
+
+<h3>System Storage</h3>
+
+<div class="storage-grid">
+
+<div class="storage-box">
+<span>Database Size</span>
+<strong id="dbSize">320 MB</strong>
+</div>
+
+<div class="storage-box">
+<span>Backup Storage</span>
+<strong id="backupSize">1.2 GB</strong>
+</div>
+
+<div class="storage-box">
+<span>Last Backup</span>
+<strong id="lastBackup">March 7, 2026</strong>
+</div>
+
+</div>
+
+</section>
+
+
+
+<!-- ================= BACKUP HISTORY ================= -->
+
+<section class="card">
+
+<h3>Backup History</h3>
+
+<table>
+
+<thead>
+
+<tr>
+<th>Backup File</th>
+<th>Date</th>
+<th>Size</th>
+<th>Action</th>
+</tr>
+
+</thead>
+
+<tbody id="backupTable"></tbody>
+
+</table>
+
+</section>
+
+
+</main>
+</div>
+
+
+
+<script>
+
+/* ================= LOAD SIDEBAR ================= */
+
+async function loadSidebar(){
+
+const res = await fetch("includes/sidebar.html")
+const html = await res.text()
+
+document.getElementById("sidebar-container").innerHTML = html
+
+const links = document.querySelectorAll(".menu a")
+const current = window.location.pathname.split("/").pop()
+
+links.forEach(link=>{
+if(link.getAttribute("href") === current){
+link.classList.add("active")
+}
+})
+
+}
+
+
+/* ================= LOAD HEADER ================= */
+
+async function loadHeader(){
+
+const res = await fetch("includes/header.html")
+const html = await res.text()
+
+document.getElementById("header-container").innerHTML = html
+
+document.getElementById("page-title").textContent = "Settings"
+document.getElementById("page-description").textContent =
+"Manage system configuration and data backup."
+
+}
+
+
+/* ================= MOCK BACKUPS ================= */
+
+let backups = [
+
+{
+file:"backup_2026_03_07.sql",
+date:"2026-03-07",
+size:"320 MB"
+},
+
+{
+file:"backup_2026_03_01.sql",
+date:"2026-03-01",
+size:"315 MB"
+}
+
+]
+
+
+/* ================= RENDER BACKUP TABLE ================= */
+
+function renderBackups(){
+
+const tbody = document.getElementById("backupTable")
+
+tbody.innerHTML=""
+
+backups.forEach((b,index)=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+
+<td>${b.file}</td>
+<td>${new Date(b.date).toLocaleDateString()}</td>
+<td>${b.size}</td>
+
+<td>
+
+<button onclick="downloadSpecificBackup(${index})">
+Download
+</button>
+
+<button onclick="deleteBackup(${index})">
+Delete
+</button>
+
+</td>
+
+`
+
+tbody.appendChild(row)
+
+})
+
+}
+
+
+/* ================= CREATE BACKUP ================= */
+
+function createBackup(){
+
+alert("Backup created successfully!")
+
+}
+
+
+/* ================= DOWNLOAD BACKUP ================= */
+
+function downloadBackup(){
+
+alert("Downloading latest backup...")
+
+}
+
+
+/* ================= DOWNLOAD SPECIFIC ================= */
+
+function downloadSpecificBackup(index){
+
+alert("Downloading "+backups[index].file)
+
+}
+
+
+/* ================= DELETE BACKUP ================= */
+
+function deleteBackup(index){
+
+backups.splice(index,1)
+
+renderBackups()
+
+}
+
+
+/* ================= SAVE SETTINGS ================= */
+
+function saveBackupSettings(){
+
+const enabled=document.getElementById("enableAutoBackup").checked
+const freq=document.getElementById("backupFrequency").value
+
+alert("Auto backup "+(enabled ? "enabled" : "disabled")+" ("+freq+")")
+
+}
+
+
+/* ================= RESTORE ================= */
+
+function restoreBackup(){
+
+const file=document.getElementById("restoreFile").files[0]
+
+if(!file){
+
+alert("Please upload a backup file.")
+
+return
+
+}
+
+alert("System restoring from "+file.name)
+
+}
+
+
+/* ================= INIT ================= */
+
+loadSidebar()
+loadHeader()
+renderBackups()
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CommUnity | Rewards</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/reward.css">
+
+</head>
+
+<body>
+
+<!-- PAGE LOADER -->
+<div id="page-loader">
+<div class="loader-spinner"></div>
+</div>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div id="sidebar-container"></div>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+<!-- HEADER -->
+<div id="header-container"></div>
+
+
+<!-- PAGE TITLE -->
+<h2 class="page-title">Rewards</h2>
+<p class="page-desc">These are the top contributors of your Barangay!</p>
+
+
+
+<!-- ================= REWARD CARDS ================= -->
+
+<section class="reward-grid" id="rewardGrid">
+
+<div class="reward gold">
+<h3>1,500 Points</h3>
+</div>
+
+<div class="reward green">
+<h3>500 Points</h3>
+</div>
+
+<div class="reward blue">
+<h3>300 Points</h3>
+</div>
+
+<div class="reward red">
+<h3>100 Points</h3>
+</div>
+
+</section>
+
+
+
+<!-- ================= TOP CONTRIBUTORS ================= -->
+
+<section class="card contributors">
+
+<h3>Top Contributors</h3>
+
+<div class="leaderboard" id="leaderboard"></div>
+
+<div class="view-all" id="viewAllBtn">
+View All →
+</div>
+
+<div class="view-all" id="goBackBtn" style="display:none;">
+← Go Back
+</div>
+
+</section>
+
+
+
+<!-- ================= CLAIMED REWARDS ================= -->
+
+<section class="card claims">
+
+<h3>Residents Who Claimed Rewards</h3>
+
+<ul id="claimList"></ul>
+
+</section>
+
+</main>
+</div>
+
+
+<script>
+
+/* ================= CONFIG ================= */
+
+const API_BASE = "http://localhost:5000/api"; 
+// replace later with your backend
+
+
+
+/* ================= STATE ================= */
+
+let contributors = [];
+let rewardClaims = [];
+let showAll = false;
+
+
+
+/* ================= MOCK DATA (fallback) ================= */
+
+const mockContributors = [
+{ name:"John Dewey", points:2000 },
+{ name:"John Dewey", points:1000 },
+{ name:"John Dewey", points:950 },
+{ name:"John Dewey", points:900 },
+{ name:"John Dewey", points:870 },
+{ name:"John Dewey", points:850 },
+{ name:"John Dewey", points:750 },
+{ name:"John Dewey", points:700 },
+{ name:"John Dewey", points:400 },
+{ name:"John Dewey", points:300 }
+];
+
+const mockClaims = [
+{
+name:"John Dewey",
+description:"Claimed ₱500 worth of Grocery for 500 Points"
+},
+{
+name:"John Dewey",
+description:"Claimed ₱200 worth of Load for 100 Points"
+},
+{
+name:"John Dewey",
+description:"Claimed School Supplies for 300 Points"
+},
+{
+name:"John Dewey",
+description:"Claimed ₱1500 Cash Aid for 1500 Points"
+}
+];
+
+
+
+/* ================= FETCH DATA ================= */
+
+async function loadRewards(){
+
+try{
+
+const res = await fetch(`${API_BASE}/rewards/leaderboard`)
+const data = await res.json()
+
+contributors = data
+
+}catch(e){
+
+contributors = mockContributors
+
+}
+
+renderContributors()
+
+}
+
+
+async function loadClaims(){
+
+try{
+
+const res = await fetch(`${API_BASE}/rewards/claims`)
+const data = await res.json()
+
+rewardClaims = data
+
+}catch(e){
+
+rewardClaims = mockClaims
+
+}
+
+renderClaims()
+
+}
+
+
+
+/* ================= RENDER CONTRIBUTORS ================= */
+
+function renderContributors(){
+
+const board = document.getElementById("leaderboard")
+board.innerHTML = ""
+
+const list = showAll ? contributors : contributors.slice(0,3)
+
+list.forEach((user,index)=>{
+
+let rankClass=""
+
+if(index===0) rankClass="first"
+else if(index===1) rankClass="second"
+else if(index===2) rankClass="third"
+
+board.innerHTML += `
+<div class="leader ${rankClass}">
+<div class="avatar"></div>
+<span>${user.name}</span>
+<strong>${user.points.toLocaleString()} Points</strong>
+</div>
+`
+
+})
+
+}
+
+
+
+/* ================= RENDER CLAIMS ================= */
+
+function renderClaims(){
+
+const list = document.getElementById("claimList")
+list.innerHTML=""
+
+rewardClaims.forEach(item=>{
+
+list.innerHTML += `
+<li>
+<div class="avatar"></div>
+<div>
+<strong>${item.name}</strong>
+<p>${item.description}</p>
+</div>
+</li>
+`
+
+})
+
+}
+
+
+
+/* ================= VIEW ALL TOGGLE ================= */
+
+document.getElementById("viewAllBtn").onclick = () => {
+
+showAll = true
+renderContributors()
+
+document.getElementById("viewAllBtn").style.display="none"
+document.getElementById("goBackBtn").style.display="block"
+
+}
+
+document.getElementById("goBackBtn").onclick = () => {
+
+showAll = false
+renderContributors()
+
+document.getElementById("viewAllBtn").style.display="block"
+document.getElementById("goBackBtn").style.display="none"
+
+}
+
+
+
+/* ================= LOAD SIDEBAR ================= */
+
+async function loadSidebar(){
+
+const res = await fetch("includes/sidebar.html")
+const html = await res.text()
+
+document.getElementById("sidebar-container").innerHTML = html
+
+const links = document.querySelectorAll(".menu a")
+const current = window.location.pathname.split("/").pop()
+
+links.forEach(link=>{
+if(link.getAttribute("href") === current){
+link.classList.add("active")
+}
+})
+
+}
+
+
+
+/* ================= LOAD HEADER ================= */
+
+async function loadHeader(){
+
+const res = await fetch("includes/header.html")
+const html = await res.text()
+
+document.getElementById("header-container").innerHTML = html
+
+document.getElementById("page-title").textContent = "Rewards"
+document.getElementById("page-description").textContent =
+"Monitor barangay reward contributions."
+
+}
+
+
+
+/* ================= PAGE LOADER ================= */
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+document.getElementById("page-loader").style.display="none"
+},1200)
+
+})
+
+
+
+/* ================= INIT ================= */
+
+loadSidebar()
+loadHeader()
+loadRewards()
+loadClaims()
+
+</script>
+
+</body>
+</html>

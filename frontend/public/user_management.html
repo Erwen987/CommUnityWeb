@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="src/user_management.css" />
+<link rel="stylesheet" href="src/user_management.css">
 
 </head>
 
@@ -15,21 +15,20 @@
 
 <div class="layout">
 
-<!-- SIDEBAR INCLUDE -->
+<!-- SIDEBAR -->
 <div id="sidebar-container"></div>
 
 <!-- MAIN -->
 <main class="content">
 
-<!-- CONTENT LOADER -->
+<!-- LOADER -->
 <div id="content-loader">
-  <div class="loader-spinner"></div>
+<div class="loader-spinner"></div>
 </div>
 
-<!-- PAGE CONTENT -->
 <div id="page-content">
 
-<!-- HEADER INCLUDE -->
+<!-- HEADER -->
 <div id="header-container"></div>
 
 <!-- STATS -->
@@ -46,8 +45,8 @@
 </div>
 
 <div class="card">
-<span>Inactive Users</span>
-<strong id="inactiveCount">0</strong>
+<span>Pending Registrations</span>
+<strong id="pendingCount">0</strong>
 </div>
 
 <div class="card">
@@ -57,35 +56,59 @@
 
 </section>
 
-<!-- TABLE -->
+
+<!-- TABLE SECTION -->
 <section class="table-card">
 
 <input class="table-search" id="tableSearch" placeholder="Search users..." />
+
+
+<!-- NEW SIGN UPS -->
+<h3 style="margin-top:20px;">New Registrations</h3>
 
 <table>
 
 <thead>
 <tr>
-<th style="text-align:left;">Name</th>
-<th style="text-align:left;">Status</th>
-<th style="text-align:left;">Actions</th>
+<th>Name</th>
+<th>Status</th>
+<th>Actions</th>
 </tr>
 </thead>
 
-<tbody id="userTable"></tbody>
+<tbody id="newUsersTable"></tbody>
+
+</table>
+
+
+<!-- OLD USERS -->
+<h3 style="margin-top:30px;">Existing Users</h3>
+
+<table>
+
+<thead>
+<tr>
+<th>Name</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="existingUsersTable"></tbody>
 
 </table>
 
 </section>
 
-</div> <!-- END PAGE CONTENT -->
+</div>
 
 </main>
 </div>
 
+
 <script>
 
-/* ================= LOAD SIDEBAR ================= */
+/* ================= SIDEBAR ================= */
 
 async function loadSidebar(){
 
@@ -105,7 +128,8 @@ link.classList.add("active")
 
 }
 
-/* ================= LOAD HEADER ================= */
+
+/* ================= HEADER ================= */
 
 async function loadHeader(){
 
@@ -116,20 +140,44 @@ document.getElementById("header-container").innerHTML = html
 
 document.getElementById("page-title").textContent = "User Management"
 document.getElementById("page-description").textContent =
-"Manage and monitor the users of the barangay"
+"Approve and manage barangay residents"
 
 }
 
-/* ================= MOCK DATA ================= */
+
+/* ================= OTP GENERATOR ================= */
+
+function generateOTP(){
+return Math.floor(100000 + Math.random() * 900000)
+}
+
+
+/* ================= MOCK USERS ================= */
 
 let mockUsers = [
 
-{ id: 1, name: "Juan Dela Cruz", email: "juan@email.com", status: "Active" },
-{ id: 2, name: "Maria Santos", email: "maria@email.com", status: "Inactive" },
-{ id: 3, name: "Pedro Reyes", email: "pedro@email.com", status: "Blocked" },
-{ id: 4, name: "Ana Lopez", email: "ana@email.com", status: "Active" }
+{ id:1, name:"Juan Dela Cruz", email:"juan@email.com", status:"Active" },
+
+{ id:2, name:"Maria Santos", email:"maria@email.com", status:"Pending" },
+
+{ id:3, name:"Pedro Reyes", email:"pedro@email.com", status:"Blocked" },
+
+{ id:4, name:"Ana Lopez", email:"ana@email.com", status:"Active" },
+
+{ id:5, name:"Carlos Rivera", email:"carlos@email.com", status:"Pending" },
+
+{ id:6, name:"Angela Bautista", email:"angela@email.com", status:"Pending" },
+
+{ id:7, name:"Michael Cruz", email:"michael@email.com", status:"OTP Sent" },
+
+{ id:8, name:"Samantha Torres", email:"samantha@email.com", status:"Pending" },
+
+{ id:9, name:"Joseph Ramirez", email:"joseph@email.com", status:"Inactive" },
+
+{ id:10, name:"Daniela Flores", email:"daniela@email.com", status:"Active" }
 
 ]
+
 
 /* ================= LOAD STATS ================= */
 
@@ -137,48 +185,43 @@ function loadStats(){
 
 const all = mockUsers.length
 const active = mockUsers.filter(u=>u.status==="Active").length
-const inactive = mockUsers.filter(u=>u.status==="Inactive").length
+const pending = mockUsers.filter(u=>u.status==="Pending").length
 const blocked = mockUsers.filter(u=>u.status==="Blocked").length
 
 document.getElementById("allCount").textContent = all
 document.getElementById("activeCount").textContent = active
-document.getElementById("inactiveCount").textContent = inactive
+document.getElementById("pendingCount").textContent = pending
 document.getElementById("blockedCount").textContent = blocked
 
 }
+
 
 /* ================= RENDER USERS ================= */
 
 function renderUsers(users){
 
-const tbody = document.getElementById("userTable")
-tbody.innerHTML = ""
+const newTable = document.getElementById("newUsersTable")
+const oldTable = document.getElementById("existingUsersTable")
 
-if(users.length === 0){
-
-tbody.innerHTML = `
-<tr>
-<td colspan="3" style="text-align:center; padding:20px;">
-No users found
-</td>
-</tr>
-`
-
-return
-}
+newTable.innerHTML=""
+oldTable.innerHTML=""
 
 users.forEach(user=>{
 
-tbody.innerHTML += `
+const row = `
+
 <tr data-id="${user.id}">
 
 <td>
 <div class="user">
+
 <div class="avatar"></div>
+
 <div>
 <strong>${user.name}</strong><br>
 <small>${user.email}</small>
 </div>
+
 </div>
 </td>
 
@@ -192,13 +235,25 @@ ${user.status}
 
 <div class="dropdown-menu">
 
-<span>View</span>
-<span>Edit</span>
+<span data-action="view">View</span>
+<span data-action="edit">Edit</span>
 
 ${
-user.status === "Blocked"
-? `<span data-action="unblock">Unblock User</span>`
-: `<span class="danger" data-action="block">Block User</span>`
+user.status==="Pending"
+? `<span data-action="approve">Approve & Send OTP</span>`
+: ""
+}
+
+${
+user.status==="OTP Sent"
+? `<span data-action="resend">Resend OTP</span>`
+: ""
+}
+
+${
+user.status==="Blocked"
+? `<span data-action="unblock">Unblock</span>`
+: `<span data-action="block">Block</span>`
 }
 
 <span class="danger" data-action="delete">Delete</span>
@@ -210,15 +265,23 @@ user.status === "Blocked"
 </tr>
 `
 
+if(user.status==="Pending" || user.status==="OTP Sent"){
+newTable.innerHTML += row
+}
+else{
+oldTable.innerHTML += row
+}
+
 })
 
 }
 
-/* ================= SEARCH USERS ================= */
+
+/* ================= SEARCH ================= */
 
 document.getElementById("tableSearch").addEventListener("input",function(){
 
-const value = this.value.toLowerCase()
+const value=this.value.toLowerCase()
 
 const filtered = mockUsers.filter(user=>
 user.name.toLowerCase().includes(value) ||
@@ -229,7 +292,8 @@ renderUsers(filtered)
 
 })
 
-/* ================= DROPDOWN ACTIONS ================= */
+
+/* ================= ACTIONS ================= */
 
 document.addEventListener("click",function(e){
 
@@ -237,10 +301,10 @@ if(e.target.classList.contains("action-btn")){
 
 e.stopPropagation()
 
-const menu = e.target.nextElementSibling
+const menu=e.target.nextElementSibling
 
 document.querySelectorAll(".dropdown-menu").forEach(m=>{
-if(m !== menu) m.style.display="none"
+if(m!==menu) m.style.display="none"
 })
 
 menu.style.display = menu.style.display==="block" ? "none" : "block"
@@ -255,8 +319,43 @@ const id = parseInt(row.dataset.id)
 
 const user = mockUsers.find(u=>u.id===id)
 
-if(e.target.dataset.action==="block") user.status="Blocked"
-if(e.target.dataset.action==="unblock") user.status="Active"
+/* APPROVE USER */
+
+if(e.target.dataset.action==="approve"){
+
+const otp = generateOTP()
+
+user.status="OTP Sent"
+user.otp=otp
+
+alert("OTP sent to "+user.email+"\nCode: "+otp)
+
+}
+
+/* RESEND OTP */
+
+if(e.target.dataset.action==="resend"){
+
+const otp = generateOTP()
+user.otp=otp
+
+alert("New OTP sent to "+user.email+"\nCode: "+otp)
+
+}
+
+/* BLOCK */
+
+if(e.target.dataset.action==="block"){
+user.status="Blocked"
+}
+
+/* UNBLOCK */
+
+if(e.target.dataset.action==="unblock"){
+user.status="Active"
+}
+
+/* DELETE */
 
 if(e.target.dataset.action==="delete"){
 mockUsers = mockUsers.filter(u=>u.id!==id)
@@ -273,21 +372,23 @@ menu.style.display="none"
 
 })
 
-/* ================= CONTENT LOADING ================= */
+
+/* ================= LOADER ================= */
 
 window.addEventListener("load",()=>{
 
-const loader = document.getElementById("content-loader")
-const content = document.getElementById("page-content")
+const loader=document.getElementById("content-loader")
+const content=document.getElementById("page-content")
 
 setTimeout(()=>{
 
 loader.style.display="none"
 content.style.opacity="1"
 
-},2000)
+},1500)
 
 })
+
 
 /* ================= INIT ================= */
 
