@@ -1,99 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CommUnity – Create Account</title>
-  <link rel="stylesheet" href="src/signup.css" />
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CommUnity – Create Account</title>
+
+<link rel="stylesheet" href="src/signup.css">
+<link rel="icon" type="image/png" href="images/CommUnity Logo.png">
+
 </head>
+
+
 <body>
 
-  <!-- NAVBAR -->
-  <header>
-    <nav>
-      <div class="logo">
-        <img src="images/CommUnity Logo.png" alt="CommUnity Logo" />
-        <span class="logo-text">CommUnity</span>
-      </div>
+<!-- NAVBAR INCLUDE -->
+<div id="navbar-placeholder"></div>
 
-      <ul class="nav-links">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#contact">Contact</a></li>
-        <li><a href="#get-started" class="get-started">Get Started</a></li>
-      </ul>
-    </nav>
-  </header>
 
-  <!-- HERO -->
-  <section class="hero">
+<!-- HERO -->
+<section class="hero">
 
-    <div class="signup-wrapper">
-      <div class="signup-container">
-        <div class="login-overview">
-          <h2>Welcome to CommUnity</h2>
-          <p>
-            CommUnity helps residents connect, report issues,
-            request services, and build a stronger barangay together.
-          </p>
+<div class="signup-wrapper">
 
-          <ul class="overview-points">
-            <li>✔ Report community concerns</li>
-            <li>✔ Request barangay services</li>
-            <li>✔ Earn rewards for participation</li>
-          </ul>
-        </div>
+<div class="signup-container">
 
-        <div class="signup-card">
 
-          <h2>Create an Account</h2>
-          <p class="subtitle">Join your community today!</p>
+<!-- LEFT SIDE -->
+<div class="login-overview">
 
-          <form>
-            <label>Name</label>
-            <div class="row">
-              <input type="text" placeholder="First name" />
-              <input type="text" placeholder="Last name" />
-            </div>
+<h2>Welcome to CommUnity</h2>
 
-            <label>Barangay</label>
-            <select>
-              <option value="">Select your barangay</option>
-              <option value="Barangay 1">Barangay 1</option>
-              <option value="Barangay 2">Barangay 2</option>
-              <option value="Barangay 3">Barangay 3</option>
-              <option value="Barangay 4">Barangay 4</option>
-              <option value="Barangay 5">Barangay 5</option>
-              <option value="Barangay 6">Barangay 6</option>
-              <option value="Barangay 7">Barangay 7</option>
-              <option value="Barangay 8">Barangay 8</option>
-              <option value="Barangay 9">Barangay 9</option>
-              <option value="Barangay 10">Barangay 10</option>
-              <!-- Add more barangays as needed -->
-            </select>
+<p>
+CommUnity helps residents connect, report issues,
+request services, and build a stronger barangay together.
+</p>
 
-            <label>Email / Phone Number</label>
-            <input type="text" placeholder="Enter your email or phone number" />
+<ul class="overview-points">
 
-            <label>Password</label>
-            <input type="password" placeholder="Enter password" />
+<li>✔ Report community concerns</li>
+<li>✔ Request barangay services</li>
+<li>✔ Earn rewards for participation</li>
 
-            <label>Confirm Password</label>
-            <input type="password" placeholder="Confirm password" />
+</ul>
 
-            <button type="submit">SIGN UP</button>
+</div>
 
-            <p class="login-text">
-              Already have an account? <a href="login.html">Log in</a>
-            </p>
-          </form>
 
-        </div>
-      </div>
-    </div>
 
-  </section>
+<!-- RIGHT SIDE -->
+<div class="signup-card">
+
+<h2>Create an Account</h2>
+<p class="subtitle">Join your community today!</p>
+
+
+<form>
+
+
+<!-- NAME -->
+<label>Name</label>
+
+<div class="row">
+
+<input type="text" placeholder="First name" required>
+<input type="text" placeholder="Last name" required>
+
+</div>
+
+
+<!-- BARANGAY -->
+<label>Barangay</label>
+
+<select name="barangay" id="barangay" required>
+
+<option value="">Select your barangay</option>
+
+<option>Bacayao Norte</option>
+<option>Bacayao Sur</option>
+<option>Balangobong</option>
+<option>Balococ</option>
+<option>Bolosan</option>
+<option>Bonuan Binloc</option>
+<option>Bonuan Boquig</option>
+<option>Bonuan Gueset</option>
+<option>Calmay</option>
+<option>Carael</option>
+<option>Caranglaan</option>
+<option>Herrero-Perez</option>
+<option>Lomboy</option>
+<option>Lucao</option>
+<option>Malued</option>
+<option>Mamalingling</option>
+<option>Mangin</option>
+<option>Mayombo</option>
+<option>Pantal</option>
+<option>Pogo Chico</option>
+<option>Pogo Grande</option>
+<option>Poblacion Oeste</option>
+<option>Poblacion Este</option>
+<option>Pugaro Suit</option>
+<option>Sabangan</option>
+<option>Salapingao</option>
+<option>Salisay</option>
+<option>Tambac</option>
+<option>Tapuac</option>
+<option>Tebeng</option>
+
+<option>Barangay I (Poblacion Area)</option>
+<option>Barangay II (Poblacion Area)</option>
+<option>Barangay III (Poblacion Area)</option>
+<option>Barangay IV (Poblacion Area)</option>
+
+</select>
+
+
+<!-- CONTACT -->
+<label>Email / Phone Number</label>
+
+<input type="text"
+placeholder="Enter your email or phone number"
+required>
+
+
+<!-- PASSWORD -->
+<label>Password</label>
+
+<input type="password"
+placeholder="Enter password"
+required>
+
+
+<label>Confirm Password</label>
+
+<input type="password"
+placeholder="Confirm password"
+required>
+
+
+<!-- SUBMIT -->
+<button type="submit">SIGN UP</button>
+
+
+<p class="login-text">
+
+Already have an account?
+<a href="login.html">Log in</a>
+
+</p>
+
+</form>
+
+</div>
+
+</div>
+</div>
+
+</section>
+
+
+<!-- LOAD NAVBAR -->
+<script>
+
+fetch("includes/nav-bar.html")
+.then(function(response){
+return response.text();
+})
+.then(function(data){
+document.getElementById("navbar-placeholder").innerHTML = data;
+});
+
+</script>
+
 
 </body>
 </html>

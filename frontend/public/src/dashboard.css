@@ -337,6 +337,7 @@ cursor:pointer;
 /* =========================
    STATS
 ========================= */
+
 .stats{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -344,8 +345,8 @@ gap:20px;
 }
 
 .stat{
-padding:16px 18px;
-height:70px;
+padding:14px 18px;      /* balanced padding */
+min-height:85px;        /* slightly taller card */
 display:flex;
 flex-direction:column;
 justify-content:center;
@@ -354,15 +355,15 @@ justify-content:center;
 .stat span{
 font-size:13px;
 color:#6b7a90;
-margin-bottom:4px;
+margin-bottom:6px;
 }
 
 .stat strong{
-font-size:26px;
+font-size:28px;
 font-weight:700;
 color:#1f5fbf;
+line-height:1;
 }
-
 /* =========================
    CHART
 ========================= */

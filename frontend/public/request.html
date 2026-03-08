@@ -1,126 +1,462 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>CommUnity | Requests</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- FONT -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="src/request.css">
+<title>CommUnity | Requests</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/request.css">
+
 </head>
+
 <body>
 
-<div class="app">
-     <!-- SIDEBAR -->
- <aside class="sidebar">
-
-    <div class="brand">
-      <img src="images/CommUnity Logo.png" alt="CommUnity Logo" class="brand-logo" />
-      <span>CommUnity</span>
-    </div>
-
-    <nav class="menu" href="dashboard.html">
-      <a class="active">
-        <img src="icons/home.png" class="menu-icon" />
-        <span>Home</span>
-      </a>
-      <a>
-        <img src="icons/reports.png" class="menu-icon" />
-        <span>Reports</span>
-      </a>
-      <a>
-        <img src="icons/requests.png" class="menu-icon" />
-        <span>Requests</span>
-      </a>
-      <a>
-        <img src="icons/rewards.png" class="menu-icon" />
-        <span>Rewards</span>
-      </a>
-      <a>
-        <img src="icons/analytics.png" class="menu-icon" />
-        <span>Analytics</span>
-      </a>
-    </nav>
-
-    <div class="logout">Log Out</div>
-  </aside>
-
-
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <!-- TOP BAR -->
-    <header class="topbar">
-      <input id="searchInput" type="text" placeholder="Search requests..." />
-      <div class="top-actions">🔔 <span>Admin</span></div>
-    </header>
-
-    <!-- STATS -->
-    <section class="stats">
-      <div class="stat-card blue">
-        <h2 id="totalRequests">0</h2>
-        <span>Total Requests</span>
-      </div>
-      <div class="stat-card purple">
-        <h2 id="reviewingCount">0</h2>
-        <span>Reviewing</span>
-      </div>
-      <div class="stat-card amber">
-        <h2 id="processingCount">0</h2>
-        <span>Processing</span>
-      </div>
-      <div class="stat-card green">
-        <h2 id="readyCount">0</h2>
-        <span>Ready for Pickup</span>
-      </div>
-      <div class="stat-card gray">
-        <h2 id="releasedCount">0</h2>
-        <span>Released</span>
-      </div>
-    </section>
-
-    <!-- FILTERS -->
-    <section class="filters">
-      <strong>Requests</strong>
-      <select id="statusFilter">
-        <option value="">All Status</option>
-        <option value="reviewing">Reviewing</option>
-        <option value="processing">Processing</option>
-        <option value="ready">Ready for Pickup</option>
-        <option value="released">Released</option>
-      </select>
-    </section>
-
-    <!-- TABLE -->
-    <section class="table-card">
-      <table>
-        <thead>
-          <tr>
-            <th>Request ID</th>
-            <th>Document</th>
-            <th>Resident</th>
-            <th>Status</th>
-            <th>Date Submitted</th>
-          </tr>
-        </thead>
-        <tbody id="requestsTable">
-          <!-- API DATA -->
-        </tbody>
-      </table>
-
-      <div id="emptyState" class="empty-state">
-        No requests found.
-      </div>
-    </section>
-
-  </main>
+<!-- PAGE LOADER -->
+<div id="page-loader">
+<div class="loader-spinner"></div>
 </div>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div id="sidebar-container"></div>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- HEADER -->
+<div id="header-container"></div>
+
+
+<!-- ================= STATS ================= -->
+
+<section class="stats">
+
+<div class="card stat">
+<span>Total Requests</span>
+<strong id="totalRequests">0</strong>
+</div>
+
+<div class="card stat">
+<span>Reviewing</span>
+<strong id="reviewingCount">0</strong>
+</div>
+
+<div class="card stat">
+<span>Processing</span>
+<strong id="processingCount">0</strong>
+</div>
+
+<div class="card stat">
+<span>Ready for Pickup</span>
+<strong id="readyCount">0</strong>
+</div>
+
+<div class="card stat">
+<span>Released</span>
+<strong id="releasedCount">0</strong>
+</div>
+
+</section>
+
+
+<!-- ================= TABLE ================= -->
+
+<section class="card">
+
+<h3 style="margin-bottom:20px;">Requests List</h3>
+
+<div style="display:flex;gap:10px;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;">
+
+<input
+type="text"
+id="filterSearch"
+placeholder="Search requests..."
+style="padding:8px 12px;border-radius:8px;border:1px solid #ccc;min-width:220px;"
+>
+
+<select
+id="statusFilter"
+style="padding:8px 12px;border-radius:8px;border:1px solid #ccc;"
+>
+
+<option value="">All Status</option>
+<option value="reviewing">Reviewing</option>
+<option value="processing">Processing</option>
+<option value="ready">Ready for Pickup</option>
+<option value="released">Released</option>
+
+</select>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Request ID</th>
+<th>Document</th>
+<th>Resident</th>
+<th>Payment</th>
+<th>Status</th>
+<th>Date Submitted</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="requestsTable"></tbody>
+
+</table>
+
+<div id="emptyState" class="empty-state">
+No requests found.
+</div>
+
+</section>
+
+</main>
+</div>
+
+
+<!-- ================= MODAL ================= -->
+
+<div class="modal-overlay" id="detailsModal">
+
+<div class="modal-card">
+
+<div class="modal-header">
+<h3>Request Details</h3>
+<span class="modal-close" onclick="closeDetails()">×</span>
+</div>
+
+<div class="modal-body" id="modalContent"></div>
+
+</div>
+
+</div>
+
+
+
+<script>
+
+/* ================= SIDEBAR ================= */
+
+async function loadSidebar(){
+
+const res = await fetch("includes/official_sidebar.html")
+const html = await res.text()
+
+document.getElementById("sidebar-container").innerHTML = html
+
+const links = document.querySelectorAll(".menu a")
+const current = window.location.pathname.split("/").pop()
+
+links.forEach(link=>{
+if(link.getAttribute("href") === current){
+link.classList.add("active")
+}
+})
+
+}
+
+
+/* ================= HEADER ================= */
+
+async function loadHeader(){
+
+const res = await fetch("includes/header.html")
+const html = await res.text()
+
+document.getElementById("header-container").innerHTML = html
+
+document.getElementById("page-title").textContent = "Requests"
+document.getElementById("page-description").textContent =
+"Monitor and manage barangay document requests."
+
+}
+
+
+/* ================= PAGE LOADER ================= */
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+document.getElementById("page-loader").style.display="none"
+},1200)
+
+})
+
+
+
+/* ================= MOCK DATA ================= */
+
+let requests = [
+
+{
+requestId:"REQ-001-2026",
+document:"Barangay Clearance",
+resident:"Juan Dela Cruz",
+status:"reviewing",
+dateSubmitted:"2026-01-05",
+purpose:"Job Application",
+contact:"09123456789",
+paymentMethod:"gcash",
+proofOfPayment:"images/sample_receipt.jpg"
+},
+
+{
+requestId:"REQ-002-2026",
+document:"Certificate of Residency",
+resident:"Maria Santos",
+status:"processing",
+dateSubmitted:"2026-01-08",
+purpose:"School Requirement",
+contact:"09181234567",
+paymentMethod:"onsite",
+proofOfPayment:null
+},
+
+{
+requestId:"REQ-003-2026",
+document:"Indigency Certificate",
+resident:"Pedro Reyes",
+status:"ready",
+dateSubmitted:"2026-01-10",
+purpose:"Medical Assistance",
+contact:"09221234567",
+paymentMethod:"gcash",
+proofOfPayment:"images/sample_receipt.jpg"
+},
+
+{
+requestId:"REQ-004-2026",
+document:"Business Clearance",
+resident:"Ana Lopez",
+status:"released",
+dateSubmitted:"2026-01-11",
+purpose:"Business Permit",
+contact:"09351234567",
+paymentMethod:"onsite",
+proofOfPayment:null
+}
+
+]
+
+
+
+/* ================= LOAD DATA ================= */
+
+function loadRequests(){
+
+renderStats(requests)
+renderTable(requests)
+
+}
+
+
+
+/* ================= STATS ================= */
+
+function renderStats(data){
+
+document.getElementById("totalRequests").textContent = data.length
+
+document.getElementById("reviewingCount").textContent =
+data.filter(r=>r.status==="reviewing").length
+
+document.getElementById("processingCount").textContent =
+data.filter(r=>r.status==="processing").length
+
+document.getElementById("readyCount").textContent =
+data.filter(r=>r.status==="ready").length
+
+document.getElementById("releasedCount").textContent =
+data.filter(r=>r.status==="released").length
+
+}
+
+
+
+/* ================= TABLE ================= */
+
+function renderTable(data){
+
+const tbody = document.getElementById("requestsTable")
+const emptyState = document.getElementById("emptyState")
+
+tbody.innerHTML=""
+
+if(data.length===0){
+emptyState.style.display="block"
+return
+}
+
+emptyState.style.display="none"
+
+data.forEach((r,index)=>{
+
+const paymentBadge =
+r.paymentMethod==="gcash"
+? `<span class="badge gcash">GCash</span>`
+: `<span class="badge onsite">On-Site</span>`
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+
+<td>${r.requestId}</td>
+<td>${r.document}</td>
+<td>${r.resident}</td>
+<td>${paymentBadge}</td>
+
+<td>
+
+<select class="status-dropdown ${r.status}"
+onchange="updateStatus('${r.requestId}', this)">
+
+<option value="reviewing" ${r.status==="reviewing"?"selected":""}>Reviewing</option>
+<option value="processing" ${r.status==="processing"?"selected":""}>Processing</option>
+<option value="ready" ${r.status==="ready"?"selected":""}>Ready for Pickup</option>
+<option value="released" ${r.status==="released"?"selected":""}>Released</option>
+
+</select>
+
+</td>
+
+<td>${new Date(r.dateSubmitted).toLocaleDateString()}</td>
+
+<td>
+<button class="view-btn" onclick="openDetails(${index})">
+View Details
+</button>
+</td>
+
+`
+
+tbody.appendChild(row)
+
+})
+
+}
+
+
+
+/* ================= UPDATE STATUS ================= */
+
+function updateStatus(requestId, select){
+
+const req = requests.find(r => r.requestId === requestId)
+
+if(!req) return
+
+req.status = select.value
+
+select.classList.remove(
+"reviewing",
+"processing",
+"ready",
+"released"
+)
+
+select.classList.add(select.value)
+
+renderStats(requests)
+
+}
+
+
+
+/* ================= MODAL ================= */
+
+function openDetails(index){
+
+const r=requests[index]
+
+let paymentSection=""
+
+if(r.paymentMethod==="gcash"){
+
+paymentSection=`
+
+<p><strong>Payment Method:</strong> GCash</p>
+
+<p><strong>Proof of Payment:</strong></p>
+
+<img src="${r.proofOfPayment}"
+style="max-width:280px;border-radius:8px;border:1px solid #ddd;margin-top:8px;">
+
+`
+
+}else{
+
+paymentSection=`<p><strong>Payment Method:</strong> On-Site Payment</p>`
+
+}
+
+document.getElementById("modalContent").innerHTML=`
+
+<p><strong>Request ID:</strong> ${r.requestId}</p>
+<p><strong>Resident:</strong> ${r.resident}</p>
+<p><strong>Document:</strong> ${r.document}</p>
+<p><strong>Status:</strong> ${r.status}</p>
+<p><strong>Date Submitted:</strong> ${new Date(r.dateSubmitted).toLocaleDateString()}</p>
+<p><strong>Purpose:</strong> ${r.purpose}</p>
+<p><strong>Contact:</strong> ${r.contact}</p>
+
+${paymentSection}
+
+`
+
+document.getElementById("detailsModal").style.display="flex"
+
+}
+
+
+function closeDetails(){
+document.getElementById("detailsModal").style.display="none"
+}
+
+
+
+/* ================= FILTER ================= */
+
+document.getElementById("statusFilter").addEventListener("change",filterTable)
+document.getElementById("filterSearch").addEventListener("input",filterTable)
+
+function filterTable(){
+
+const search=document.getElementById("filterSearch").value.toLowerCase()
+const status=document.getElementById("statusFilter").value
+
+const filtered=requests.filter(r=>{
+
+const matchSearch =
+r.resident.toLowerCase().includes(search) ||
+r.document.toLowerCase().includes(search)
+
+const matchStatus =
+status === "" || r.status === status
+
+return matchSearch && matchStatus
+
+})
+
+renderTable(filtered)
+
+}
+
+
+
+/* ================= INIT ================= */
+
+loadSidebar()
+loadHeader()
+loadRequests()
+
+</script>
 
 </body>
 </html>

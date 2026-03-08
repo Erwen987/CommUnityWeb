@@ -1,193 +1,402 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CommUnity Dashboard</title>
 
-  <!-- FONT -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ICONS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<title>CommUnity | Reports</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="src/reports.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/reports.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 </head>
+
 <body>
 
-<div class="dashboard-container">
-
-  <!-- ================= SIDEBAR ================= -->
-  <aside class="sidebar">
-
-    <div class="brand">
-      <img src="images/CommUnity Logo.png" alt="CommUnity Logo" class="brand-logo" />
-      <span>CommUnity</span>
-    </div>
-
-    <nav class="menu">
-      <a href="dashboard.html">
-        <img src="icons/home.png" class="menu-icon" />
-        <span>Home</span>
-      </a>
-      <a class="active" href="reports.html">
-        <img src="icons/reports.png" class="menu-icon" />
-        <span>Reports</span>
-      </a>
-      <a href="request.html">
-        <img src="icons/requests.png" class="menu-icon" />
-        <span>Requests</span>
-      </a>
-      <a>
-        <img src="icons/rewards.png" class="menu-icon" />
-        <span>Rewards</span>
-      </a>
-      <a>
-        <img src="icons/analytics.png" class="menu-icon" />
-        <span>Analytics</span>
-      </a>
-    </nav>
-
-    <div class="logout">Log Out</div>
-  </aside>
-  <!-- ================= MAIN CONTENT ================= -->
-  <main class="main-content">
-
-    <!-- HEADER -->
-    <header>
-      <h1 class="page-title">Today’s Reports</h1>
-
-      <div class="header-tools">
-        <div class="search-bar">
-          <input
-            type="text"
-            id="globalSearch"
-            placeholder="Search..."
-            autocomplete="off"
-          >
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </div>
-
-        <button class="notification" id="notificationBtn">
-          <i class="fa-solid fa-bell"></i>
-          <span class="badge-dot" id="notificationBadge" hidden></span>
-        </button>
-
-        <div class="profile-avatar" id="profileAvatar"></div>
-      </div>
-    </header>
-
-    <!-- ================= STATS (ZERO DEFAULTS) ================= -->
-    <section class="stats-grid">
-      <div class="card stat-card shadow-effect">
-        <h3>Total Reports</h3>
-        <div class="stat-number" id="statTotal">0</div>
-      </div>
-
-      <div class="card stat-card center shadow-effect">
-        <h3>Reviewed</h3>
-        <div class="stat-number" id="statReviewed">0</div>
-      </div>
-
-      <div class="card stat-card center shadow-effect">
-        <h3>Assigned</h3>
-        <div class="stat-number" id="statAssigned">0</div>
-      </div>
-
-      <div class="card stat-card center shadow-effect">
-        <h3>Completed</h3>
-        <div class="stat-number" id="statCompleted">0</div>
-      </div>
-    </section>
-
-    <!-- ================= MAP (BACKEND-READY) ================= -->
-    <section class="card map-section shadow-effect">
-      <!-- Backend can inject coordinates via data-lat / data-lng -->
-      <div
-        class="map-container"
-        id="googleMap"
-        data-lat=""
-        data-lng=""
-      ></div>
-    </section>
-
-    <!-- ================= REPORTS TABLE ================= -->
-    <section class="card table-card shadow-effect">
-
-      <div class="table-header-row">
-        <h3>Reports</h3>
-        <div class="search-small">
-          <input
-            type="text"
-            id="tableSearch"
-            placeholder="Search reports..."
-            autocomplete="off"
-          >
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </div>
-      </div>
-
-      <table class="reports-table">
-        <thead>
-          <tr>
-            <th>Report ID</th>
-            <th>Title</th>
-            <th>Reporter</th>
-            <th>Officer Assigned</th>
-            <th>Status</th>
-            <th>Date Submitted</th>
-            <th></th>
-          </tr>
-        </thead>
-
-        <!-- BACKEND / JS WILL POPULATE -->
-        <tbody id="reportsTableBody">
-          <!-- intentionally empty -->
-        </tbody>
-      </table>
-
-      <!-- EMPTY STATE (VISIBLE BY DEFAULT WHEN NO DATA) -->
-      <div class="empty-state" id="reportsEmptyState">
-        No reports available.
-      </div>
-
-    </section>
-
-    <div class="spacer-bottom"></div>
-
-  </main>
+<!-- PAGE LOADER -->
+<div id="page-loader">
+<div class="loader-spinner"></div>
 </div>
 
-<!-- ================= GOOGLE MAP (OPTIONAL, BACKEND-READY) ================= -->
+<div class="app">
+
+<!-- SIDEBAR -->
+<div id="sidebar-container"></div>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- HEADER -->
+<div id="header-container"></div>
+
+<!-- STATS -->
+<section class="stats">
+
+<div class="card stat">
+<span>Total Reports</span>
+<strong id="totalReports">0</strong>
+</div>
+
+<div class="card stat">
+<span>Reviewed</span>
+<strong id="reviewedReports">0</strong>
+</div>
+
+<div class="card stat">
+<span>Assigned</span>
+<strong id="assignedReports">0</strong>
+</div>
+
+<div class="card stat">
+<span>Fixed</span>
+<strong id="fixedReports">0</strong>
+</div>
+
+</section>
+
+<!-- MAP -->
+<section class="card" style="padding:20px;margin-top:20px;">
+<div id="map" style="height:300px;border-radius:12px;"></div>
+</section>
+
+<!-- OVERVIEW -->
+<section class="card" style="padding:20px;margin-top:20px;">
+
+<h3 style="margin-bottom:20px;">Reports Overview</h3>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+<div>
+<canvas id="statusChart"></canvas>
+</div>
+
+<div>
+
+<h4 class="officer-title">Officer Assignments</h4>
+<ul id="officerList" class="officer-list"></ul>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- TABLE -->
+<section class="card" style="margin-top:30px;padding:25px;">
+
+<h3 style="margin-bottom:20px;">Reports List</h3>
+
+<table>
+
+<thead>
+<tr>
+<th>Report ID</th>
+<th>Title</th>
+<th>Reporter</th>
+<th>Officer Assigned</th>
+<th>Status</th>
+<th>Date Submitted</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="reportsTable"></tbody>
+
+</table>
+
+</section>
+
+</main>
+</div>
+
+
 <script>
-  function initMap() {
-    const mapEl = document.getElementById("googleMap");
-    if (!mapEl) return;
 
-    const lat = parseFloat(mapEl.dataset.lat);
-    const lng = parseFloat(mapEl.dataset.lng);
+/* SIDEBAR */
 
-    // If backend hasn't provided coordinates yet, do nothing
-    if (!lat || !lng) return;
+async function loadSidebar(){
+const res = await fetch("includes/official_sidebar.html")
+const html = await res.text()
+document.getElementById("sidebar-container").innerHTML = html
+}
 
-    const map = new google.maps.Map(mapEl, {
-      center: { lat, lng },
-      zoom: 15,
-      disableDefaultUI: true
-    });
 
-    new google.maps.Marker({
-      position: { lat, lng },
-      map
-    });
-  }
-</script>
+/* HEADER */
 
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&callback=initMap"
-  async
-  defer>
+async function loadHeader(){
+const res = await fetch("includes/header.html")
+const html = await res.text()
+document.getElementById("header-container").innerHTML = html
+}
+
+
+/* LOADER */
+
+window.addEventListener("load",()=>{
+setTimeout(()=>{
+document.getElementById("page-loader").style.display="none"
+},1000)
+})
+
+
+/* MOCK DATA */
+
+let reports=[
+
+{
+reportId:"RPT-001-2026",
+title:"Illegal Dumping",
+reporter:"Toni Fowler",
+officer:"Kgw. Daddy Rob",
+status:"in_progress",
+dateSubmitted:"January 02, 2026",
+lat:14.6091,
+lng:121.0223
+},
+
+{
+reportId:"RPT-002-2026",
+title:"Broken Street Light",
+reporter:"Juan Dela Cruz",
+officer:"Kgw. Maria Santos",
+status:"reviewed",
+dateSubmitted:"January 05, 2026",
+lat:14.6105,
+lng:121.0198
+}
+
+]
+
+
+/* STATS */
+
+function renderStats(){
+
+document.getElementById("totalReports").textContent=reports.length
+
+document.getElementById("reviewedReports").textContent=
+reports.filter(r=>r.status==="reviewed").length
+
+document.getElementById("assignedReports").textContent=
+reports.filter(r=>r.status==="assigned").length
+
+document.getElementById("fixedReports").textContent=
+reports.filter(r=>r.status==="fixed").length
+
+}
+
+/* =========================
+   LOAD HEADER
+========================= */
+
+async function loadHeader(){
+
+const res = await fetch("includes/header.html")
+const html = await res.text()
+
+document.getElementById("header-container").innerHTML = html
+
+document.getElementById("page-title").textContent = "This is for today’s Report!"
+
+
+}
+
+
+/* UPDATE STATUS */
+
+function updateStatus(reportId,select){
+
+const report=reports.find(r=>r.reportId===reportId)
+if(!report) return
+
+report.status=select.value
+
+/* FIX COLOR CODING */
+
+select.classList.remove(
+"reviewed",
+"assigned",
+"in_progress",
+"fixed"
+)
+
+select.classList.add(select.value)
+
+renderStats()
+renderChart()
+
+}
+
+
+/* TABLE */
+
+function renderTable(){
+
+const tbody=document.getElementById("reportsTable")
+tbody.innerHTML=""
+
+reports.forEach(r=>{
+
+const tr=document.createElement("tr")
+
+tr.innerHTML=`
+
+<td>${r.reportId}</td>
+<td>${r.title}</td>
+<td>${r.reporter}</td>
+<td>${r.officer}</td>
+
+<td>
+
+<select class="status-dropdown ${r.status}"
+onchange="updateStatus('${r.reportId}',this)">
+
+<option value="reviewed">Reviewed</option>
+<option value="assigned">Assigned</option>
+<option value="in_progress">In Progress</option>
+<option value="fixed">Fixed</option>
+
+</select>
+
+</td>
+
+<td>${r.dateSubmitted}</td>
+
+<td class="action">
+<button class="action-btn">⋮</button>
+</td>
+
+`
+
+tbody.appendChild(tr)
+
+const dropdown=tr.querySelector("select")
+dropdown.value=r.status
+
+})
+
+}
+
+
+/* MAP */
+
+function renderMap(){
+
+const map=L.map("map").setView([14.6091,121.0223],15)
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
+
+reports.forEach(r=>{
+L.marker([r.lat,r.lng])
+.addTo(map)
+.bindPopup(`<b>${r.title}</b><br>${r.status}`)
+})
+
+}
+
+
+/* CHART */
+
+let chart
+
+function renderChart(){
+
+const reviewed=reports.filter(r=>r.status==="reviewed").length
+const assigned=reports.filter(r=>r.status==="assigned").length
+const fixed=reports.filter(r=>r.status==="fixed").length
+const progress=reports.filter(r=>r.status==="in_progress").length
+
+if(chart) chart.destroy()
+
+chart=new Chart(document.getElementById("statusChart"),{
+
+type:"bar",
+
+data:{
+labels:["Reports"],
+datasets:[
+{label:"Reviewed",data:[reviewed],backgroundColor:"#94a3b8"},
+{label:"Assigned",data:[assigned],backgroundColor:"#f59e0b"},
+{label:"Fixed",data:[fixed],backgroundColor:"#16a34a"},
+{label:"In Progress",data:[progress],backgroundColor:"#2d66ca"}
+]
+},
+
+options:{
+plugins:{legend:{position:"bottom"}},
+scales:{y:{beginAtZero:true}}
+}
+
+})
+
+}
+
+
+/* OFFICERS */
+
+function renderOfficers(){
+
+const list=document.getElementById("officerList")
+list.innerHTML=""
+
+const counts={}
+
+reports.forEach(r=>{
+counts[r.officer]=(counts[r.officer]||0)+1
+})
+
+Object.entries(counts).forEach(([name,total])=>{
+
+const li=document.createElement("li")
+
+li.innerHTML=`
+
+<div class="officer-card">
+
+<div class="officer-info">
+
+<div class="officer-avatar">
+${name.charAt(0)}
+</div>
+
+<div class="officer-name">
+${name}
+</div>
+
+</div>
+
+<div class="officer-reports">
+${total} Reports
+</div>
+
+</div>
+
+`
+
+list.appendChild(li)
+
+})
+
+}
+
+
+/* INIT */
+
+loadSidebar()
+loadHeader()
+
+renderStats()
+renderTable()
+renderMap()
+renderChart()
+renderOfficers()
+
 </script>
 
 </body>
