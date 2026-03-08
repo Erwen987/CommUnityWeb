@@ -8,16 +8,11 @@
 <title>CommUnity | Rewards</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="src/rewards.css">
+<link rel="stylesheet" href="src/reward.css">
 
 </head>
 
 <body>
-
-<!-- PAGE LOADER -->
-<div id="page-loader">
-<div class="loader-spinner"></div>
-</div>
 
 <div class="app">
 
@@ -27,9 +22,13 @@
 <!-- MAIN CONTENT -->
 <main class="main">
 
+<!-- MAIN LOADER (ONLY MAIN AREA) -->
+<div id="page-loader">
+  <div class="loader-spinner"></div>
+</div>
+
 <!-- HEADER -->
 <div id="header-container"></div>
-
 
 
 <!-- ================= REWARD CARDS ================= -->
@@ -94,20 +93,19 @@ View All →
 
 /* ================= CONFIG ================= */
 
-const API_BASE = "http://localhost:5000/api"; 
-// replace later with your backend
+const API_BASE = "http://localhost:5000/api"
 
 
 
 /* ================= STATE ================= */
 
-let contributors = [];
-let rewardClaims = [];
-let showAll = false;
+let contributors = []
+let rewardClaims = []
+let showAll = false
 
 
 
-/* ================= MOCK DATA (fallback) ================= */
+/* ================= MOCK DATA ================= */
 
 const mockContributors = [
 { name:"John Dewey", points:2000 },
@@ -120,7 +118,7 @@ const mockContributors = [
 { name:"John Dewey", points:700 },
 { name:"John Dewey", points:400 },
 { name:"John Dewey", points:300 }
-];
+]
 
 const mockClaims = [
 {
@@ -139,7 +137,7 @@ description:"Claimed School Supplies for 300 Points"
 name:"John Dewey",
 description:"Claimed ₱1500 Cash Aid for 1500 Points"
 }
-];
+]
 
 
 
@@ -150,11 +148,9 @@ async function loadRewards(){
 try{
 
 const res = await fetch(`${API_BASE}/rewards/leaderboard`)
-const data = await res.json()
+contributors = await res.json()
 
-contributors = data
-
-}catch(e){
+}catch{
 
 contributors = mockContributors
 
@@ -170,11 +166,9 @@ async function loadClaims(){
 try{
 
 const res = await fetch(`${API_BASE}/rewards/claims`)
-const data = await res.json()
+rewardClaims = await res.json()
 
-rewardClaims = data
-
-}catch(e){
+}catch{
 
 rewardClaims = mockClaims
 
@@ -242,7 +236,7 @@ list.innerHTML += `
 
 
 
-/* ================= VIEW ALL TOGGLE ================= */
+/* ================= VIEW ALL ================= */
 
 document.getElementById("viewAllBtn").onclick = () => {
 
@@ -270,7 +264,7 @@ document.getElementById("goBackBtn").style.display="none"
 
 async function loadSidebar(){
 
-const res = await fetch("includes/sidebar.html")
+const res = await fetch("includes/official_sidebar.html")
 const html = await res.text()
 
 document.getElementById("sidebar-container").innerHTML = html
@@ -307,22 +301,32 @@ document.getElementById("page-description").textContent =
 
 /* ================= PAGE LOADER ================= */
 
-window.addEventListener("load",()=>{
+function hideLoader(){
+const loader = document.getElementById("page-loader")
+loader.style.opacity="0"
 
 setTimeout(()=>{
-document.getElementById("page-loader").style.display="none"
-},1200)
-
-})
+loader.style.display="none"
+},300)
+}
 
 
 
 /* ================= INIT ================= */
 
-loadSidebar()
-loadHeader()
-loadRewards()
-loadClaims()
+async function init(){
+
+await loadSidebar()
+await loadHeader()
+
+await loadRewards()
+await loadClaims()
+
+hideLoader()
+
+}
+
+init()
 
 </script>
 

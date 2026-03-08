@@ -54,6 +54,11 @@
 </div>
 
 <div class="card stat">
+<span>In Progress</span>
+<strong id="progressReports">0</strong>
+</div>
+
+<div class="card stat">
 <span>Fixed</span>
 <strong id="fixedReports">0</strong>
 </div>
@@ -77,10 +82,8 @@
 </div>
 
 <div>
-
 <h4 class="officer-title">Officer Assignments</h4>
 <ul id="officerList" class="officer-list"></ul>
-
 </div>
 
 </div>
@@ -118,34 +121,59 @@
 
 <script>
 
-/* SIDEBAR */
+/* =====================================
+CONFIG
+===================================== */
+
+const USE_MOCK_DATA = true
+
+
+/* =====================================
+SIDEBAR
+===================================== */
 
 async function loadSidebar(){
+
 const res = await fetch("includes/official_sidebar.html")
 const html = await res.text()
+
 document.getElementById("sidebar-container").innerHTML = html
+
 }
 
 
-/* HEADER */
+/* =====================================
+HEADER
+===================================== */
 
 async function loadHeader(){
+
 const res = await fetch("includes/header.html")
 const html = await res.text()
+
 document.getElementById("header-container").innerHTML = html
+
+document.getElementById("page-title").textContent = "Reports"
+
 }
 
 
-/* LOADER */
+/* =====================================
+LOADER
+===================================== */
 
 window.addEventListener("load",()=>{
+
 setTimeout(()=>{
 document.getElementById("page-loader").style.display="none"
 },1000)
+
 })
 
 
-/* MOCK DATA */
+/* =====================================
+MOCK DATA
+===================================== */
 
 let reports=[
 
@@ -174,50 +202,79 @@ lng:121.0198
 ]
 
 
-/* STATS */
+/* =====================================
+LOAD REPORTS
+===================================== */
+
+async function loadReports(){
+
+if(USE_MOCK_DATA){
+
+renderStats()
+renderTable()
+renderMap()
+renderChart()
+renderOfficers()
+
+return
+
+}
+
+try{
+
+const res = await fetch("/api/reports")
+const data = await res.json()
+
+reports = data
+
+renderStats()
+renderTable()
+renderMap()
+renderChart()
+renderOfficers()
+
+}catch(err){
+
+console.error("Backend error:",err)
+
+}
+
+}
+
+
+/* =====================================
+STATS
+===================================== */
 
 function renderStats(){
 
-document.getElementById("totalReports").textContent=reports.length
+document.getElementById("totalReports").textContent = reports.length
 
-document.getElementById("reviewedReports").textContent=
+document.getElementById("reviewedReports").textContent =
 reports.filter(r=>r.status==="reviewed").length
 
-document.getElementById("assignedReports").textContent=
+document.getElementById("assignedReports").textContent =
 reports.filter(r=>r.status==="assigned").length
 
-document.getElementById("fixedReports").textContent=
+document.getElementById("progressReports").textContent =
+reports.filter(r=>r.status==="in_progress").length
+
+document.getElementById("fixedReports").textContent =
 reports.filter(r=>r.status==="fixed").length
 
 }
 
-/* =========================
-   LOAD HEADER
-========================= */
 
-async function loadHeader(){
+/* =====================================
+UPDATE STATUS
+===================================== */
 
-const res = await fetch("includes/header.html")
-const html = await res.text()
-
-document.getElementById("header-container").innerHTML = html
-
-document.getElementById("page-title").textContent = "This is for today’s Report!"
-
-
-}
-
-
-/* UPDATE STATUS */
-
-function updateStatus(reportId,select){
+async function updateStatus(reportId,select){
 
 const report=reports.find(r=>r.reportId===reportId)
 if(!report) return
 
 report.status=select.value
-
-/* FIX COLOR CODING */
 
 select.classList.remove(
 "reviewed",
@@ -231,10 +288,24 @@ select.classList.add(select.value)
 renderStats()
 renderChart()
 
+if(!USE_MOCK_DATA){
+
+await fetch(`/api/reports/${reportId}`,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({status:select.value})
+})
+
+}
+
 }
 
 
-/* TABLE */
+/* =====================================
+TABLE
+===================================== */
 
 function renderTable(){
 
@@ -284,24 +355,34 @@ dropdown.value=r.status
 }
 
 
-/* MAP */
+/* =====================================
+MAP
+===================================== */
+
+let map
 
 function renderMap(){
 
-const map=L.map("map").setView([14.6091,121.0223],15)
+if(map) map.remove()
+
+map=L.map("map").setView([14.6091,121.0223],15)
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
 
 reports.forEach(r=>{
+
 L.marker([r.lat,r.lng])
 .addTo(map)
 .bindPopup(`<b>${r.title}</b><br>${r.status}`)
+
 })
 
 }
 
 
-/* CHART */
+/* =====================================
+CHART
+===================================== */
 
 let chart
 
@@ -323,8 +404,8 @@ labels:["Reports"],
 datasets:[
 {label:"Reviewed",data:[reviewed],backgroundColor:"#94a3b8"},
 {label:"Assigned",data:[assigned],backgroundColor:"#f59e0b"},
-{label:"Fixed",data:[fixed],backgroundColor:"#16a34a"},
-{label:"In Progress",data:[progress],backgroundColor:"#2d66ca"}
+{label:"In Progress",data:[progress],backgroundColor:"#2d66ca"},
+{label:"Fixed",data:[fixed],backgroundColor:"#16a34a"}
 ]
 },
 
@@ -338,7 +419,9 @@ scales:{y:{beginAtZero:true}}
 }
 
 
-/* OFFICERS */
+/* =====================================
+OFFICERS
+===================================== */
 
 function renderOfficers(){
 
@@ -386,18 +469,15 @@ list.appendChild(li)
 }
 
 
-/* INIT */
+/* =====================================
+INIT
+===================================== */
 
 loadSidebar()
 loadHeader()
-
-renderStats()
-renderTable()
-renderMap()
-renderChart()
-renderOfficers()
+loadReports()
 
 </script>
 
 </body>
-</html>
+</html> 

@@ -14,11 +14,6 @@
 
 <body>
 
-<!-- PAGE LOADER -->
-<div id="page-loader">
-<div class="loader-spinner"></div>
-</div>
-
 <div class="app">
 
 <!-- SIDEBAR -->
@@ -27,9 +22,13 @@
 <!-- MAIN -->
 <main class="main">
 
+<!-- MAIN LOADER -->
+<div id="main-loader">
+<div class="loader-spinner"></div>
+</div>
+
 <!-- HEADER -->
 <div id="header-container"></div>
-
 
 <!-- ================= STATS ================= -->
 
@@ -179,18 +178,6 @@ document.getElementById("page-description").textContent =
 }
 
 
-/* ================= PAGE LOADER ================= */
-
-window.addEventListener("load",()=>{
-
-setTimeout(()=>{
-document.getElementById("page-loader").style.display="none"
-},1200)
-
-})
-
-
-
 /* ================= MOCK DATA ================= */
 
 let requests = [
@@ -229,33 +216,35 @@ purpose:"Medical Assistance",
 contact:"09221234567",
 paymentMethod:"gcash",
 proofOfPayment:"images/sample_receipt.jpg"
-},
-
-{
-requestId:"REQ-004-2026",
-document:"Business Clearance",
-resident:"Ana Lopez",
-status:"released",
-dateSubmitted:"2026-01-11",
-purpose:"Business Permit",
-contact:"09351234567",
-paymentMethod:"onsite",
-proofOfPayment:null
 }
 
 ]
 
 
+/* ================= FETCH REQUESTS (Backend Ready) ================= */
 
-/* ================= LOAD DATA ================= */
+async function fetchRequests(){
 
-function loadRequests(){
+try{
+
+const res = await fetch("/api/requests")
+
+if(!res.ok) throw new Error()
+
+requests = await res.json()
+
+}catch{
+
+console.log("Using mock request data")
+
+}
 
 renderStats(requests)
 renderTable(requests)
 
-}
+document.getElementById("main-loader").style.display="none"
 
+}
 
 
 /* ================= STATS ================= */
@@ -277,7 +266,6 @@ document.getElementById("releasedCount").textContent =
 data.filter(r=>r.status==="released").length
 
 }
-
 
 
 /* ================= TABLE ================= */
@@ -317,10 +305,10 @@ row.innerHTML=`
 <select class="status-dropdown ${r.status}"
 onchange="updateStatus('${r.requestId}', this)">
 
-<option value="reviewing" ${r.status==="reviewing"?"selected":""}>Reviewing</option>
-<option value="processing" ${r.status==="processing"?"selected":""}>Processing</option>
-<option value="ready" ${r.status==="ready"?"selected":""}>Ready for Pickup</option>
-<option value="released" ${r.status==="released"?"selected":""}>Released</option>
+<option value="reviewing">Reviewing</option>
+<option value="processing">Processing</option>
+<option value="ready">Ready</option>
+<option value="released">Released</option>
 
 </select>
 
@@ -343,30 +331,34 @@ tbody.appendChild(row)
 }
 
 
-
 /* ================= UPDATE STATUS ================= */
 
-function updateStatus(requestId, select){
+async function updateStatus(requestId,select){
+
+const newStatus = select.value
+
+try{
+
+await fetch(`/api/requests/${requestId}/status`,{
+
+method:"PUT",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({status:newStatus})
+
+})
+
+}catch{
+
+console.log("Backend not connected yet")
+
+}
 
 const req = requests.find(r => r.requestId === requestId)
-
-if(!req) return
-
-req.status = select.value
-
-select.classList.remove(
-"reviewing",
-"processing",
-"ready",
-"released"
-)
-
-select.classList.add(select.value)
+if(req) req.status = newStatus
 
 renderStats(requests)
 
 }
-
 
 
 /* ================= MODAL ================= */
@@ -414,11 +406,9 @@ document.getElementById("detailsModal").style.display="flex"
 
 }
 
-
 function closeDetails(){
 document.getElementById("detailsModal").style.display="none"
 }
-
 
 
 /* ================= FILTER ================= */
@@ -449,12 +439,11 @@ renderTable(filtered)
 }
 
 
-
 /* ================= INIT ================= */
 
 loadSidebar()
 loadHeader()
-loadRequests()
+fetchRequests()
 
 </script>
 

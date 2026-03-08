@@ -8,7 +8,6 @@
 <title>CommUnity | Barangay Dashboard</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
 <link rel="stylesheet" href="src/dashboard.css">
 
 </head>
@@ -17,27 +16,20 @@
 
 <div class="app">
 
-<!-- ======================
-     SIDEBAR (LOADED)
-======================= -->
+<!-- SIDEBAR -->
 <div id="sidebar-container"></div>
 
-<!-- ======================
-     MAIN CONTENT
-======================= -->
+<!-- MAIN -->
 <main class="main">
 
-<!-- ======================
-     HEADER (LOADED)
-======================= -->
+<!-- HEADER -->
 <div id="header-container"></div>
-
 
 
 <section class="grid">
 
 <!-- ======================
-     LEFT COLUMN
+LEFT COLUMN
 ======================= -->
 <div class="left-column">
 
@@ -49,18 +41,18 @@
 <div class="announcement-box">
 
 <textarea
+id="announcementText"
 placeholder="Write an announcement for barangay residents..."
-aria-label="Barangay announcement input"
 ></textarea>
 
-<label class="attach" title="Attach Image">
+<label class="attach">
 📎
-<input type="file" accept="image/*" hidden>
+<input id="announcementImage" type="file" accept="image/*" hidden>
 </label>
 
 </div>
 
-<button type="button">
+<button id="publishAnnouncement">
 Publish Announcement
 </button>
 
@@ -73,13 +65,10 @@ Publish Announcement
 
 <h3>Monthly Reports and Requests</h3>
 
-<!-- EMPTY STATE -->
 <div id="graphEmpty" class="empty-state">
 No available records yet.
 </div>
 
-
-<!-- BAR GRAPH -->
 <div class="bars" id="graphBars" style="display:none">
 
 <div class="group">
@@ -120,8 +109,6 @@ No available records yet.
 
 </div>
 
-
-<!-- LINE GRAPH -->
 <div class="chart-line" id="graphLine" style="display:none">
 
 <span></span>
@@ -133,19 +120,9 @@ No available records yet.
 
 </div>
 
-
 <div class="legend">
-
-<span>
-<i class="req"></i>
-Requests
-</span>
-
-<span>
-<i class="rep"></i>
-Reports
-</span>
-
+<span><i class="req"></i>Requests</span>
+<span><i class="rep"></i>Reports</span>
 </div>
 
 </div>
@@ -155,7 +132,7 @@ Reports
 
 
 <!-- ======================
-     RIGHT COLUMN
+RIGHT COLUMN
 ======================= -->
 <div class="right-column">
 
@@ -182,11 +159,9 @@ Reports
 <h3>Top Community Contributors</h3>
 
 <ul id="leaderboardList">
-
 <li class="empty">
 No contributor records yet.
 </li>
-
 </ul>
 
 </div>
@@ -203,10 +178,12 @@ No contributor records yet.
 <script>
 
 /* =========================
-   LOAD SIDEBAR
+LOAD SIDEBAR
 ========================= */
 
 async function loadSidebar(){
+
+try{
 
 const res = await fetch("includes/official_sidebar.html")
 const html = await res.text()
@@ -222,31 +199,101 @@ link.classList.add("active")
 }
 })
 
+}catch(e){
+console.error("Sidebar failed to load",e)
+}
+
 }
 
 
 
 /* =========================
-   LOAD HEADER
+LOAD HEADER
 ========================= */
 
 async function loadHeader(){
+
+try{
 
 const res = await fetch("includes/header.html")
 const html = await res.text()
 
 document.getElementById("header-container").innerHTML = html
 
-document.getElementById("page-title").textContent = "Hello, Barangay Officials 👋"
+document.getElementById("page-title").textContent =
+"Hello, Barangay Officials 👋"
+
 document.getElementById("page-description").textContent =
 "Here’s what’s happening in your barangay today."
+
+}catch(e){
+console.error("Header failed to load",e)
+}
 
 }
 
 
 
 /* =========================
-   DASHBOARD GRAPH
+PUBLISH ANNOUNCEMENT
+========================= */
+
+async function publishAnnouncement(){
+
+const message =
+document.getElementById("announcementText").value.trim()
+
+const image =
+document.getElementById("announcementImage").files[0]
+
+if(!message){
+alert("Announcement cannot be empty")
+return
+}
+
+const formData = new FormData()
+
+formData.append("message",message)
+
+if(image){
+formData.append("image",image)
+}
+
+try{
+
+const res = await fetch("/api/announcements",{
+method:"POST",
+body:formData
+})
+
+const data = await res.json()
+
+if(data.success){
+
+alert("Announcement published")
+
+document.getElementById("announcementText").value=""
+document.getElementById("announcementImage").value=""
+
+}else{
+
+alert("Failed to publish")
+
+}
+
+}catch(e){
+
+console.error(e)
+alert("Server error")
+
+}
+
+}
+
+
+
+/* =========================
+LOAD DASHBOARD GRAPH
 ========================= */
 
 async function loadDashboardGraph(){
@@ -284,8 +331,11 @@ const points = document.querySelectorAll(".chart-line span")
 
 groups.forEach((g,i)=>{
 
-g.querySelector(".requests").style.setProperty("--h",(data.requests[i]/max*100)+"%")
-g.querySelector(".reports").style.setProperty("--h",(data.reports[i]/max*100)+"%")
+g.querySelector(".requests")
+.style.setProperty("--h",(data.requests[i]/max*100)+"%")
+
+g.querySelector(".reports")
+.style.setProperty("--h",(data.reports[i]/max*100)+"%")
 
 })
 
@@ -307,7 +357,7 @@ empty.style.display="block"
 
 
 /* =========================
-   LEADERBOARD
+LOAD LEADERBOARD
 ========================= */
 
 async function loadLeaderboard(){
@@ -321,20 +371,20 @@ const data = await res.json()
 
 if(!data || data.length===0){
 
-list.innerHTML = `
-<li class="empty">
-No contributor records yet.
-</li>`
+list.innerHTML =
+`<li class="empty">No contributor records yet.</li>`
+
 return
 }
 
 list.innerHTML=""
 
-data.forEach(u=>{
+data.forEach((u,index)=>{
 
 const li=document.createElement("li")
 
-li.innerHTML=`<span></span>${u.name}<b>${u.points}</b>`
+li.innerHTML=
+`<span>${index+1}</span>${u.name}<b>${u.points}</b>`
 
 list.appendChild(li)
 
@@ -342,10 +392,8 @@ list.appendChild(li)
 
 }catch{
 
-list.innerHTML = `
-<li class="empty">
-No contributor records yet.
-</li>`
+list.innerHTML =
+`<li class="empty">No contributor records yet.</li>`
 
 }
 
@@ -354,14 +402,22 @@ No contributor records yet.
 
 
 /* =========================
-   INIT
+INIT
 ========================= */
+
+document.addEventListener("DOMContentLoaded",()=>{
 
 loadSidebar()
 loadHeader()
 
 loadDashboardGraph()
 loadLeaderboard()
+
+document
+.getElementById("publishAnnouncement")
+.addEventListener("click",publishAnnouncement)
+
+})
 
 </script>
 

@@ -147,8 +147,9 @@ MAIN AREA
 margin-left:240px;
 flex:1;
 min-height:100vh;
-padding:50px 70px;
+padding:40px 60px;
 overflow-y:auto;
+width:calc(100% - 240px);
 animation:pageFade .4s ease;
 }
 
@@ -265,11 +266,29 @@ background:#ff3b3b;
 border-radius:50%;
 }
 
-.profile{
-width:36px;
-height:36px;
-background:#163364;
+.profile-circle{
+width:38px;
+height:38px;
 border-radius:50%;
+overflow:hidden;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+background:#dbeafe;
+border:2px solid #e2e8f0;
+transition:.2s;
+}
+
+.profile-circle img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.profile-circle:hover{
+transform:scale(1.05);
+border-color:#2d66ca;
 }
 
 
@@ -279,21 +298,23 @@ STATS
 
 .stats{
 display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:28px;
+grid-template-columns:repeat(5,1fr);
+gap:22px;
 margin-bottom:40px;
+width:100%;
 }
 
 .card.stat{
 background:white;
 border-radius:16px;
-padding:28px 26px;
+padding:24px 22px;
 box-shadow:0 10px 25px rgba(0,0,0,0.05);
 display:flex;
 flex-direction:column;
 justify-content:space-between;
-min-height:120px;
+min-height:110px;
 transition:.2s;
+width:100%;
 }
 
 .card.stat:hover{
@@ -362,7 +383,7 @@ color:#1f2937;
 
 
 /* =====================================
-STATUS DROPDOWN (COLOR FIXED)
+STATUS DROPDOWN
 ===================================== */
 
 .status-dropdown{
@@ -376,28 +397,20 @@ outline:none;
 appearance:none;
 }
 
-/* REVIEWED */
-
 .status-dropdown.reviewed{
 background:#e2e8f0;
 color:#334155;
 }
-
-/* ASSIGNED */
 
 .status-dropdown.assigned{
 background:#fef3c7;
 color:#92400e;
 }
 
-/* IN PROGRESS */
-
 .status-dropdown.in_progress{
 background:#dbeafe;
 color:#1d4ed8;
 }
-
-/* FIXED */
 
 .status-dropdown.fixed{
 background:#dcfce7;
@@ -430,7 +443,7 @@ background:#dde7f7;
 
 
 /* =====================================
-OFFICER ASSIGNMENTS (FIXED)
+OFFICER ASSIGNMENTS
 ===================================== */
 
 .officer-list{
@@ -442,21 +455,14 @@ margin-top:10px;
 }
 
 .officer-card{
-
 display:flex;
 justify-content:space-between;
 align-items:center;
-
 padding:14px 18px;
-
 background:white;
-
 border-radius:12px;
-
 border:1px solid #e6edf6;
-
 transition:.2s;
-
 }
 
 .officer-card:hover{
@@ -464,15 +470,11 @@ background:#f7fbff;
 transform:translateY(-2px);
 }
 
-/* LEFT SIDE */
-
 .officer-left{
 display:flex;
 align-items:center;
 gap:12px;
 }
-
-/* AVATAR */
 
 .officer-avatar{
 width:38px;
@@ -486,8 +488,6 @@ justify-content:center;
 font-weight:700;
 font-size:14px;
 }
-
-/* META */
 
 .officer-meta{
 display:flex;
@@ -504,8 +504,6 @@ color:#1e293b;
 font-size:11px;
 color:#64748b;
 }
-
-/* RIGHT SIDE */
 
 .officer-right{
 display:flex;
@@ -579,7 +577,8 @@ width:70px;
 
 .main{
 margin-left:70px;
-padding:40px 25px;
+width:calc(100% - 70px);
+padding:35px 20px;
 }
 
 .stats{

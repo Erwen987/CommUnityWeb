@@ -322,6 +322,57 @@ border-radius:50%;
 
 
 /* =====================================
+PROFILE CIRCLE
+===================================== */
+
+.profile-circle{
+
+width:38px;
+height:38px;
+
+border-radius:50%;
+
+overflow:hidden;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+cursor:pointer;
+
+background:#dbeafe;
+
+border:2px solid #e2e8f0;
+
+transition:.2s;
+
+}
+
+.profile-circle:hover{
+transform:scale(1.05);
+border-color:#2d66ca;
+}
+
+.profile-circle img{
+
+width:100%;
+height:100%;
+
+object-fit:cover;
+
+}
+
+.profile-circle span{
+
+font-size:14px;
+font-weight:700;
+
+color:#2d66ca;
+
+}
+
+
+/* =====================================
 STATS
 ===================================== */
 
