@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CommUnity | Barangay Officials</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/profile.css">
+
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div id="sidebar-container"></div>
+
+<main class="main">
+
+<!-- LOADER -->
+<div id="content-loader">
+<div class="loader-spinner"></div>
+</div>
+
+<div id="page-content">
+
+<!-- HEADER -->
+<div id="header-container"></div>
+
+
+<!-- BARANGAY HEADER -->
+
+<section class="barangay-header">
+
+<div class="cover-photo"></div>
+
+<div class="barangay-info-header">
+
+<div class="barangay-avatar" onclick="triggerLogoUpload()">
+<img id="barangayLogo">
+<input type="file" id="logoUpload" hidden accept="image/*">
+</div>
+
+<div class="barangay-meta">
+<h2 id="barangayName"></h2>
+<span id="barangayCity"></span>
+</div>
+
+</div>
+
+</section>
+
+
+<!-- PAGE LAYOUT -->
+
+<section class="barangay-layout">
+
+<!-- LEFT PANEL -->
+
+<div class="left-column">
+
+<div class="card barangay-details">
+
+<h3>Barangay Information</h3>
+
+<ul id="barangayDetails"></ul>
+
+</div>
+
+</div>
+
+
+<!-- RIGHT PANEL -->
+
+<div class="right-column">
+
+<section class="card org-chart">
+
+<h3>Barangay Organizational Structure</h3>
+
+<button class="add-official-btn" onclick="openAddModal()">
++ Add Official
+</button>
+
+<div id="orgTree"></div>
+
+</section>
+
+</div>
+
+</section>
+
+</div>
+
+</main>
+
+</div>
+
+
+<!-- ADD OFFICIAL MODAL -->
+
+<div class="modal" id="addModal">
+
+<div class="modal-content">
+
+<h3>Add Barangay Official</h3>
+
+<input type="text" id="officialName" placeholder="Official Name">
+
+<select id="officialRole">
+<option>Barangay Captain</option>
+<option>Secretary</option>
+<option>Treasurer</option>
+<option>Kagawad</option>
+<option>Barangay Tanod</option>
+<option>Health Worker</option>
+</select>
+
+<button onclick="addOfficial()">Add</button>
+<button onclick="closeModal()">Cancel</button>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ================================
+MOCK DATABASE
+================================ */
+
+let barangayData = {
+
+barangay:{
+name:"Barangay Bonuan Boquig",
+city:"Dagupan City",
+logo:"images/barangay-logo.png",
+facebook:"Barangay Bonuan Boquig",
+telephone:"+63 912 345 6789",
+email:"bonuanboquig@barangay.gov.ph",
+address:"Bonuan Boquig, Dagupan City",
+population:"12,350 Residents"
+},
+
+officials:[
+
+{ id:1,name:"Juan Dela Cruz",role:"Barangay Captain",image:"images/default-user.png"},
+{ id:2,name:"Maria Santos",role:"Secretary",image:"images/default-user.png"},
+{ id:3,name:"Pedro Reyes",role:"Treasurer",image:"images/default-user.png"},
+{ id:4,name:"Ana Lopez",role:"Kagawad",image:"images/default-user.png"}
+
+]
+
+}
+
+
+/* ================================
+RENDER BARANGAY PROFILE
+================================ */
+
+function renderBarangay(){
+
+const b=barangayData.barangay
+
+document.getElementById("barangayName").textContent=b.name
+document.getElementById("barangayCity").textContent=b.city
+document.getElementById("barangayLogo").src=b.logo
+
+const details=document.getElementById("barangayDetails")
+
+details.innerHTML=`
+
+<li><strong>Facebook</strong><span>${b.facebook}</span></li>
+<li><strong>Telephone</strong><span>${b.telephone}</span></li>
+<li><strong>Email</strong><span>${b.email}</span></li>
+<li><strong>Address</strong><span>${b.address}</span></li>
+<li><strong>Population</strong><span>${b.population}</span></li>
+
+`
+
+}
+
+
+/* ================================
+UPLOAD BARANGAY LOGO
+================================ */
+
+function triggerLogoUpload(){
+document.getElementById("logoUpload").click()
+}
+
+document.getElementById("logoUpload").addEventListener("change",function(){
+
+const file=this.files[0]
+if(!file) return
+
+const reader=new FileReader()
+
+reader.onload=(e)=>{
+
+const img=e.target.result
+
+document.getElementById("barangayLogo").src=img
+barangayData.barangay.logo=img
+
+localStorage.setItem("barangayLogo",img)
+
+}
+
+reader.readAsDataURL(file)
+
+})
+
+
+function loadSavedLogo(){
+
+const savedLogo=localStorage.getItem("barangayLogo")
+
+if(savedLogo){
+barangayData.barangay.logo=savedLogo
+}
+
+}
+
+
+/* ================================
+RENDER ORGANIZATIONAL CHART
+================================ */
+
+function renderOfficials(){
+
+const container=document.getElementById("orgTree")
+container.innerHTML=""
+
+barangayData.officials.forEach(o=>{
+
+const card=document.createElement("div")
+card.className="official-card"
+card.dataset.id=o.id
+
+card.innerHTML=`
+
+<div class="photo-wrapper">
+
+<img src="${o.image}" class="official-photo">
+
+<input type="file"
+class="photo-upload"
+data-id="${o.id}"
+accept="image/*">
+
+</div>
+
+<div class="name"
+contenteditable="true"
+onblur="updateName(${o.id},this.innerText)">
+${o.name}
+</div>
+
+<div class="role">${o.role}</div>
+
+<button class="delete-btn"
+onclick="deleteOfficial(${o.id})">
+✕
+</button>
+
+`
+
+container.appendChild(card)
+
+})
+
+enableUploads()
+
+}
+
+
+/* ================================
+ADD OFFICIAL
+================================ */
+
+function addOfficial(){
+
+const name=document.getElementById("officialName").value
+const role=document.getElementById("officialRole").value
+
+if(!name) return
+
+barangayData.officials.push({
+
+id:Date.now(),
+name,
+role,
+image:"images/default-user.png"
+
+})
+
+saveOfficials()
+renderOfficials()
+
+closeModal()
+
+}
+
+
+/* ================================
+DELETE OFFICIAL
+================================ */
+
+function deleteOfficial(id){
+
+barangayData.officials =
+barangayData.officials.filter(o=>o.id!==id)
+
+saveOfficials()
+renderOfficials()
+
+}
+
+
+/* ================================
+EDIT NAME
+================================ */
+
+function updateName(id,newName){
+
+const official=barangayData.officials.find(o=>o.id===id)
+
+if(official){
+official.name=newName
+saveOfficials()
+}
+
+}
+
+
+/* ================================
+OFFICER IMAGE UPLOAD
+================================ */
+
+function enableUploads(){
+
+document.querySelectorAll(".photo-upload").forEach(input=>{
+
+input.addEventListener("change",function(){
+
+const file=this.files[0]
+if(!file) return
+
+const id=Number(this.dataset.id)
+
+const reader=new FileReader()
+
+reader.onload=(e)=>{
+
+const image=e.target.result
+
+this.previousElementSibling.src=image
+
+const officer=barangayData.officials.find(o=>o.id===id)
+
+if(officer){
+officer.image=image
+}
+
+saveOfficials()
+
+}
+
+reader.readAsDataURL(file)
+
+})
+
+})
+
+}
+
+
+/* ================================
+LOCAL STORAGE
+================================ */
+
+function saveOfficials(){
+
+localStorage.setItem(
+"barangayOfficials",
+JSON.stringify(barangayData.officials)
+)
+
+}
+
+function loadOfficials(){
+
+const saved=localStorage.getItem("barangayOfficials")
+
+if(saved){
+barangayData.officials=JSON.parse(saved)
+}
+
+}
+
+
+/* ================================
+MODAL
+================================ */
+
+function openAddModal(){
+document.getElementById("addModal").style.display="flex"
+}
+
+function closeModal(){
+document.getElementById("addModal").style.display="none"
+}
+
+
+/* ================================
+SIDEBAR
+================================ */
+
+async function loadSidebar(){
+
+const res=await fetch("includes/official_sidebar.html")
+const html=await res.text()
+
+document.getElementById("sidebar-container").innerHTML=html
+
+}
+
+
+/* ================================
+HEADER
+================================ */
+
+async function loadHeader(){
+
+const res=await fetch("includes/header.html")
+const html=await res.text()
+
+document.getElementById("header-container").innerHTML=html
+
+document.getElementById("page-title").textContent="Barangay Officials"
+document.getElementById("page-description").textContent="Manage barangay structure"
+
+}
+
+
+/* ================================
+PAGE LOADER
+================================ */
+
+window.addEventListener("load",()=>{
+
+loadSavedLogo()
+loadOfficials()
+
+renderBarangay()
+renderOfficials()
+
+const loader=document.getElementById("content-loader")
+const content=document.getElementById("page-content")
+
+setTimeout(()=>{
+
+loader.style.display="none"
+content.style.opacity="1"
+
+},1000)
+
+})
+
+
+/* INIT */
+
+loadSidebar()
+loadHeader()
+
+</script>
+
+</body>
+</html>
