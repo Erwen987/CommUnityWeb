@@ -314,3 +314,198 @@ nav {
   .card-row, .card-grid { grid-template-columns: 1fr; }
   .about-layout, .contact-layout { flex-direction: column; }
 }
+
+/* ── AUTH PAGES (Login / Signup) ── */
+.auth-page {
+  min-height: 100vh;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px 60px;
+}
+
+/* Card */
+.auth-card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 860px;
+  min-height: 520px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+}
+
+/* Both form panels sit side by side, each 50% */
+.auth-panel {
+  width: 50%;
+  flex-shrink: 0;
+  padding: 52px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #fff;
+  background: rgba(20, 40, 80, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: opacity 0.35s ease;
+  z-index: 1;
+}
+
+/* Login form: right side (order 2), Signup form: left side (order 1) */
+.auth-panel-login { order: 2; }
+.auth-panel-signup { order: 1; opacity: 0; pointer-events: none; }
+
+/* Signup mode: flip visibility */
+.auth-signup-mode .auth-panel-login { opacity: 0; pointer-events: none; }
+.auth-signup-mode .auth-panel-signup { opacity: 1; pointer-events: all; }
+
+.auth-panel-title {
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.auth-form-sub {
+  font-size: 13px;
+  opacity: 0.75;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Shared form fields */
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 13px;
+}
+.auth-field label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+.auth-field input,
+.auth-field select {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.92);
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  color: #1f2937;
+  outline: none;
+  width: 100%;
+}
+.auth-field input:focus,
+.auth-field select:focus { border-color: #7AB1F1; }
+
+.auth-name-row { display: flex; gap: 10px; }
+.auth-name-row input { flex: 1; }
+
+.auth-forgot {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+.auth-forgot:hover { color: #fff; }
+
+.auth-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  background: #0f2447;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 14px;
+}
+.auth-btn:hover { background: #1a3a6b; }
+
+.auth-switch {
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.85;
+}
+.auth-switch-btn {
+  background: none;
+  border: none;
+  color: #7AB1F1;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+.auth-switch-btn:hover { text-decoration: underline; }
+
+/* Sliding info overlay — starts on LEFT, slides to RIGHT in signup mode */
+.auth-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: rgba(10, 22, 55, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 52px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #fff;
+  z-index: 10;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.auth-signup-mode .auth-overlay {
+  transform: translateX(100%);
+}
+
+.auth-overlay h2 {
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+.auth-overlay p {
+  font-size: 14px;
+  line-height: 1.8;
+  opacity: 0.85;
+  margin-bottom: 28px;
+}
+.auth-checklist {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auth-checklist li {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+  .auth-card { flex-direction: column; min-height: unset; }
+  .auth-panel { width: 100%; order: unset !important; }
+  .auth-panel-signup { display: none; }
+  .auth-signup-mode .auth-panel-login { display: none; }
+  .auth-signup-mode .auth-panel-signup { display: flex; opacity: 1; pointer-events: all; }
+  .auth-overlay { display: none; }
+  .auth-name-row { flex-direction: column; }
+}

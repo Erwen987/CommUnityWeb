@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
+import Auth from './pages/Auth';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
-function App() {
+function Landing() {
   useEffect(() => {
     const check = () => {
       document.querySelectorAll('.fade-element').forEach(el => {
@@ -146,6 +148,18 @@ function App() {
       </footer>
 
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Auth initialMode="login" />} />
+        <Route path="/signup" element={<Auth initialMode="signup" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
