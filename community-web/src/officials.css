@@ -13,7 +13,7 @@
   width: 260px;
   height: 100vh;
   background: linear-gradient(180deg, #0a224d 0%, #1a3f8f 60%, #2554a4 100%);
-  padding: 20px 16px;
+  padding: 20px 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -41,12 +41,15 @@
 .off-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  align-items: stretch;
 }
 .off-nav-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 14px;
+  width: 100%;
   padding: 13px 14px;
   border-radius: 10px;
   font-weight: 500;
@@ -55,6 +58,7 @@
   text-decoration: none;
   transition: background 0.2s, color 0.2s;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 .off-nav-icon {
   width: 22px;
