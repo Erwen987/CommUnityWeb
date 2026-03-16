@@ -38,7 +38,7 @@ function App() {
         </header>
 
         <section id="home" className="hero-section">
-          <h1>CommUnity: Report, Request, Reward</h1>
+          <h1>CommUnity:<br />Report, Request, Reward</h1>
           <p>Make your barangay better</p>
         </section>
       </div>
