@@ -8,6 +8,13 @@ import Reports   from './pages/officials/Reports';
 import Requests  from './pages/officials/Requests';
 import Analytics from './pages/officials/Analytics';
 import Rewards   from './pages/officials/Rewards';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import AdminReports   from './pages/admin/AdminReports';
+import AdminRequests  from './pages/admin/AdminRequests';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminRewards   from './pages/admin/AdminRewards';
+import AdminSettings  from './pages/admin/AdminSettings';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -169,6 +176,15 @@ function App() {
         <Route path="/officials/requests"  element={<Requests />} />
         <Route path="/officials/analytics" element={<Analytics />} />
         <Route path="/officials/rewards"   element={<Rewards />} />
+
+        {/* Admin */}
+        <Route path="/admin/dashboard"       element={<AdminDashboard />} />
+        <Route path="/admin/user-management" element={<UserManagement />} />
+        <Route path="/admin/reports"         element={<AdminReports />} />
+        <Route path="/admin/requests"        element={<AdminRequests />} />
+        <Route path="/admin/analytics"       element={<AdminAnalytics />} />
+        <Route path="/admin/rewards"         element={<AdminRewards />} />
+        <Route path="/admin/settings"        element={<AdminSettings />} />
       </Routes>
     </BrowserRouter>
   );
