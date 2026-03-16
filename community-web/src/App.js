@@ -15,6 +15,7 @@ import AdminRequests  from './pages/admin/AdminRequests';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminRewards   from './pages/admin/AdminRewards';
 import AdminSettings  from './pages/admin/AdminSettings';
+import AdminPortal    from './pages/admin/AdminPortal';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -176,6 +177,9 @@ function App() {
         <Route path="/officials/requests"  element={<Requests />} />
         <Route path="/officials/analytics" element={<Analytics />} />
         <Route path="/officials/rewards"   element={<Rewards />} />
+
+        {/* Admin Portal */}
+        <Route path="/admin-portal" element={<AdminPortal />} />
 
         {/* Admin */}
         <Route path="/admin/dashboard"       element={<AdminDashboard />} />
