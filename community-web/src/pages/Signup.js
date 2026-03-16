@@ -45,87 +45,80 @@ function Signup() {
       <div className="auth-container">
         <div className="auth-card auth-card--signup">
 
-          {/* LEFT — form panel */}
-          <div className="auth-form">
+          {/* LEFT — signup form */}
+          <div className="auth-form auth-form--left">
             <h2>Create an Account</h2>
-            <p className="auth-form-sub">Join your community today!</p>
+            <p className="auth-sub">Join your community today!</p>
             <form onSubmit={handleSubmit}>
-              <div className="auth-field">
-                <label>Name</label>
-                <div className="auth-name-row">
-                  <input
-                    type="text"
-                    name="firstName"
-                    placeholder="First name"
-                    value={form.firstName}
-                    onChange={handleChange}
-                    required
-                  />
-                  <input
-                    type="text"
-                    name="lastName"
-                    placeholder="Last name"
-                    value={form.lastName}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="auth-field">
-                <label>Barangay</label>
-                <select name="barangay" value={form.barangay} onChange={handleChange} required>
-                  <option value="" disabled>Select your barangay</option>
-                  {BARANGAYS.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </div>
-              <div className="auth-field">
-                <label>Email / Phone Number</label>
+              <label>Name</label>
+              <div className="auth-name-row">
                 <input
                   type="text"
-                  name="email"
-                  placeholder="Enter your email or phone number"
-                  value={form.email}
+                  name="firstName"
+                  placeholder="First name"
+                  value={form.firstName}
                   onChange={handleChange}
                   required
                 />
-              </div>
-              <div className="auth-field">
-                <label>Password</label>
                 <input
-                  type="password"
-                  name="password"
-                  placeholder="Enter password"
-                  value={form.password}
+                  type="text"
+                  name="lastName"
+                  placeholder="Last name"
+                  value={form.lastName}
                   onChange={handleChange}
                   required
                 />
               </div>
-              <div className="auth-field">
-                <label>Confirm Password</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm password"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <button type="submit" className="auth-btn">SIGN UP</button>
-              <p className="auth-switch">
+              <label>Barangay</label>
+              <select name="barangay" value={form.barangay} onChange={handleChange} required>
+                <option value="" disabled>Select your barangay</option>
+                {BARANGAYS.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <label>Email / Phone Number</label>
+              <input
+                type="text"
+                name="email"
+                placeholder="Enter your email or phone number"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+              <label>Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm password"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              <button type="submit">SIGN UP</button>
+              <p className="auth-switch-text">
                 Already have an account? <Link to="/login">Log in</Link>
               </p>
             </form>
           </div>
 
           {/* RIGHT — info panel */}
-          <div className="auth-info">
+          <div className="auth-overview auth-overview--right">
             <h2>Welcome to CommUnity</h2>
-            <p>CommUnity helps residents connect, report issues, request services, and build a stronger barangay together.</p>
+            <p>
+              CommUnity helps residents connect, report issues, request services,
+              and build a stronger barangay together.
+            </p>
             <ul className="auth-checklist">
-              <li>✓ Report community concerns</li>
-              <li>✓ Request barangay services</li>
-              <li>✓ Earn rewards for participation</li>
+              <li>✔ Report community concerns</li>
+              <li>✔ Request barangay services</li>
+              <li>✔ Earn rewards for participation</li>
             </ul>
           </div>
 

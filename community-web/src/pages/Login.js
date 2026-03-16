@@ -38,45 +38,44 @@ function Login() {
         <div className="auth-card">
 
           {/* LEFT — info panel */}
-          <div className="auth-info">
+          <div className="auth-overview">
             <h2>Welcome to CommUnity</h2>
-            <p>CommUnity helps residents connect, report issues, request services, and build a stronger barangay together.</p>
+            <p>
+              CommUnity helps residents connect, report issues, request services,
+              and build a stronger barangay together.
+            </p>
             <ul className="auth-checklist">
-              <li>✓ Report community concerns</li>
-              <li>✓ Request barangay services</li>
-              <li>✓ Earn rewards for participation</li>
+              <li>✔ Report community concerns</li>
+              <li>✔ Request barangay services</li>
+              <li>✔ Earn rewards for participation</li>
             </ul>
           </div>
 
-          {/* RIGHT — form panel */}
+          {/* RIGHT — login form */}
           <div className="auth-form">
             <h2>WELCOME BACK!</h2>
             <form onSubmit={handleSubmit}>
-              <div className="auth-field">
-                <label>Email / Phone Number</label>
-                <input
-                  type="text"
-                  name="email"
-                  placeholder="Enter your email or phone number"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="auth-field">
-                <label>Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Enter password"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+              <label>Email / Phone Number</label>
+              <input
+                type="text"
+                name="email"
+                placeholder="Enter your email or phone number"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
               <Link to="/forgot-password" className="auth-forgot">Forgot Password?</Link>
-              <button type="submit" className="auth-btn">LOGIN</button>
-              <p className="auth-switch">
+              <button type="submit">LOGIN</button>
+              <p className="auth-switch-text">
                 Don't have an account? <Link to="/signup">Sign up</Link>
               </p>
             </form>

@@ -1,7 +1,13 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
-import Auth from './pages/Auth';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Dashboard from './pages/officials/Dashboard';
+import Reports   from './pages/officials/Reports';
+import Requests  from './pages/officials/Requests';
+import Analytics from './pages/officials/Analytics';
+import Rewards   from './pages/officials/Rewards';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -156,8 +162,13 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Auth initialMode="login" />} />
-        <Route path="/signup" element={<Auth initialMode="signup" />} />
+        <Route path="/login"  element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/officials/dashboard" element={<Dashboard />} />
+        <Route path="/officials/reports"   element={<Reports />} />
+        <Route path="/officials/requests"  element={<Requests />} />
+        <Route path="/officials/analytics" element={<Analytics />} />
+        <Route path="/officials/rewards"   element={<Rewards />} />
       </Routes>
     </BrowserRouter>
   );
