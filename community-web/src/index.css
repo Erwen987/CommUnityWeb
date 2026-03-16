@@ -22,7 +22,7 @@ body {
 /* HERO WRAPPER */
 .hero-wrapper {
   background-size: cover;
-  background-position: center top;
+  background-position: center center;
   background-repeat: no-repeat;
   min-height: 100vh;
   display: flex;
@@ -121,13 +121,14 @@ nav {
   display: flex;
   align-items: center;
   gap: 60px;
-  margin-top: 48px;
+  margin-top: 32px;
   flex-wrap: wrap;
 }
 .about-image img {
-  width: 420px;
+  width: 320px;
   max-width: 100%;
   border-radius: 20px;
+  object-fit: contain;
 }
 .about-text {
   flex: 1;
