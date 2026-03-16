@@ -48,7 +48,6 @@ function AdminSidebar() {
           <span>Settings</span>
         </NavLink>
         <button onClick={() => navigate('/login')}>
-          <HiOutlineLogout className="off-nav-icon" />
           Log Out
         </button>
       </div>
