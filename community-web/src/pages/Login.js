@@ -4,8 +4,7 @@ import { supabase } from '../supabaseClient';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
-const ADMIN_EMAIL    = 'pandahuntergamer09@gmail.com';
-const OFFICIAL_EMAIL = 'jerwenbacani80@gmail.com';
+const ADMIN_EMAIL = 'pandahuntergamer09@gmail.com';
 
 function Login() {
   const [form, setForm]         = useState({ email: '', password: '' });
@@ -24,31 +23,61 @@ function Login() {
     setError('');
 
     const email = form.email.trim().toLowerCase();
+    setLoading(true);
 
-    // Only allow admin and official accounts
-    if (email !== ADMIN_EMAIL && email !== OFFICIAL_EMAIL) {
-      setError('Access denied. This portal is for admin and officials only.');
+    // Admin shortcut — no DB lookup needed
+    if (email === ADMIN_EMAIL) {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: form.email.trim(),
+        password: form.password,
+      });
+      setLoading(false);
+      if (authError) { setError('Invalid email or password. Please try again.'); return; }
+      navigate('/admin/dashboard');
       return;
     }
 
-    setLoading(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    // Officials — check Supabase auth first
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
       email: form.email.trim(),
       password: form.password,
     });
-    setLoading(false);
 
     if (authError) {
+      setLoading(false);
       setError('Invalid email or password. Please try again.');
       return;
     }
 
-    // Redirect based on role
-    if (email === ADMIN_EMAIL) {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/officials/dashboard');
+    // Look up in officials table
+    const { data: official, error: dbError } = await supabase
+      .from('officials')
+      .select('status, barangay')
+      .eq('auth_id', data.user.id)
+      .single();
+
+    setLoading(false);
+
+    if (dbError || !official) {
+      await supabase.auth.signOut();
+      setError('Access denied. This portal is for officials only.');
+      return;
     }
+
+    if (official.status === 'pending') {
+      await supabase.auth.signOut();
+      setError('Your account is under review. Please wait for admin approval.');
+      return;
+    }
+
+    if (official.status === 'rejected') {
+      await supabase.auth.signOut();
+      setError('Your account was not approved. Please contact the admin.');
+      return;
+    }
+
+    // Approved — go to dashboard
+    navigate('/officials/dashboard');
   };
 
   return (
