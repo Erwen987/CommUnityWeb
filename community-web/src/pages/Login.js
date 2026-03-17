@@ -1,16 +1,54 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
+const ADMIN_EMAIL    = 'pandahuntergamer09@gmail.com';
+const OFFICIAL_EMAIL = 'jerwenbacani80@gmail.com';
+
 function Login() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm]         = useState({ email: '', password: '' });
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const navigate                = useNavigate();
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError('');
+  };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    // Supabase auth will go here
+    setError('');
+
+    const email = form.email.trim().toLowerCase();
+
+    // Only allow admin and official accounts
+    if (email !== ADMIN_EMAIL && email !== OFFICIAL_EMAIL) {
+      setError('Access denied. This portal is for admin and officials only.');
+      return;
+    }
+
+    setLoading(true);
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: form.email.trim(),
+      password: form.password,
+    });
+    setLoading(false);
+
+    if (authError) {
+      setError('Invalid email or password. Please try again.');
+      return;
+    }
+
+    // Redirect based on role
+    if (email === ADMIN_EMAIL) {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/officials/dashboard');
+    }
   };
 
   return (
@@ -55,26 +93,67 @@ function Login() {
           <div className="auth-form">
             <h2>WELCOME BACK!</h2>
             <form onSubmit={handleSubmit}>
-              <label>Email / Phone Number</label>
+              {error && (
+                <div style={{
+                  background: '#fdecea', color: '#c62828',
+                  border: '1px solid #f5c6cb', borderRadius: '8px',
+                  padding: '10px 14px', marginBottom: '12px', fontSize: '14px'
+                }}>
+                  {error}
+                </div>
+              )}
+              <label>Email</label>
               <input
-                type="text"
+                type="email"
                 name="email"
-                placeholder="Enter your email or phone number"
+                placeholder="Enter your email"
                 value={form.email}
                 onChange={handleChange}
                 required
               />
               <label>Password</label>
-              <input
-                type="password"
-                name="password"
-                placeholder="Enter password"
-                value={form.password}
-                onChange={handleChange}
-                required
-              />
-              <Link to="/forgot-password" className="auth-forgot">Forgot Password?</Link>
-              <button type="submit">LOGIN</button>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  name="password"
+                  placeholder="Enter password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  style={{ paddingRight: '44px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(v => !v)}
+                  style={{
+                    position: 'absolute', right: '12px', top: '50%',
+                    transform: 'translateY(-50%)', background: 'none',
+                    border: 'none', cursor: 'pointer', padding: '4px',
+                    color: '#6b7280', display: 'flex', alignItems: 'center',
+                  }}
+                  aria-label={showPass ? 'Hide password' : 'Show password'}
+                >
+                  {showPass ? (
+                    /* Eye-off icon */
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  ) : (
+                    /* Eye icon */
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <button type="submit" disabled={loading}>
+                {loading ? 'Logging in...' : 'LOGIN'}
+              </button>
               <p className="auth-switch-text">
                 Don't have an account? <Link to="/signup">Sign up</Link>
               </p>
