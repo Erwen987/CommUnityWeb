@@ -45,7 +45,11 @@ function Login() {
 
     if (authError) {
       setLoading(false);
-      setError('Invalid email or password. Please try again.');
+      if (authError.message?.toLowerCase().includes('email not confirmed')) {
+        setError('Please confirm your email address first. Check your inbox for a confirmation link from Supabase.');
+      } else {
+        setError('Invalid email or password. Please try again.');
+      }
       return;
     }
 

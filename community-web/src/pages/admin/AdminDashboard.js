@@ -11,27 +11,35 @@ import {
 const monthlyData = [];
 
 function AdminDashboard() {
-  const [pending, setPending]     = useState([]);
+  const [pending,   setPending]   = useState([]);
+  const [approved,  setApproved]  = useState([]);
   const [loadingId, setLoadingId] = useState(null);
 
   useEffect(() => {
-    fetchPending();
+    fetchOfficials();
   }, []);
 
-  const fetchPending = async () => {
-    const { data } = await supabase
+  const fetchOfficials = async () => {
+    const { data: pendingData } = await supabase
       .from('officials')
       .select('id, barangay_name, barangay, email, created_at')
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
-    setPending(data || []);
+    setPending(pendingData || []);
+
+    const { data: approvedData } = await supabase
+      .from('officials')
+      .select('id, barangay_name, barangay, email, created_at')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: true });
+    setApproved(approvedData || []);
   };
 
   const updateStatus = async (id, status) => {
     setLoadingId(id);
     await supabase.from('officials').update({ status }).eq('id', id);
     setLoadingId(null);
-    fetchPending();
+    fetchOfficials();
   };
 
   return (
@@ -48,7 +56,7 @@ function AdminDashboard() {
           <div className="off-stats-row off-stats-row-4">
             <div className="off-stat-card"><h4>Reports</h4><div className="off-stat-value">0</div></div>
             <div className="off-stat-card"><h4>Requests</h4><div className="off-stat-value">0</div></div>
-            <div className="off-stat-card"><h4>Users</h4><div className="off-stat-value">0</div></div>
+            <div className="off-stat-card"><h4>Officials</h4><div className="off-stat-value">{approved.length}</div></div>
             <div className="off-stat-card"><h4>Pending Officials</h4><div className="off-stat-value" style={{ color: pending.length > 0 ? '#d97706' : undefined }}>{pending.length}</div></div>
           </div>
 
@@ -112,6 +120,61 @@ function AdminDashboard() {
                             Reject
                           </button>
                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* ── APPROVED OFFICIALS ── */}
+          <div className="off-card" style={{ marginBottom: '24px' }}>
+            <h3 className="off-card-title">
+              Approved Officials
+              {approved.length > 0 && (
+                <span style={{
+                  marginLeft: '10px', background: '#dcfce7', color: '#166534',
+                  fontSize: '12px', fontWeight: '700', padding: '2px 10px',
+                  borderRadius: '999px', border: '1px solid #bbf7d0',
+                }}>
+                  {approved.length} active
+                </span>
+              )}
+            </h3>
+            {approved.length === 0 ? (
+              <p style={{ fontSize: 13, color: '#9ca3af' }}>No approved officials yet.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Barangay Name</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Barangay</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Email</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Approved Since</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approved.map(row => (
+                    <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '12px 12px', fontWeight: '600', color: '#1f2937' }}>{row.barangay_name}</td>
+                      <td style={{ padding: '12px 12px', color: '#374151' }}>{row.barangay}</td>
+                      <td style={{ padding: '12px 12px', color: '#374151' }}>{row.email}</td>
+                      <td style={{ padding: '12px 12px', color: '#6b7280' }}>
+                        {new Date(row.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                      <td style={{ padding: '12px 12px' }}>
+                        <button
+                          onClick={() => updateStatus(row.id, 'rejected')}
+                          disabled={loadingId === row.id}
+                          style={{
+                            background: '#dc2626', color: '#fff', border: 'none',
+                            padding: '6px 16px', borderRadius: '8px', cursor: 'pointer',
+                            fontWeight: '600', fontSize: '12px', opacity: loadingId === row.id ? 0.6 : 1,
+                          }}>
+                          Revoke
+                        </button>
                       </td>
                     </tr>
                   ))}

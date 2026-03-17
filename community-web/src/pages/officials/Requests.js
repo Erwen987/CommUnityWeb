@@ -1,3 +1,7 @@
+import React, { useState } from 'react';
+import '../../officials.css';
+import OfficialSidebar from '../../components/OfficialSidebar';
+import OfficialTopbar from '../../components/OfficialTopbar';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 
 const STATS = [
