@@ -5,6 +5,8 @@ import './AdminPortal.css';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
+const ADMIN_EMAIL = 'pandahuntergamer09@gmail.com';
+
 function AdminPortal() {
   const navigate = useNavigate();
   const [form, setForm]         = useState({ email: '', password: '' });
@@ -17,30 +19,25 @@ function AdminPortal() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    });
+    const email = form.email.trim().toLowerCase();
 
-    if (authError) {
-      setError('Invalid email or password.');
-      setLoading(false);
+    if (email !== ADMIN_EMAIL) {
+      setError('Access denied. Admin accounts only.');
       return;
     }
 
-    // Check if user is admin
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('role')
-      .eq('auth_id', data.user.id)
-      .single();
+    setLoading(true);
 
-    if (userError || userData?.role !== 'admin') {
-      await supabase.auth.signOut();
-      setError('Access denied. Admin accounts only.');
-      setLoading(false);
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: form.email.trim(),
+      password: form.password,
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      setError('Invalid email or password.');
       return;
     }
 
