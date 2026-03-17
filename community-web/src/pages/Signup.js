@@ -15,13 +15,14 @@ const BARANGAYS = [
 
 function Signup() {
   const [form, setForm] = useState({
-    barangayName: '', barangay: '', email: '', password: '', confirmPassword: '',
+    barangay: '', email: '', password: '', confirmPassword: '',
   });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
   // 'form' | 'otp' | 'done'
   const [step, setStep]       = useState('form');
   const [otp, setOtp]         = useState('');
+  const [pendingUserId, setPendingUserId] = useState(null);
   const [showPass, setShowPass]       = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -51,30 +52,34 @@ function Signup() {
       password: form.password,
     });
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    // 2. Insert into officials table with status = 'pending'
-    const { error: dbError } = await supabase.from('officials').insert({
-      auth_id:       data.user.id,
-      barangay_name: form.barangayName.trim(),
-      barangay:      form.barangay,
-      email:         form.email.trim().toLowerCase(),
-      status:        'pending',
-    });
-
     setLoading(false);
 
-    if (dbError) {
-      setError('Account created but failed to save details. Please contact admin.');
+    if (authError) {
+      setError(authError.message);
       return;
     }
 
-    // Move to OTP verification step
-    setStep('otp');
+    // If Supabase auto-confirmed (email confirmation disabled), session is available now
+    if (data.session) {
+      // Insert immediately — user is already authenticated
+      const { error: dbError } = await supabase.from('officials').insert({
+        auth_id:       data.user.id,
+        barangay_name: form.barangay,
+        barangay:      form.barangay,
+        email:         form.email.trim().toLowerCase(),
+        status:        'pending',
+      });
+      if (dbError) {
+        setError('Failed to save your details. Please contact admin.');
+        return;
+      }
+      await supabase.auth.signOut();
+      setStep('done');
+    } else {
+      // Email confirmation required — wait for OTP
+      setPendingUserId(data.user.id);
+      setStep('otp');
+    }
   };
 
   const handleVerifyOtp = async e => {
@@ -83,20 +88,36 @@ function Signup() {
     if (!otp.trim()) { setError('Please enter the OTP code.'); return; }
     setLoading(true);
 
+    // Verify OTP — this gives the user an active session
     const { error: verifyError } = await supabase.auth.verifyOtp({
       email: form.email.trim(),
       token: otp.trim(),
       type:  'signup',
     });
 
-    setLoading(false);
-
     if (verifyError) {
+      setLoading(false);
       setError('Invalid or expired OTP. Please check the code and try again.');
       return;
     }
 
-    // Email confirmed — sign out and show pending approval screen
+    // Now authenticated — insert into officials table
+    const { error: dbError } = await supabase.from('officials').insert({
+      auth_id:       pendingUserId,
+      barangay_name: form.barangay,
+      barangay:      form.barangay,
+      email:         form.email.trim().toLowerCase(),
+      status:        'pending',
+    });
+
+    setLoading(false);
+
+    if (dbError) {
+      setError('Email confirmed but failed to save your details. Please contact admin. Error: ' + dbError.message);
+      return;
+    }
+
+    // Sign out — they need admin approval before they can use the portal
     await supabase.auth.signOut();
     setStep('done');
   };
@@ -252,16 +273,6 @@ function Signup() {
             )}
 
             <form onSubmit={handleSubmit}>
-
-              <label>Barangay Name</label>
-              <input
-                type="text"
-                name="barangayName"
-                placeholder="e.g. Barangay Mangin Officials"
-                value={form.barangayName}
-                onChange={handleChange}
-                required
-              />
 
               <label>Select Barangay</label>
               <select name="barangay" value={form.barangay} onChange={handleChange} required>

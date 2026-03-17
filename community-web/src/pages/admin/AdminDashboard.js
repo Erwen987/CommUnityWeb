@@ -10,6 +10,35 @@ import {
 
 const monthlyData = [];
 
+// ── EmailJS config ──────────────────────────────────────────────────────────
+// 1. Sign up free at https://www.emailjs.com
+// 2. Add a Gmail service → copy Service ID below
+// 3. Create a template with variables: {{to_email}}, {{barangay}}
+//    Subject: "CommUnity – Your account has been approved!"
+//    Body:    "Hello! Your official account for {{barangay}} has been approved.
+//              You can now log in at [your site URL]."
+// 4. Copy Template ID and Public Key below
+const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';
+const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
+const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';
+
+const sendApprovalEmail = async (toEmail, barangay) => {
+  try {
+    await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id:  EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id:     EMAILJS_PUBLIC_KEY,
+        template_params: { to_email: toEmail, barangay },
+      }),
+    });
+  } catch (_) {
+    // Email failure is non-critical — approval still goes through
+  }
+};
+
 function AdminDashboard() {
   const [pending,   setPending]   = useState([]);
   const [approved,  setApproved]  = useState([]);
@@ -37,7 +66,17 @@ function AdminDashboard() {
 
   const updateStatus = async (id, status) => {
     setLoadingId(id);
-    await supabase.from('officials').update({ status }).eq('id', id);
+    const { data: updated } = await supabase
+      .from('officials')
+      .update({ status })
+      .eq('id', id)
+      .select('email, barangay')
+      .single();
+
+    if (status === 'approved' && updated) {
+      await sendApprovalEmail(updated.email, updated.barangay);
+    }
+
     setLoadingId(null);
     fetchOfficials();
   };

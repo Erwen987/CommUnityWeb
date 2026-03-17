@@ -18,7 +18,7 @@ function Dashboard() {
         <OfficialTopbar />
         <div className="off-content">
           <h1 className="off-page-title">
-            {loading ? 'Loading...' : `Hello, ${barangayName || barangay || 'Officials'} 👋`}
+            Hello, Officials! 👋
           </h1>
           <p className="off-page-sub">Here's what's happening in your barangay today.</p>
           <div className="off-dash-grid">
