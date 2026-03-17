@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
+import { supabase } from '../../supabaseClient';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
@@ -10,6 +11,29 @@ import {
 const monthlyData = [];
 
 function AdminDashboard() {
+  const [pending, setPending]     = useState([]);
+  const [loadingId, setLoadingId] = useState(null);
+
+  useEffect(() => {
+    fetchPending();
+  }, []);
+
+  const fetchPending = async () => {
+    const { data } = await supabase
+      .from('officials')
+      .select('id, barangay_name, barangay, email, created_at')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+    setPending(data || []);
+  };
+
+  const updateStatus = async (id, status) => {
+    setLoadingId(id);
+    await supabase.from('officials').update({ status }).eq('id', id);
+    setLoadingId(null);
+    fetchPending();
+  };
+
   return (
     <div className="off-layout">
       <AdminSidebar />
@@ -18,14 +42,82 @@ function AdminDashboard() {
         <div className="off-content">
 
           <h1 className="off-page-title">Welcome Admin 👋</h1>
-          <p className="off-page-sub">Here's a quick overview of your barangay</p>
+          <p className="off-page-sub">Here's a quick overview of the system</p>
 
           {/* Stat cards */}
           <div className="off-stats-row off-stats-row-4">
             <div className="off-stat-card"><h4>Reports</h4><div className="off-stat-value">0</div></div>
             <div className="off-stat-card"><h4>Requests</h4><div className="off-stat-value">0</div></div>
             <div className="off-stat-card"><h4>Users</h4><div className="off-stat-value">0</div></div>
-            <div className="off-stat-card"><h4>Active Users</h4><div className="off-stat-value">0</div></div>
+            <div className="off-stat-card"><h4>Pending Officials</h4><div className="off-stat-value" style={{ color: pending.length > 0 ? '#d97706' : undefined }}>{pending.length}</div></div>
+          </div>
+
+          {/* ── PENDING APPROVALS ── */}
+          <div className="off-card" style={{ marginBottom: '24px' }}>
+            <h3 className="off-card-title">
+              Pending Official Approvals
+              {pending.length > 0 && (
+                <span style={{
+                  marginLeft: '10px', background: '#fef3c7', color: '#92400e',
+                  fontSize: '12px', fontWeight: '700', padding: '2px 10px',
+                  borderRadius: '999px', border: '1px solid #fde68a',
+                }}>
+                  {pending.length} pending
+                </span>
+              )}
+            </h3>
+
+            {pending.length === 0 ? (
+              <p style={{ fontSize: 13, color: '#9ca3af' }}>No pending approval requests.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Barangay Name</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Barangay</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Email</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Submitted</th>
+                    <th style={{ padding: '10px 12px', color: '#6b7280', fontWeight: '600' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pending.map(row => (
+                    <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '12px 12px', fontWeight: '600', color: '#1f2937' }}>{row.barangay_name}</td>
+                      <td style={{ padding: '12px 12px', color: '#374151' }}>{row.barangay}</td>
+                      <td style={{ padding: '12px 12px', color: '#374151' }}>{row.email}</td>
+                      <td style={{ padding: '12px 12px', color: '#6b7280' }}>
+                        {new Date(row.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                      <td style={{ padding: '12px 12px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => updateStatus(row.id, 'approved')}
+                            disabled={loadingId === row.id}
+                            style={{
+                              background: '#16a34a', color: '#fff', border: 'none',
+                              padding: '6px 16px', borderRadius: '8px', cursor: 'pointer',
+                              fontWeight: '600', fontSize: '12px', opacity: loadingId === row.id ? 0.6 : 1,
+                            }}>
+                            {loadingId === row.id ? '...' : 'Approve'}
+                          </button>
+                          <button
+                            onClick={() => updateStatus(row.id, 'rejected')}
+                            disabled={loadingId === row.id}
+                            style={{
+                              background: '#dc2626', color: '#fff', border: 'none',
+                              padding: '6px 16px', borderRadius: '8px', cursor: 'pointer',
+                              fontWeight: '600', fontSize: '12px', opacity: loadingId === row.id ? 0.6 : 1,
+                            }}>
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           <div className="off-dash-grid">
