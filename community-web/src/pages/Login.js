@@ -46,7 +46,7 @@ function Login() {
     if (authError) {
       setLoading(false);
       if (authError.message?.toLowerCase().includes('email not confirmed')) {
-        setError('Please confirm your email address first. Check your inbox for a confirmation link from Supabase.');
+        setError('Email not confirmed yet. Please go back to sign up and complete the OTP verification step.');
       } else {
         setError('Invalid email or password. Please try again.');
       }

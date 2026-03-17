@@ -19,9 +19,11 @@ function Signup() {
   });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [showPass, setShowPass]         = useState(false);
-  const [showConfirm, setShowConfirm]   = useState(false);
+  // 'form' | 'otp' | 'done'
+  const [step, setStep]       = useState('form');
+  const [otp, setOtp]         = useState('');
+  const [showPass, setShowPass]       = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -43,7 +45,7 @@ function Signup() {
 
     setLoading(true);
 
-    // 1. Create Supabase auth account
+    // 1. Create Supabase auth account (Supabase will send an OTP to their email)
     const { data, error: authError } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
@@ -71,13 +73,100 @@ function Signup() {
       return;
     }
 
-    // Sign out immediately — they need admin approval first
-    await supabase.auth.signOut();
-    setSubmitted(true);
+    // Move to OTP verification step
+    setStep('otp');
   };
 
+  const handleVerifyOtp = async e => {
+    e.preventDefault();
+    setError('');
+    if (!otp.trim()) { setError('Please enter the OTP code.'); return; }
+    setLoading(true);
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: form.email.trim(),
+      token: otp.trim(),
+      type:  'signup',
+    });
+
+    setLoading(false);
+
+    if (verifyError) {
+      setError('Invalid or expired OTP. Please check the code and try again.');
+      return;
+    }
+
+    // Email confirmed — sign out and show pending approval screen
+    await supabase.auth.signOut();
+    setStep('done');
+  };
+
+  // ── OTP SCREEN ──
+  if (step === 'otp') {
+    return (
+      <div className="auth-page" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
+        <header>
+          <nav>
+            <a href="/" className="logo">
+              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
+              <span className="logo-text">CommUnity</span>
+            </a>
+          </nav>
+        </header>
+        <div className="auth-container">
+          <div style={{
+            background: 'rgba(255,255,255,0.95)', borderRadius: '20px',
+            padding: '48px 40px', textAlign: 'center', maxWidth: '420px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📬</div>
+            <h2 style={{ color: '#1E3A5F', marginBottom: '8px', fontSize: '22px' }}>Check Your Email</h2>
+            <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '24px', lineHeight: '1.6' }}>
+              We sent a 6-digit OTP to <strong>{form.email}</strong>.<br />
+              Enter it below to confirm your email address.
+            </p>
+            {error && (
+              <div style={{
+                background: '#fdecea', color: '#c62828', border: '1px solid #f5c6cb',
+                borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px',
+              }}>
+                {error}
+              </div>
+            )}
+            <form onSubmit={handleVerifyOtp}>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="Enter 6-digit OTP"
+                value={otp}
+                onChange={e => { setOtp(e.target.value); setError(''); }}
+                style={{
+                  width: '100%', padding: '12px 16px', fontSize: '20px', textAlign: 'center',
+                  letterSpacing: '8px', border: '2px solid #e5e7eb', borderRadius: '10px',
+                  marginBottom: '16px', boxSizing: 'border-box', outline: 'none',
+                }}
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%', background: '#1E3A5F', color: '#fff',
+                  padding: '12px', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '14px', cursor: 'pointer',
+                  opacity: loading ? 0.7 : 1,
+                }}>
+                {loading ? 'Verifying...' : 'Verify OTP'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── SUCCESS SCREEN ──
-  if (submitted) {
+  if (step === 'done') {
     return (
       <div className="auth-page" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
         <header>
@@ -94,14 +183,23 @@ function Signup() {
             padding: '56px 48px', textAlign: 'center', maxWidth: '480px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
           }}>
-            <div style={{ fontSize: '56px', marginBottom: '16px' }}>⏳</div>
+            <div style={{ fontSize: '56px', marginBottom: '16px' }}>✅</div>
             <h2 style={{ color: '#1E3A5F', marginBottom: '12px', fontSize: '22px' }}>
-              Request Submitted!
+              Email Confirmed!
             </h2>
-            <p style={{ color: '#4b5563', lineHeight: '1.7', marginBottom: '24px' }}>
-              Your account for <strong>{form.barangay}</strong> has been submitted for admin approval.
-              You will be able to log in once the admin approves your request.
-            </p>
+            <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+              <div style={{
+                background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px',
+                padding: '16px 20px',
+              }}>
+                <div style={{ fontWeight: '700', color: '#166534', marginBottom: '4px', fontSize: '14px' }}>
+                  Waiting for Admin Approval
+                </div>
+                <div style={{ color: '#4b5563', fontSize: '13px', lineHeight: '1.6' }}>
+                  Your account for <strong>{form.barangay}</strong> has been submitted. Once the admin approves it, you can log in using your email and password.
+                </div>
+              </div>
+            </div>
             <a href="/login" style={{
               display: 'inline-block', background: '#1E3A5F', color: '#fff',
               padding: '12px 32px', borderRadius: '10px', textDecoration: 'none',
