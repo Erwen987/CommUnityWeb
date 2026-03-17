@@ -129,14 +129,11 @@ function Landing() {
           </div>
           <div className="contact-form">
             <form>
-              <label htmlFor="name">Full Name</label>
-              <input type="text" id="name" placeholder="Enter your full name" required />
+              <label htmlFor="barangay">Barangay Name</label>
+              <input type="text" id="barangay" placeholder="Enter your barangay name" required />
 
               <label htmlFor="email">Email Address</label>
               <input type="email" id="email" placeholder="Enter your email" required />
-
-              <label htmlFor="subject">Subject</label>
-              <input type="text" id="subject" placeholder="Enter subject" required />
 
               <label htmlFor="message">Message</label>
               <textarea id="message" rows="5" placeholder="Write your message here..." required></textarea>
