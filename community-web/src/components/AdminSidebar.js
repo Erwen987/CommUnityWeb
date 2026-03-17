@@ -5,6 +5,7 @@ import {
   HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift,
   HiOutlineCog, HiOutlineLogout
 } from 'react-icons/hi';
+import { supabase } from '../supabaseClient';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -19,6 +20,12 @@ const NAV = [
 
 function AdminSidebar() {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
   return (
     <aside className="off-sidebar">
       <div className="off-sidebar-logo">
@@ -47,7 +54,8 @@ function AdminSidebar() {
           <HiOutlineCog className="off-nav-icon" />
           <span>Settings</span>
         </NavLink>
-        <button onClick={() => navigate('/login')}>
+        <button onClick={handleLogout}>
+          <HiOutlineLogout className="off-nav-icon" />
           Log Out
         </button>
       </div>

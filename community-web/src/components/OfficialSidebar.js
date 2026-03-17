@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout } from 'react-icons/hi';
+import { supabase } from '../supabaseClient';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -14,6 +15,12 @@ const NAV = [
 
 function OfficialSidebar() {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
   return (
     <aside className="off-sidebar">
       <div className="off-sidebar-logo">
@@ -35,7 +42,7 @@ function OfficialSidebar() {
       </nav>
 
       <div className="off-logout">
-        <button onClick={() => navigate('/login')}>
+        <button onClick={handleLogout}>
           <HiOutlineLogout className="off-nav-icon" />
           Log Out
         </button>

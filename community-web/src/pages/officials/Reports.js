@@ -2,28 +2,19 @@ import React from 'react';
 import '../../officials.css';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
+import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 
 const STATS = [
-  { label: 'Total Reports', value: 2 },
-  { label: 'Reviewed',      value: 1 },
+  { label: 'Total Reports', value: 0 },
+  { label: 'Reviewed',      value: 0 },
   { label: 'Assigned',      value: 0 },
-  { label: 'In Progress',   value: 1 },
+  { label: 'In Progress',   value: 0 },
   { label: 'Fixed',         value: 0 },
 ];
 
-const REPORTS = [
-  { id: 'RPT-001-2026', type: 'Broken Streetlight', resident: 'Juan Dela Cruz', location: 'Brgy. 1', status: 'inprogress', date: '1/5/2026' },
-  { id: 'RPT-002-2026', type: 'Pothole',            resident: 'Maria Santos',   location: 'Brgy. 2', status: 'reviewing',  date: '1/8/2026' },
-];
-
-const STATUS_LABELS = {
-  reviewing:  { label: 'Reviewing',  cls: 'off-status-reviewing'  },
-  inprogress: { label: 'In Progress', cls: 'off-status-inprogress' },
-  assigned:   { label: 'Assigned',   cls: 'off-status-assigned'   },
-  fixed:      { label: 'Fixed',      cls: 'off-status-fixed'      },
-};
-
 function Reports() {
+  const { barangay, loading } = useOfficialProfile();
+
   return (
     <div className="off-layout">
       <OfficialSidebar />
@@ -32,7 +23,9 @@ function Reports() {
         <div className="off-content">
 
           <h1 className="off-page-title">Reports</h1>
-          <p className="off-page-sub" style={{ marginBottom: 20 }}></p>
+          <p className="off-page-sub">
+            {!loading && barangay ? `Showing reports for ${barangay}` : ''}
+          </p>
 
           {/* Stat cards */}
           <div className="off-stats-row off-stats-row-5">
@@ -48,7 +41,7 @@ function Reports() {
           <div className="off-map">
             <iframe
               title="Barangay Map"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=120.97,14.59,121.07,14.63&layer=mapnik"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=120.27,16.01,120.37,16.07&layer=mapnik"
               allowFullScreen
             />
           </div>
@@ -69,20 +62,11 @@ function Reports() {
                 </tr>
               </thead>
               <tbody>
-                {REPORTS.map(r => {
-                  const s = STATUS_LABELS[r.status];
-                  return (
-                    <tr key={r.id}>
-                      <td>{r.id}</td>
-                      <td>{r.type}</td>
-                      <td>{r.resident}</td>
-                      <td>{r.location}</td>
-                      <td><span className={`off-status-badge ${s.cls}`}>{s.label}</span></td>
-                      <td>{r.date}</td>
-                      <td><button className="off-view-btn">View Details</button></td>
-                    </tr>
-                  );
-                })}
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', color: '#9ca3af', padding: '24px', fontSize: 13 }}>
+                    No reports yet for {barangay || 'your barangay'}.
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
