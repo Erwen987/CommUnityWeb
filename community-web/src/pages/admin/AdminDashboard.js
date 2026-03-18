@@ -18,9 +18,9 @@ const monthlyData = [];
 //    Body:    "Hello! Your official account for {{barangay}} has been approved.
 //              You can now log in at [your site URL]."
 // 4. Copy Template ID and Public Key below
-const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
-const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';
+const EMAILJS_SERVICE_ID  = 'service_0pp2139';
+const EMAILJS_TEMPLATE_ID = 'template_2r9u3vk';
+const EMAILJS_PUBLIC_KEY  = 'MYsqjprp39Rb43jVR';
 
 const sendApprovalEmail = async (toEmail, barangay) => {
   try {
