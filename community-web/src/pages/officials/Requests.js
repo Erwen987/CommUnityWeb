@@ -24,11 +24,28 @@ function Requests() {
   const fetchRequests = useCallback(async () => {
     if (!barangay) return;
     setLoading(true);
+
+    // Step 1: get all auth_ids of residents in this barangay
+    const { data: users } = await supabase
+      .from('users')
+      .select('auth_id')
+      .eq('barangay', barangay);
+
+    const userIds = (users || []).map(u => u.auth_id);
+
+    if (userIds.length === 0) {
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
+
+    // Step 2: fetch requests for those users
     const { data } = await supabase
       .from('requests')
       .select('*')
-      .eq('barangay', barangay)
+      .in('user_id', userIds)
       .order('created_at', { ascending: false });
+
     setRequests(data || []);
     setLoading(false);
   }, [barangay]);
