@@ -18,24 +18,25 @@ const monthlyData = [];
 //    Body:    "Hello! Your official account for {{barangay}} has been approved.
 //              You can now log in at [your site URL]."
 // 4. Copy Template ID and Public Key below
-const EMAILJS_SERVICE_ID  = 'service_0pp2139';
-const EMAILJS_TEMPLATE_ID = 'template_2r9u3vk';
-const EMAILJS_PUBLIC_KEY  = 'MYsqjprp39Rb43jVR';
+const EMAILJS_SERVICE_ID           = 'service_0pp2139';
+const EMAILJS_APPROVAL_TEMPLATE_ID = 'template_2r9u3vk';
+const EMAILJS_REJECTION_TEMPLATE_ID = 'template_xpisoa5';
+const EMAILJS_PUBLIC_KEY           = 'MYsqjprp39Rb43jVR';
 
-const sendApprovalEmail = async (toEmail, barangay) => {
+const sendEmail = async (templateId, toEmail, barangay) => {
   try {
     await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         service_id:  EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
+        template_id: templateId,
         user_id:     EMAILJS_PUBLIC_KEY,
         template_params: { to_email: toEmail, barangay },
       }),
     });
   } catch (_) {
-    // Email failure is non-critical — approval still goes through
+    // Email failure is non-critical — action still goes through
   }
 };
 
@@ -73,8 +74,12 @@ function AdminDashboard() {
       .select('email, barangay')
       .single();
 
-    if (status === 'approved' && updated) {
-      await sendApprovalEmail(updated.email, updated.barangay);
+    if (updated) {
+      if (status === 'approved') {
+        await sendEmail(EMAILJS_APPROVAL_TEMPLATE_ID, updated.email, updated.barangay);
+      } else if (status === 'rejected') {
+        await sendEmail(EMAILJS_REJECTION_TEMPLATE_ID, updated.email, updated.barangay);
+      }
     }
 
     setLoadingId(null);
