@@ -94,26 +94,43 @@ function MapModal({ lat, lng, barangay, onClose }) {
         },
       });
 
-      // Draw route using Directions API
-      const directionsService  = new window.google.maps.DirectionsService();
-      const directionsRenderer = new window.google.maps.DirectionsRenderer({
-        suppressMarkers: true,
-        polylineOptions: { strokeColor: '#1E3A5F', strokeWeight: 4, strokeOpacity: 0.8 },
-      });
-      directionsRenderer.setMap(map);
+      // Draw route using OSRM (free, no billing needed)
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/` +
+        `${hallPos.lng},${hallPos.lat};${reportPos.lng},${reportPos.lat}` +
+        `?overview=full&geometries=geojson`;
 
-      directionsService.route({
-        origin:      hallPos,
-        destination: reportPos,
-        travelMode:  window.google.maps.TravelMode.DRIVING,
-      }, (result, status) => {
-        if (status === 'OK') {
-          directionsRenderer.setDirections(result);
-          const leg = result.routes[0].legs[0];
-          document.getElementById('route-info').textContent =
-            `${leg.distance.text} from ${barangay} Barangay Hall · ~${leg.duration.text}`;
-        }
-      });
+      fetch(osrmUrl)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 'Ok' && data.routes.length > 0) {
+            const route    = data.routes[0];
+            const coords   = route.geometry.coordinates.map(([lng, lat]) => ({ lat, lng }));
+            const distance = (route.distance / 1000).toFixed(1);
+            const minutes  = Math.round(route.duration / 60);
+
+            new window.google.maps.Polyline({
+              path:          coords,
+              geodesic:      true,
+              strokeColor:   '#1E3A5F',
+              strokeOpacity: 0.9,
+              strokeWeight:  5,
+              map,
+            });
+
+            // Fit map to show full route
+            const bounds = new window.google.maps.LatLngBounds();
+            coords.forEach(c => bounds.extend(c));
+            map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+
+            const routeInfo = document.getElementById('route-info');
+            if (routeInfo) routeInfo.textContent =
+              `${distance} km from ${barangay} Barangay Hall · ~${minutes} min`;
+          }
+        })
+        .catch(() => {
+          const routeInfo = document.getElementById('route-info');
+          if (routeInfo) routeInfo.textContent = 'Route unavailable';
+        });
     };
 
     if (window.google) {
