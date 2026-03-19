@@ -28,7 +28,7 @@ const sendEmail = async (templateId, toEmail, barangay) => {
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
 const fmt = d => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
-const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap' };
+const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
 const TD = { padding: '14px 16px', fontSize: 13, color: '#374151', borderBottom: '1px solid #f1f5f9' };
 
 function Avatar({ label, color }) {

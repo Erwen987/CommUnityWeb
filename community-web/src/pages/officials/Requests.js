@@ -13,8 +13,8 @@ const STATUS_CFG = {
   rejected:         { bg: '#fee2e2', color: '#991b1b', dot: '#ef4444', label: 'Rejected'          },
 };
 
-const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap' };
-const TD = { padding: '13px 16px', fontSize: 13, color: '#374151', borderBottom: '1px solid #f1f5f9' };
+const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
+const TD = { padding: '13px 16px', fontSize: 13, color: '#374151' };
 
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.reviewing;
@@ -161,8 +161,11 @@ function Requests() {
                         <div style={{ fontSize: 12, color: '#9ca3af' }}>{search || filter !== 'all' ? 'Try adjusting your search or filter.' : `No requests submitted for ${barangay || 'your barangay'} yet.`}</div>
                       </div>
                     </td></tr>
-                  ) : filtered.map(r => (
-                    <tr key={r.id} onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background=''}>
+                  ) : filtered.map((r, i) => (
+                    <tr key={r.id}
+                      style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#eff6ff'}
+                      onMouseLeave={e => e.currentTarget.style.background= i % 2 === 0 ? '#fff' : '#f8fafc'}>
                       <td style={{ ...TD, fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#1E3A5F' }}>{r.reference_number}</td>
                       <td style={{ ...TD, fontWeight: 600, color: '#111827' }}>{r.document_type}</td>
                       <td style={{ ...TD, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.purpose}</td>
