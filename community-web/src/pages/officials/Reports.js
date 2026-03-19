@@ -5,39 +5,136 @@ import OfficialTopbar from '../../components/OfficialTopbar';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import { supabase } from '../../supabaseClient';
 
-// ── Leaflet Map Modal ─────────────────────────────────────────────────────────
-function MapModal({ lat, lng, onClose }) {
+const GOOGLE_MAPS_KEY = 'AIzaSyDD1KBSgXW5ilJo5y_pYTGM0VD0CTehVSE';
+
+// Approximate barangay hall coordinates for Dagupan City
+const BARANGAY_HALLS = {
+  'Mangin':           { lat: 16.0453, lng: 120.3672 },
+  'Bolosan':          { lat: 16.0441, lng: 120.3378 },
+  'Calmay':           { lat: 16.0389, lng: 120.3501 },
+  'Pantal':           { lat: 16.0312, lng: 120.3398 },
+  'Lucao':            { lat: 16.0298, lng: 120.3512 },
+  'Bonuan Binloc':    { lat: 16.0201, lng: 120.3489 },
+  'Bonuan Boquig':    { lat: 16.0178, lng: 120.3412 },
+  'Bonuan Gueset':    { lat: 16.0223, lng: 120.3601 },
+  'Malued':           { lat: 16.0501, lng: 120.3298 },
+  'Mayombo':          { lat: 16.0478, lng: 120.3512 },
+  'Perez':            { lat: 16.0432, lng: 120.3445 },
+  'Bacayao Norte':    { lat: 16.0389, lng: 120.3223 },
+  'Bacayao Sur':      { lat: 16.0356, lng: 120.3201 },
+  'Caranglaan':       { lat: 16.0512, lng: 120.3601 },
+  'Carael':           { lat: 16.0534, lng: 120.3512 },
+  'Herrero':          { lat: 16.0445, lng: 120.3489 },
+  'Lasip Chico':      { lat: 16.0567, lng: 120.3423 },
+  'Lasip Grande':     { lat: 16.0589, lng: 120.3401 },
+  'Lomboy':           { lat: 16.0312, lng: 120.3601 },
+  'Mamalingling':     { lat: 16.0601, lng: 120.3512 },
+  'Pugaro Suit':      { lat: 16.0223, lng: 120.3312 },
+  'Quezon':           { lat: 16.0434, lng: 120.3398 },
+  'Salvador':         { lat: 16.0456, lng: 120.3512 },
+  'Salapingao':       { lat: 16.0378, lng: 120.3623 },
+  'Sta. Barbara':     { lat: 16.0512, lng: 120.3489 },
+  'Sta. Maria':       { lat: 16.0489, lng: 120.3445 },
+  'Tebeng':           { lat: 16.0534, lng: 120.3378 },
+  'Pogo Chico':       { lat: 16.0267, lng: 120.3534 },
+  'Pogo Grande':      { lat: 16.0245, lng: 120.3556 },
+  'Barangay I (Poblacion)':  { lat: 16.0432, lng: 120.3335 },
+  'Barangay II (Poblacion)': { lat: 16.0445, lng: 120.3312 },
+  'Barangay III (Poblacion)':{ lat: 16.0423, lng: 120.3356 },
+  'Barangay IV (Poblacion)': { lat: 16.0412, lng: 120.3378 },
+};
+
+// ── Google Maps Modal ─────────────────────────────────────────────────────────
+function MapModal({ lat, lng, barangay, onClose }) {
   const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    const loadMap = () => {
+      if (!mapRef.current || !window.google) return;
 
-    const L = window.L;
-    if (!L) return;
+      const reportPos   = { lat, lng };
+      const hallCoords  = BARANGAY_HALLS[barangay];
+      const hallPos     = hallCoords || { lat: 16.0432, lng: 120.3335 };
 
-    const map = L.map(mapRef.current).setView([lat, lng], 17);
-    mapInstanceRef.current = map;
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: reportPos,
+        zoom: 15,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        streetViewControl: false,
+      });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors © CARTO',
-      maxZoom: 19,
-    }).addTo(map);
+      // Report location marker (red)
+      new window.google.maps.Marker({
+        position: reportPos,
+        map,
+        title: 'Issue Location',
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#dc2626',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      });
 
-    const icon = L.divIcon({
-      html: `<div style="background:#dc2626;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-      className: '',
-    });
+      // Barangay hall marker (blue)
+      new window.google.maps.Marker({
+        position: hallPos,
+        map,
+        title: `${barangay} Barangay Hall`,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#1E3A5F',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      });
 
-    L.marker([lat, lng], { icon })
-      .addTo(map)
-      .bindPopup('<b>Issue Location</b>')
-      .openPopup();
+      // Draw route using Directions API
+      const directionsService  = new window.google.maps.DirectionsService();
+      const directionsRenderer = new window.google.maps.DirectionsRenderer({
+        suppressMarkers: true,
+        polylineOptions: { strokeColor: '#1E3A5F', strokeWeight: 4, strokeOpacity: 0.8 },
+      });
+      directionsRenderer.setMap(map);
 
-    return () => { map.remove(); mapInstanceRef.current = null; };
-  }, [lat, lng]);
+      directionsService.route({
+        origin:      hallPos,
+        destination: reportPos,
+        travelMode:  window.google.maps.TravelMode.DRIVING,
+      }, (result, status) => {
+        if (status === 'OK') {
+          directionsRenderer.setDirections(result);
+          const leg = result.routes[0].legs[0];
+          document.getElementById('route-info').textContent =
+            `${leg.distance.text} from ${barangay} Barangay Hall · ~${leg.duration.text}`;
+        }
+      });
+    };
+
+    if (window.google) {
+      loadMap();
+    } else {
+      const scriptId = 'google-maps-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id  = scriptId;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}`;
+        script.async = true;
+        script.onload = loadMap;
+        document.head.appendChild(script);
+      } else {
+        // Script loading — wait for it
+        const interval = setInterval(() => {
+          if (window.google) { clearInterval(interval); loadMap(); }
+        }, 200);
+      }
+    }
+  }, [lat, lng, barangay]);
 
   return (
     <div style={{
@@ -46,15 +143,25 @@ function MapModal({ lat, lng, onClose }) {
     }} onClick={onClose}>
       <div style={{
         background: '#fff', borderRadius: 16, overflow: 'hidden',
-        width: 560, maxWidth: '95vw', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+        width: 620, maxWidth: '95vw', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
       }} onClick={e => e.stopPropagation()}>
+
         <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, color: '#1E3A5F', fontSize: 15 }}>📍 Issue Location</span>
+          <div>
+            <span style={{ fontWeight: 700, color: '#1E3A5F', fontSize: 15 }}>📍 Issue Location</span>
+            <div style={{ display: 'flex', gap: 16, marginTop: 4, fontSize: 12 }}>
+              <span style={{ color: '#dc2626', fontWeight: 600 }}>● Report</span>
+              <span style={{ color: '#1E3A5F', fontWeight: 600 }}>● Barangay Hall</span>
+            </div>
+          </div>
           <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#6b7280' }}>✕</button>
         </div>
-        <div ref={mapRef} style={{ width: '100%', height: 360 }} />
-        <div style={{ padding: '10px 20px', background: '#f8fafc', fontSize: 12, color: '#6b7280' }}>
-          Coordinates: {lat.toFixed(5)}, {lng.toFixed(5)}
+
+        <div ref={mapRef} style={{ width: '100%', height: 400 }} />
+
+        <div style={{ padding: '10px 20px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span id="route-info" style={{ fontSize: 12, color: '#1E3A5F', fontWeight: 600 }}>Calculating route...</span>
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>{lat.toFixed(5)}, {lng.toFixed(5)}</span>
         </div>
       </div>
     </div>
@@ -76,22 +183,6 @@ function Reports() {
   const [filter, setFilter]         = useState('all');
   const [mapReport, setMapReport]   = useState(null); // report to show in map modal
 
-  // Inject Leaflet CSS + JS once
-  useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id  = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    if (!document.getElementById('leaflet-js')) {
-      const script = document.createElement('script');
-      script.id  = 'leaflet-js';
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      document.head.appendChild(script);
-    }
-  }, []);
 
   const fetchReports = useCallback(async () => {
     if (!barangay) return;
@@ -156,6 +247,7 @@ function Reports() {
       <MapModal
         lat={mapReport.location_lat}
         lng={mapReport.location_lng}
+        barangay={barangay}
         onClose={() => setMapReport(null)}
       />
     )}
