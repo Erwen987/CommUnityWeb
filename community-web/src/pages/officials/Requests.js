@@ -163,9 +163,9 @@ function Requests() {
                     </td></tr>
                   ) : filtered.map((r, i) => (
                     <tr key={r.id}
-                      style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}
-                      onMouseEnter={e => e.currentTarget.style.background='#eff6ff'}
-                      onMouseLeave={e => e.currentTarget.style.background= i % 2 === 0 ? '#fff' : '#f8fafc'}>
+                      style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                       <td style={{ ...TD, fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#1E3A5F' }}>{r.reference_number}</td>
                       <td style={{ ...TD, fontWeight: 600, color: '#111827' }}>{r.document_type}</td>
                       <td style={{ ...TD, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.purpose}</td>

@@ -127,7 +127,9 @@ function AdminAnalytics() {
                 <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16 }}>Most active community members</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {topResidents.map((r, i) => (
-                    <div key={r.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, background: '#f8fafc' }}>
+                    <div key={r.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff', cursor: 'default' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarColors[i], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
                           {r.name[0]}

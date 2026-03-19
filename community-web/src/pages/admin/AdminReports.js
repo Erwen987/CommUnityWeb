@@ -17,7 +17,7 @@ const STATUS_CFG = {
 };
 
 const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
-const TD = { padding: '13px 16px', fontSize: 13, color: '#374151', borderBottom: '1px solid #f1f5f9' };
+const TD = { padding: '13px 16px', fontSize: 13, color: '#374151' };
 
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.reviewed;
@@ -131,7 +131,10 @@ function AdminReports() {
                       </div>
                     </td></tr>
                   ) : filtered.map((r, i) => (
-                    <tr key={r.id} onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background=''}>
+                    <tr key={r.id}
+                      style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                       <td style={{ ...TD, fontFamily: 'monospace', fontSize: 11, color: '#6b7280' }}>{r.id}</td>
                       <td style={{ ...TD, fontWeight: 600, color: '#111827' }}>{r.type}</td>
                       <td style={TD}>

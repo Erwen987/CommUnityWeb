@@ -259,9 +259,9 @@ function Reports() {
                       </td></tr>
                     ) : filtered.map((r, i) => (
                       <tr key={r.id}
-                        style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}
-                        onMouseEnter={e => e.currentTarget.style.background='#eff6ff'}
-                        onMouseLeave={e => e.currentTarget.style.background= i % 2 === 0 ? '#fff' : '#f8fafc'}>
+                        style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                         <td style={{ ...TD, fontFamily: 'monospace', fontSize: 11, color: '#9ca3af' }}>{r.id?.slice(0,8)}…</td>
                         <td style={{ ...TD, fontWeight: 600, color: '#111827' }}>{r.problem}</td>
                         <td style={{ ...TD, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.description || '—'}</td>

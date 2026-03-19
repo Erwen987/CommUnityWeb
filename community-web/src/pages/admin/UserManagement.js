@@ -29,7 +29,7 @@ const sendEmail = async (templateId, toEmail, barangay) => {
 const fmt = d => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
 const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
-const TD = { padding: '14px 16px', fontSize: 13, color: '#374151', borderBottom: '1px solid #f1f5f9' };
+const TD = { padding: '14px 16px', fontSize: 13, color: '#374151' };
 
 function Avatar({ label, color }) {
   return (
@@ -185,8 +185,11 @@ function UserManagement() {
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                           <thead><tr><th style={TH}>Official</th><th style={TH}>Barangay</th><th style={TH}>Email</th><th style={TH}>Submitted</th><th style={TH}>Actions</th></tr></thead>
                           <tbody>
-                            {filterOfficial(pending).map(row => (
-                              <tr key={row.id} onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background=''}>
+                            {filterOfficial(pending).map((row, i) => (
+                              <tr key={row.id}
+                                style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                                 <td style={TD}><div style={{ display:'flex', alignItems:'center', gap:10 }}><Avatar label={row.barangay_name?.[0]?.toUpperCase()||'?'} color="#1E3A5F" /><div><div style={{ fontWeight:600, color:'#111827', fontSize:13 }}>{row.barangay_name}</div><div style={{ fontSize:11, color:'#9ca3af' }}>Official account</div></div></div></td>
                                 <td style={TD}><span style={{ background:'#f1f5f9', color:'#374151', padding:'3px 10px', borderRadius:6, fontSize:12, fontWeight:600 }}>{row.barangay}</span></td>
                                 <td style={{ ...TD, color:'#6b7280' }}>{row.email}</td>
@@ -223,8 +226,11 @@ function UserManagement() {
                         <table style={{ width:'100%', borderCollapse:'collapse' }}>
                           <thead><tr><th style={TH}>Official</th><th style={TH}>Barangay</th><th style={TH}>Email</th><th style={TH}>Status</th><th style={TH}>Approved Since</th><th style={TH}>Actions</th></tr></thead>
                           <tbody>
-                            {filterOfficial(approved).map(row => (
-                              <tr key={row.id} onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background=''}>
+                            {filterOfficial(approved).map((row, i) => (
+                              <tr key={row.id}
+                                style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                                 <td style={TD}><div style={{ display:'flex', alignItems:'center', gap:10 }}><Avatar label={row.barangay_name?.[0]?.toUpperCase()||'?'} color="#16a34a" /><div><div style={{ fontWeight:600, color:'#111827', fontSize:13 }}>{row.barangay_name}</div><div style={{ fontSize:11, color:'#9ca3af' }}>Official account</div></div></div></td>
                                 <td style={TD}><span style={{ background:'#f1f5f9', color:'#374151', padding:'3px 10px', borderRadius:6, fontSize:12, fontWeight:600 }}>{row.barangay}</span></td>
                                 <td style={{ ...TD, color:'#6b7280' }}>{row.email}</td>
@@ -258,7 +264,10 @@ function UserManagement() {
                           <thead><tr><th style={TH}>Resident</th><th style={TH}>Email</th><th style={TH}>Barangay</th><th style={TH}>Joined</th></tr></thead>
                           <tbody>
                             {filterResident(residents).map((row, i) => (
-                              <tr key={row.id} onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background=''}>
+                              <tr key={row.id}
+                                style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                                 <td style={TD}><div style={{ display:'flex', alignItems:'center', gap:10 }}><Avatar label={row.first_name?.[0]?.toUpperCase()||'?'} color={avatarColors[i%5]} /><div><div style={{ fontWeight:600, color:'#111827', fontSize:13 }}>{row.first_name} {row.last_name}</div><div style={{ fontSize:11, color:'#9ca3af' }}>Resident</div></div></div></td>
                                 <td style={{ ...TD, color:'#6b7280' }}>{row.email}</td>
                                 <td style={TD}>{row.barangay ? <span style={{ background:'#f1f5f9', color:'#374151', padding:'3px 10px', borderRadius:6, fontSize:12, fontWeight:600 }}>{row.barangay}</span> : <span style={{ color:'#d1d5db' }}>—</span>}</td>

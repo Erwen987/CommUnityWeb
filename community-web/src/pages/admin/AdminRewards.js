@@ -68,7 +68,9 @@ function AdminRewards() {
               </div>
               <div style={{ padding: '12px 24px 20px' }}>
                 {CONTRIBUTORS.map((c, i) => (
-                  <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < CONTRIBUTORS.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                  <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff', cursor: 'default' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ width: 24, height: 24, borderRadius: '50%', background: rankColors[i], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
                         {c.rank}
