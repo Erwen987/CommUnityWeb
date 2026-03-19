@@ -114,21 +114,94 @@ function UserManagement() {
           <p className="off-page-sub">Manage official accounts and view registered residents</p>
 
           {/* Stat cards */}
-          <div className="off-stats-row off-stats-row-3">
-            <div className="off-stat-card">
-              <h4>Pending Approvals</h4>
-              <div className="off-stat-value" style={{ color: pending.length > 0 ? '#d97706' : undefined }}>
-                {pending.length}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+
+            {/* Pending */}
+            <div style={{
+              background: '#fff', borderRadius: 14, padding: '20px 24px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex',
+              alignItems: 'center', gap: 16, borderLeft: '4px solid #f59e0b',
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: '#fef3c7', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: '#92400e', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                  Pending Approvals
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: pending.length > 0 ? '#d97706' : '#1f2937', lineHeight: 1 }}>
+                  {pending.length}
+                </div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                  {pending.length === 0 ? 'No pending requests' : `${pending.length} awaiting review`}
+                </div>
               </div>
             </div>
-            <div className="off-stat-card">
-              <h4>Approved Officials</h4>
-              <div className="off-stat-value">{approved.length}</div>
+
+            {/* Approved */}
+            <div style={{
+              background: '#fff', borderRadius: 14, padding: '20px 24px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex',
+              alignItems: 'center', gap: 16, borderLeft: '4px solid #16a34a',
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: '#dcfce7', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  <polyline points="16 11 18 13 22 9"/>
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: '#166534', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                  Approved Officials
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>
+                  {approved.length}
+                </div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                  {approved.length === 0 ? 'No approved officials' : `${approved.length} active official${approved.length !== 1 ? 's' : ''}`}
+                </div>
+              </div>
             </div>
-            <div className="off-stat-card">
-              <h4>Registered Residents</h4>
-              <div className="off-stat-value">{residents.length}</div>
+
+            {/* Residents */}
+            <div style={{
+              background: '#fff', borderRadius: 14, padding: '20px 24px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex',
+              alignItems: 'center', gap: 16, borderLeft: '4px solid #1E3A5F',
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: '#e0e7ef', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E3A5F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: '#1E3A5F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                  Registered Residents
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>
+                  {residents.length}
+                </div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                  {residents.length === 0 ? 'No residents yet' : `${residents.length} registered user${residents.length !== 1 ? 's' : ''}`}
+                </div>
+              </div>
             </div>
+
           </div>
 
           {/* Tabs */}
