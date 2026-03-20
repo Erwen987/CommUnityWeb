@@ -4,17 +4,16 @@ import AdminSidebar from '../../components/AdminSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
 
 const REQUESTS = [
-  { id: 'REQ-001-2026', doc: 'Barangay Clearance',       resident: 'Juan Dela Cruz', barangay: 'Mangin',  payment: 'GCash',   status: 'reviewing',  date: '1/5/2026'  },
-  { id: 'REQ-002-2026', doc: 'Certificate of Residency', resident: 'Maria Santos',   barangay: 'Bolosan', payment: 'On-Site', status: 'processing', date: '1/8/2026'  },
+  { id: 'REQ-001-2026', doc: 'Barangay Clearance',       resident: 'Juan Dela Cruz', barangay: 'Mangin',  payment: 'GCash',   status: 'pending',          date: '1/5/2026'  },
+  { id: 'REQ-002-2026', doc: 'Certificate of Residency', resident: 'Maria Santos',   barangay: 'Bolosan', payment: 'On-Site', status: 'pending',          date: '1/8/2026'  },
   { id: 'REQ-003-2026', doc: 'Indigency Certificate',    resident: 'Pedro Reyes',    barangay: 'Calmay',  payment: 'GCash',   status: 'ready_for_pickup', date: '1/10/2026' },
-  { id: 'REQ-004-2026', doc: 'Barangay ID',              resident: 'Ana Gonzales',   barangay: 'Mangin',  payment: 'GCash',   status: 'released',   date: '1/12/2026' },
+  { id: 'REQ-004-2026', doc: 'Barangay ID',              resident: 'Ana Gonzales',   barangay: 'Mangin',  payment: 'GCash',   status: 'claimed',          date: '1/12/2026' },
 ];
 
 const STATUS_CFG = {
-  reviewing:        { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Reviewing'       },
-  processing:       { bg: '#dbeafe', color: '#1e40af', dot: '#3b82f6', label: 'Processing'       },
+  pending:          { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Pending'          },
   ready_for_pickup: { bg: '#ede9fe', color: '#6d28d9', dot: '#8b5cf6', label: 'Ready for Pickup' },
-  released:         { bg: '#dcfce7', color: '#166534', dot: '#22c55e', label: 'Released'         },
+  claimed:          { bg: '#dcfce7', color: '#166534', dot: '#22c55e', label: 'Claimed'          },
   rejected:         { bg: '#fee2e2', color: '#991b1b', dot: '#ef4444', label: 'Rejected'         },
 };
 
@@ -22,7 +21,7 @@ const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b728
 const TD = { padding: '13px 16px', fontSize: 13, color: '#374151' };
 
 function StatusBadge({ status }) {
-  const s = STATUS_CFG[status] || STATUS_CFG.reviewing;
+  const s = STATUS_CFG[status] || STATUS_CFG.pending;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: s.bg, color: s.color, padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot }} />{s.label}
@@ -47,14 +46,14 @@ function AdminRequests() {
   const STATS = [
     { label: 'Total Requests',   value: REQUESTS.length,          accent: '#7c3aed', iconBg: '#ede9fe',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg> },
-    { label: 'Reviewing',        value: count('reviewing'),        accent: '#f59e0b', iconBg: '#fef3c7',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> },
-    { label: 'Processing',       value: count('processing'),       accent: '#3b82f6', iconBg: '#dbeafe',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg> },
+    { label: 'Pending',          value: count('pending'),          accent: '#f59e0b', iconBg: '#fef3c7',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
     { label: 'Ready for Pickup', value: count('ready_for_pickup'), accent: '#8b5cf6', iconBg: '#ede9fe',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-    { label: 'Released',         value: count('released'),         accent: '#16a34a', iconBg: '#dcfce7',
+    { label: 'Claimed',          value: count('claimed'),          accent: '#16a34a', iconBg: '#dcfce7',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+    { label: 'Rejected',         value: count('rejected'),         accent: '#ef4444', iconBg: '#fee2e2',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> },
   ];
 
   return (
@@ -99,10 +98,9 @@ function AdminRequests() {
                 <select value={filter} onChange={e => setFilter(e.target.value)}
                   style={{ padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', cursor: 'pointer' }}>
                   <option value="all">All Status</option>
-                  <option value="reviewing">Reviewing</option>
-                  <option value="processing">Processing</option>
+                  <option value="pending">Pending</option>
                   <option value="ready_for_pickup">Ready for Pickup</option>
-                  <option value="released">Released</option>
+                  <option value="claimed">Claimed</option>
                   <option value="rejected">Rejected</option>
                 </select>
               </div>
