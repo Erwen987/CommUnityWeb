@@ -23,6 +23,17 @@ function StatusBadge({ status }) {
 }
 
 const fmtDate = d => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+const avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
+
+function ResidentAvatar({ url, name, size = 30, index = 0 }) {
+  if (url) return <img src={url} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
 
 // Detail modal
 function ReportModal({ report, onClose }) {
@@ -79,28 +90,20 @@ function AdminReports() {
   const [loading,     setLoading]     = useState(false);
   const [search,      setSearch]      = useState('');
   const [filter,      setFilter]      = useState('all');
-  const [selected,    setSelected]    = useState(null);
-  const [updatingId,  setUpdatingId]  = useState(null);
-
-  const updateStatus = async (id, status) => {
-    setUpdatingId(id);
-    await supabase.from('reports').update({ status }).eq('id', id);
-    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    setUpdatingId(null);
-  };
+  const [selected, setSelected] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
 
     const [{ data: rpts = [] }, { data: users = [] }] = await Promise.all([
       supabase.from('reports').select('*').order('created_at', { ascending: false }),
-      supabase.from('users').select('auth_id, first_name, last_name'),
+      supabase.from('users').select('auth_id, first_name, last_name, avatar_url'),
     ]);
 
     const userMap = {};
-    users.forEach(u => { userMap[u.auth_id] = `${u.first_name} ${u.last_name}`.trim(); });
+    users.forEach(u => { userMap[u.auth_id] = { name: `${u.first_name} ${u.last_name}`.trim(), avatar_url: u.avatar_url }; });
 
-    setReports(rpts.map(r => ({ ...r, residentName: userMap[r.user_id] || 'Unknown' })));
+    setReports(rpts.map(r => ({ ...r, residentName: userMap[r.user_id]?.name || 'Unknown', residentAvatar: userMap[r.user_id]?.avatar_url || null })));
     setLoading(false);
   }, []);
 
@@ -181,26 +184,25 @@ function AdminReports() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={{ ...TH, width: '4%' }}>#</th>
-                    <th style={{ ...TH, width: '21%' }}>Problem</th>
-                    <th style={{ ...TH, width: '18%' }}>Resident</th>
-                    <th style={{ ...TH, width: '13%' }}>Barangay</th>
-                    <th style={{ ...TH, width: '13%' }}>Status</th>
-                    <th style={{ ...TH, width: '11%' }}>Date</th>
-                    <th style={{ ...TH, width: '13%' }}>Update</th>
-                    <th style={{ ...TH, width: '7%' }}>Action</th>
+                    <th style={{ ...TH, width: '5%' }}>#</th>
+                    <th style={{ ...TH, width: '26%' }}>Problem</th>
+                    <th style={{ ...TH, width: '22%' }}>Resident</th>
+                    <th style={{ ...TH, width: '15%' }}>Barangay</th>
+                    <th style={{ ...TH, width: '14%' }}>Status</th>
+                    <th style={{ ...TH, width: '12%' }}>Date</th>
+                    <th style={{ ...TH, width: '6%' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={8} style={{ padding: '48px 24px', textAlign: 'center' }}>
+                    <tr><td colSpan={7} style={{ padding: '48px 24px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 32, height: 32, border: '3px solid #e0e7ef', borderTopColor: '#1E3A5F', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                         <span style={{ fontSize: 13, color: '#9ca3af' }}>Loading reports...</span>
                       </div>
                     </td></tr>
                   ) : filtered.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: '48px 24px' }}>
+                    <tr><td colSpan={7} style={{ padding: '48px 24px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 52, height: 52, borderRadius: 14, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -229,14 +231,6 @@ function AdminReports() {
                         <td style={{ ...TD, overflow: 'hidden' }}><span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.barangay || '—'}</span></td>
                         <td style={TD}><StatusBadge status={r.status} /></td>
                         <td style={{ ...TD, color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(r.created_at)}</td>
-                        <td style={TD}>
-                          <select value={r.status} disabled={updatingId === r.id} onChange={e => updateStatus(r.id, e.target.value)}
-                            style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 8px', fontSize: 11, cursor: updatingId === r.id ? 'not-allowed' : 'pointer', background: '#fff', color: '#374151', fontWeight: 600, outline: 'none', opacity: updatingId === r.id ? 0.5 : 1 }}>
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                          </select>
-                        </td>
                         <td style={TD}>
                           <button onClick={() => setSelected(r)}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eff6ff', color: '#1E3A5F', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
