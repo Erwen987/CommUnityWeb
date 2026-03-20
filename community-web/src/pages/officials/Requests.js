@@ -7,8 +7,15 @@ import { supabase } from '../../supabaseClient';
 
 const avatarColors = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444'];
 
+function resolveAvatar(url) {
+  if (!url) return null;
+  if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+  return url;
+}
+
 function ResidentAvatar({ url, name, size = 30, index = 0 }) {
-  if (url) return <img src={url} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const src = resolveAvatar(url);
+  if (src) return <img src={src} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
   const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
