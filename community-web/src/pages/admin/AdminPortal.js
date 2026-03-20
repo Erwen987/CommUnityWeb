@@ -5,8 +5,6 @@ import './AdminPortal.css';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
-const ADMIN_EMAIL = 'pandahuntergamer09@gmail.com';
-
 function AdminPortal() {
   const navigate = useNavigate();
   const [form, setForm]         = useState({ email: '', password: '' });
@@ -21,13 +19,20 @@ function AdminPortal() {
     setError('');
 
     const email = form.email.trim().toLowerCase();
+    setLoading(true);
 
-    if (email !== ADMIN_EMAIL) {
+    // Check admins table
+    const { data: adminRow } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (!adminRow) {
+      setLoading(false);
       setError('Access denied. Admin accounts only.');
       return;
     }
-
-    setLoading(true);
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: form.email.trim(),

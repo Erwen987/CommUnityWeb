@@ -4,8 +4,6 @@ import { supabase } from '../supabaseClient';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
-const ADMIN_EMAIL = 'pandahuntergamer09@gmail.com';
-
 function Login() {
   const [form, setForm]         = useState({ email: '', password: '' });
   const [error, setError]       = useState('');
@@ -25,8 +23,14 @@ function Login() {
     const email = form.email.trim().toLowerCase();
     setLoading(true);
 
-    // Admin shortcut — no DB lookup needed
-    if (email === ADMIN_EMAIL) {
+    // Check if email belongs to an admin
+    const { data: adminRow } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (adminRow) {
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: form.email.trim(),
         password: form.password,
