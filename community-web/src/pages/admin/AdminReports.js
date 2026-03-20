@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import OfficialTopbar from '../../components/OfficialTopbar';
+import AdminTopbar from '../../components/AdminTopbar';
 
 const REPORTS = [
   { id: 'RPT-001-2026', type: 'Broken Streetlight', resident: 'Juan Dela Cruz', barangay: 'Mangin',  location: 'Purok 3', status: 'reviewed',    date: '1/5/2026'  },
@@ -59,7 +59,7 @@ function AdminReports() {
     <div className="off-layout">
       <AdminSidebar />
       <div className="off-main">
-        <OfficialTopbar />
+        <AdminTopbar />
         <div className="off-content">
 
           <div style={{ marginBottom: 24 }}>

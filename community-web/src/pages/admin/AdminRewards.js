@@ -1,7 +1,7 @@
 import React from 'react';
 import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import OfficialTopbar from '../../components/OfficialTopbar';
+import AdminTopbar from '../../components/AdminTopbar';
 
 const TIERS = [
   { label: 'Gold',   points: 1500, bg: 'linear-gradient(135deg, #fbbf24, #f59e0b)', shadow: 'rgba(245,158,11,0.3)', desc: 'Exceptional contributors',
@@ -32,7 +32,7 @@ function AdminRewards() {
     <div className="off-layout">
       <AdminSidebar />
       <div className="off-main">
-        <OfficialTopbar />
+        <AdminTopbar />
         <div className="off-content">
 
           <div style={{ marginBottom: 24 }}>

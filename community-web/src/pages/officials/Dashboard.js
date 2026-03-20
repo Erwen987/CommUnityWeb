@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import '../../officials.css';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
@@ -6,7 +6,15 @@ import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../../supabaseClient';
 
-const monthlyData = [];
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function getLastSixMonths() {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    return { year: d.getFullYear(), month: d.getMonth(), label: MONTH_LABELS[d.getMonth()] };
+  });
+}
 
 const EXPIRY_OPTIONS = [
   { label: '3 days',  days: 3  },
@@ -29,13 +37,67 @@ function Dashboard() {
   const fileRef = useRef();
 
   // Active announcements list
-  const [announcements, setAnnouncements] = useState([]);
-  const [loadingList,   setLoadingList]   = useState(false);
-  const [deletingId,    setDeletingId]    = useState(null);
+  const [announcements,   setAnnouncements]   = useState([]);
+  const [loadingList,     setLoadingList]     = useState(false);
+  const [deletingId,      setDeletingId]      = useState(null);
+  const [listExpanded,    setListExpanded]    = useState(true);
+
+  // Dashboard stats
+  const [statsLoading,    setStatsLoading]    = useState(false);
+  const [totalReports,    setTotalReports]    = useState(null);
+  const [totalRequests,   setTotalRequests]   = useState(null);
+  const [monthlyData,     setMonthlyData]     = useState([]);
+  const [topContributors, setTopContributors] = useState([]);
+
+  const loadStats = useCallback(async () => {
+    if (!barangay) return;
+    setStatsLoading(true);
+
+    const months      = getLastSixMonths();
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [
+      { data: reports  = [] },
+      { data: requests = [] },
+      { data: users    = [] },
+    ] = await Promise.all([
+      supabase.from('reports').select('id, created_at, user_id').eq('barangay', barangay),
+      supabase.from('requests').select('id, created_at').eq('barangay', barangay),
+      supabase.from('users').select('auth_id, first_name, last_name').eq('barangay', barangay),
+    ]);
+
+    setTotalReports(reports.length);
+    setTotalRequests(requests.length);
+
+    // Monthly chart — last 6 months
+    const recentReports  = reports.filter(r  => new Date(r.created_at)  >= sixMonthsAgo);
+    const recentRequests = requests.filter(r => new Date(r.created_at) >= sixMonthsAgo);
+    setMonthlyData(months.map(m => ({
+      month:    m.label,
+      reports:  recentReports.filter(r  => { const d = new Date(r.created_at);  return d.getFullYear() === m.year && d.getMonth() === m.month; }).length,
+      requests: recentRequests.filter(r => { const d = new Date(r.created_at); return d.getFullYear() === m.year && d.getMonth() === m.month; }).length,
+    })));
+
+    // Top contributors — most reports submitted
+    const countMap = {};
+    reports.forEach(r => { countMap[r.user_id] = (countMap[r.user_id] || 0) + 1; });
+    const userMap  = {};
+    users.forEach(u => { userMap[u.auth_id] = `${u.first_name} ${u.last_name}`.trim(); });
+    const ranked = Object.entries(countMap)
+      .map(([uid, count]) => ({ name: userMap[uid] || 'Unknown', count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    setTopContributors(ranked);
+
+    setStatsLoading(false);
+  }, [barangay]);
 
   useEffect(() => {
-    if (barangay) fetchAnnouncements();
-  }, [barangay]);
+    if (barangay) { fetchAnnouncements(); loadStats(); }
+  }, [barangay, loadStats]);
 
   const fetchAnnouncements = async () => {
     if (!barangay) return;
@@ -126,10 +188,6 @@ function Dashboard() {
   };
 
   const fmtDate = d => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
-  const daysLeft = expiresAt => {
-    const diff = Math.ceil((new Date(expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
-    return diff > 0 ? `${diff}d left` : 'Expired';
-  };
 
   return (
     <div className="off-layout">
@@ -236,45 +294,87 @@ function Dashboard() {
                 </div>
 
                 {/* Active announcements list */}
-                {(loadingList || announcements.length > 0) && (
-                  <div style={{ borderTop: '1px solid #f1f5f9' }}>
-                    <div style={{ padding: '12px 24px', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#f8fafc' }}>
-                      Active Announcements ({announcements.length}/10)
+                <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                  {/* Section header */}
+                  <button onClick={() => setListExpanded(v => !v)}
+                    style={{ width: '100%', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Active Announcements</span>
                     </div>
-                    {loadingList ? (
-                      <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>Loading...</div>
-                    ) : (
-                      announcements.map((a, i) => (
-                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', borderBottom: i < announcements.length - 1 ? '1px solid #f1f5f9' : 'none', backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
-                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#dbeafe'}
-                          onMouseLeave={e => e.currentTarget.style.backgroundColor = i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: announcements.length >= 8 ? '#dc2626' : '#1E3A5F', background: announcements.length >= 8 ? '#fef2f2' : '#e0e7ef', padding: '2px 10px', borderRadius: 999 }}>
+                        {announcements.length} / 10
+                      </span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ transform: listExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </div>
+                  </button>
 
-                          {/* Thumbnail */}
-                          {a.image_url
-                            ? <img src={a.image_url} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-                            : <div style={{ width: 48, height: 48, borderRadius: 8, background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                              </div>
-                          }
+                  {listExpanded && loadingList ? (
+                    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, border: '3px solid #e0e7ef', borderTopColor: '#1E3A5F', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                      <span style={{ fontSize: 12, color: '#9ca3af' }}>Loading announcements...</span>
+                    </div>
+                  ) : listExpanded && announcements.length === 0 ? (
+                    <div style={{ padding: '36px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 14, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#9ca3af' }}>No active announcements</span>
+                      <span style={{ fontSize: 12, color: '#d1d5db' }}>Post your first announcement above</span>
+                    </div>
+                  ) : listExpanded ? (
+                    <div style={{ padding: '8px 16px 16px' }}>
+                      {announcements.map((a) => {
+                        const days = Math.ceil((new Date(a.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+                        const expiryColor = days <= 1 ? '#dc2626' : days <= 3 ? '#f59e0b' : '#16a34a';
+                        const expiryBg   = days <= 1 ? '#fef2f2' : days <= 3 ? '#fffbeb' : '#f0fdf4';
+                        const expiryLabel = days <= 0 ? 'Expired' : days === 1 ? 'Last day' : `${days}d left`;
+                        return (
+                          <div key={a.id}
+                            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12, marginBottom: 6, background: '#fff', border: '1px solid #f1f5f9', transition: 'box-shadow 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)'}
+                            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
 
-                          {/* Info */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
-                            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-                              {fmtDate(a.created_at)} · <span style={{ color: '#16a34a', fontWeight: 600 }}>{daysLeft(a.expires_at)}</span>
+                            {/* Thumbnail */}
+                            {a.image_url
+                              ? <img src={a.image_url} alt="" style={{ width: 46, height: 46, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '1px solid #f1f5f9' }} />
+                              : <div style={{ width: 46, height: 46, borderRadius: 10, background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                </div>
+                            }
+
+                            {/* Info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
+                              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>Posted {fmtDate(a.created_at)}</div>
                             </div>
-                          </div>
 
-                          {/* Delete */}
-                          <button onClick={() => handleDelete(a.id)} disabled={deletingId === a.id}
-                            style={{ background: 'none', border: '1px solid #fca5a5', color: '#dc2626', borderRadius: 7, padding: '5px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0, opacity: deletingId === a.id ? 0.5 : 1 }}>
-                            {deletingId === a.id ? '...' : 'Delete'}
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                            {/* Expiry pill */}
+                            <span style={{ fontSize: 11, fontWeight: 700, color: expiryColor, background: expiryBg, padding: '3px 10px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                              {expiryLabel}
+                            </span>
+
+                            {/* Delete icon button */}
+                            <button onClick={() => handleDelete(a.id)} disabled={deletingId === a.id}
+                              title="Delete announcement"
+                              style={{ background: 'none', border: 'none', cursor: deletingId === a.id ? 'not-allowed' : 'pointer', color: '#d1d5db', padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: deletingId === a.id ? 0.4 : 1, transition: 'color 0.15s, background 0.15s' }}
+                              onMouseEnter={e => { if (deletingId !== a.id) { e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.background = '#fef2f2'; }}}
+                              onMouseLeave={e => { e.currentTarget.style.color = '#d1d5db'; e.currentTarget.style.background = 'none'; }}>
+                              {deletingId === a.id
+                                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                              }
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
 
               </div>
 
@@ -282,28 +382,32 @@ function Dashboard() {
               <div style={{ background: '#fff', borderRadius: 16, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>Monthly Reports & Requests</div>
-                    <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Activity over time</div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>Monthly Reports &amp; Requests</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Activity over last 6 months</div>
                   </div>
                   <div style={{ display: 'flex', gap: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#93c5fd', display: 'inline-block' }} />Requests</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#1d4ed8', display: 'inline-block' }} />Reports</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#93c5fd', display: 'inline-block' }} />Reports</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#7c3aed', display: 'inline-block' }} />Requests</div>
                   </div>
                 </div>
-                {monthlyData.length === 0 ? (
+                {statsLoading ? (
+                  <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 28, height: 28, border: '3px solid #e0e7ef', borderTopColor: '#1E3A5F', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : !monthlyData.some(m => m.reports > 0 || m.requests > 0) ? (
                   <div style={{ height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#f8fafc', borderRadius: 12 }}>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
-                    <div style={{ fontSize: 12, color: '#9ca3af' }}>No data yet</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>No activity yet</div>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={monthlyData}>
+                    <BarChart data={monthlyData} barGap={4}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                      <Bar dataKey="requests" fill="#93c5fd" radius={[4,4,0,0]} />
-                      <Bar dataKey="reports"  fill="#1d4ed8" radius={[4,4,0,0]} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }} />
+                      <Bar dataKey="reports"  name="Reports"  fill="#93c5fd" radius={[4,4,0,0]} />
+                      <Bar dataKey="requests" name="Requests" fill="#7c3aed" radius={[4,4,0,0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -316,26 +420,56 @@ function Dashboard() {
 
               <div className="off-dash-stats-row">
                 {[
-                  { label: 'Total Reports',  value: 0, accent: '#1d4ed8', iconBg: '#dbeafe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-                  { label: 'Total Requests', value: 0, accent: '#7c3aed', iconBg: '#ede9fe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg> },
+                  { label: 'Total Reports',  value: totalReports,  accent: '#1d4ed8', iconBg: '#dbeafe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
+                  { label: 'Total Requests', value: totalRequests, accent: '#7c3aed', iconBg: '#ede9fe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg> },
                 ].map(c => (
                   <div key={c.label} style={{ background: '#fff', borderRadius: 14, padding: '16px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', flex: 1, borderLeft: `4px solid ${c.accent}`, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 38, height: 38, borderRadius: 10, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
                     <div>
                       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280', marginBottom: 2 }}>{c.label}</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{c.value}</div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>
+                        {statsLoading || c.value === null ? <span style={{ fontSize: 14, color: '#d1d5db' }}>—</span> : c.value}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
 
               <div style={{ background: '#fff', borderRadius: 16, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937', marginBottom: 4 }}>Top Community Contributors</div>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16 }}>Most active residents in your barangay</div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>No contributor records yet</span>
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937', marginBottom: 2 }}>Top Community Contributors</div>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>Most active residents in your barangay</div>
+
+                {statsLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+                    <div style={{ width: 24, height: 24, border: '3px solid #e0e7ef', borderTopColor: '#1E3A5F', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : topContributors.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span style={{ fontSize: 12, color: '#9ca3af' }}>No contributor records yet</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {topContributors.map((r, i) => {
+                      const medals  = ['🥇','🥈','🥉'];
+                      const initials = r.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < topContributors.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#1E3A5F', flexShrink: 0 }}>
+                              {initials}
+                            </div>
+                            <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{r.name}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {i < 3 && <span style={{ fontSize: 14 }}>{medals[i]}</span>}
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#1E3A5F', background: '#e0e7ef', padding: '2px 9px', borderRadius: 999 }}>{r.count}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
             </div>

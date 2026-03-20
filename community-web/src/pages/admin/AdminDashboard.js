@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import OfficialTopbar from '../../components/OfficialTopbar';
+import AdminTopbar from '../../components/AdminTopbar';
 import { supabase } from '../../supabaseClient';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -41,7 +41,7 @@ function AdminDashboard() {
     <div className="off-layout">
       <AdminSidebar />
       <div className="off-main">
-        <OfficialTopbar />
+        <AdminTopbar />
         <div className="off-content">
 
           <div style={{ marginBottom: 24 }}>

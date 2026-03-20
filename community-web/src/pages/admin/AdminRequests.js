@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import OfficialTopbar from '../../components/OfficialTopbar';
+import AdminTopbar from '../../components/AdminTopbar';
 
 const REQUESTS = [
   { id: 'REQ-001-2026', doc: 'Barangay Clearance',       resident: 'Juan Dela Cruz', barangay: 'Mangin',  payment: 'GCash',   status: 'pending',          date: '1/5/2026'  },
@@ -60,7 +60,7 @@ function AdminRequests() {
     <div className="off-layout">
       <AdminSidebar />
       <div className="off-main">
-        <OfficialTopbar />
+        <AdminTopbar />
         <div className="off-content">
 
           <div style={{ marginBottom: 24 }}>

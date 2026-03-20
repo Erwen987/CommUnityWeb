@@ -301,6 +301,9 @@
 }
 .off-publish-btn:hover { background: #1d4ed8; }
 
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Chart empty state */
 .off-chart-empty {
   display: flex;

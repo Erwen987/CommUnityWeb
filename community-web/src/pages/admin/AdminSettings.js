@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import OfficialTopbar from '../../components/OfficialTopbar';
+import AdminTopbar from '../../components/AdminTopbar';
 
 function Toggle({ value, onChange }) {
   return (
@@ -52,7 +52,7 @@ function AdminSettings() {
     <div className="off-layout">
       <AdminSidebar />
       <div className="off-main">
-        <OfficialTopbar />
+        <AdminTopbar />
         <div className="off-content">
 
           <div style={{ marginBottom: 24 }}>
