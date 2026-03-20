@@ -44,9 +44,12 @@ function ReportModal({ report, onClose }) {
       <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#111827' }}>Report Details</div>
-            <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, fontFamily: 'monospace' }}>{report.id.slice(0, 8).toUpperCase()}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <ResidentAvatar url={report.residentAvatar} name={report.residentName} size={44} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: '#111827' }}>{report.residentName}</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, fontFamily: 'monospace' }}>{report.id.slice(0, 8).toUpperCase()}</div>
+            </div>
           </div>
           <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -212,7 +215,6 @@ function AdminReports() {
                       </div>
                     </td></tr>
                   ) : filtered.map((r, i) => {
-                    const initials = r.residentName.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
                     return (
                       <tr key={r.id}
                         style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f9fafb' }}
@@ -222,9 +224,7 @@ function AdminReports() {
                         <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.problem || '—'}</td>
                         <td style={{ ...TD, overflow: 'hidden' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#e0e7ef', color: '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
-                              {initials}
-                            </div>
+                            <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={30} index={i} />
                             <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.residentName}</span>
                           </div>
                         </td>

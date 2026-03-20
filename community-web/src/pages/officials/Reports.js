@@ -111,6 +111,18 @@ const STATUS_CFG = {
 const TH = { padding: '10px 12px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
 const TD = { padding: '12px 12px', fontSize: 13, color: '#374151' };
 
+const avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
+
+function ResidentAvatar({ url, name, size = 28, index = 0 }) {
+  if (url) return <img src={url} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
+
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.pending;
   return (
@@ -135,13 +147,13 @@ function Reports() {
   const fetchReports = useCallback(async () => {
     if (!barangay) return;
     setLoading(true);
-    const { data: users } = await supabase.from('users').select('auth_id, first_name, last_name').eq('barangay', barangay);
+    const { data: users } = await supabase.from('users').select('auth_id, first_name, last_name, avatar_url').eq('barangay', barangay);
     const userIds = (users || []).map(u => u.auth_id);
     if (userIds.length === 0) { setReports([]); setLoading(false); return; }
     const userMap = {};
-    (users || []).forEach(u => { userMap[u.auth_id] = `${u.first_name || ''} ${u.last_name || ''}`.trim(); });
+    (users || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name || ''} ${u.last_name || ''}`.trim(), avatar_url: u.avatar_url }; });
     const { data } = await supabase.from('reports').select('*').in('user_id', userIds).order('created_at', { ascending: false });
-    setReports((data || []).map(r => ({ ...r, residentName: userMap[r.user_id] || 'Unknown' })));
+    setReports((data || []).map(r => ({ ...r, residentName: userMap[r.user_id]?.name || 'Unknown', residentAvatar: userMap[r.user_id]?.avatar_url || null })));
     setLoading(false);
   }, [barangay]);
 
@@ -262,7 +274,6 @@ function Reports() {
                         </div>
                       </td></tr>
                     ) : filtered.map((r, i) => {
-                      const initials = (r.residentName || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
                       return (
                       <tr key={r.id}
                         style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
@@ -270,7 +281,7 @@ function Reports() {
                         onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                         <td style={{ ...TD, overflow: 'hidden' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e0e7ef', color: '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0 }}>{initials}</div>
+                            <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={28} index={i} />
                             <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>{r.residentName}</span>
                           </div>
                         </td>

@@ -16,6 +16,16 @@ const TD = { padding: '12px 12px', fontSize: 13, color: '#374151' };
 
 const avatarColors = ['#1E3A5F', '#0f766e', '#7c3aed', '#c2410c', '#0369a1'];
 
+function ResidentAvatar({ url, name, size = 30, index = 0 }) {
+  if (url) return <img src={url} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const initial = (name || '?')[0].toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
+      {initial}
+    </div>
+  );
+}
+
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.pending;
   return (
@@ -111,15 +121,16 @@ function AdminRequests() {
     try {
       const [{ data: reqs }, { data: users }] = await Promise.all([
         supabase.from('requests').select('*').order('created_at', { ascending: false }),
-        supabase.from('users').select('auth_id, first_name, last_name'),
+        supabase.from('users').select('auth_id, first_name, last_name, avatar_url'),
       ]);
 
       const userMap = {};
-      (users || []).forEach(u => { userMap[u.auth_id] = `${u.first_name || ''} ${u.last_name || ''}`.trim(); });
+      (users || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name || ''} ${u.last_name || ''}`.trim(), avatar_url: u.avatar_url }; });
 
       const rows = (reqs || []).map(r => ({
         ...r,
-        residentName: userMap[r.user_id] || 'Unknown Resident',
+        residentName: userMap[r.user_id]?.name || 'Unknown Resident',
+        residentAvatar: userMap[r.user_id]?.avatar_url || null,
         shortId: `REQ-${r.id.slice(0, 6).toUpperCase()}`,
         dateLabel: r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
       }));
@@ -242,9 +253,7 @@ function AdminRequests() {
                         <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.document_type}</td>
                         <td style={{ ...TD, overflow: 'hidden' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarColors[i % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                              {(r.residentName || '?')[0].toUpperCase()}
-                            </div>
+                            <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={30} index={i} />
                             <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.residentName}</span>
                           </div>
                         </td>

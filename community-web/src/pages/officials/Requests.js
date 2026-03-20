@@ -5,6 +5,18 @@ import OfficialTopbar from '../../components/OfficialTopbar';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import { supabase } from '../../supabaseClient';
 
+const avatarColors = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444'];
+
+function ResidentAvatar({ url, name, size = 30, index = 0 }) {
+  if (url) return <img src={url} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
+
 const STATUS_CFG = {
   pending:          { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Pending'           },
   ready_for_pickup: { bg: '#ede9fe', color: '#6d28d9', dot: '#8b5cf6', label: 'Ready for Pickup'  },
@@ -40,11 +52,13 @@ function Requests() {
   const fetchRequests = useCallback(async () => {
     if (!barangay) return;
     setLoading(true);
-    const { data: users } = await supabase.from('users').select('auth_id').eq('barangay', barangay);
-    const userIds = (users || []).map(u => u.auth_id);
+    const { data: users } = await supabase.from('users').select('auth_id, first_name, last_name, avatar_url').eq('barangay', barangay);
+    const userMap = {};
+    (users || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name || ''} ${u.last_name || ''}`.trim(), avatar_url: u.avatar_url }; });
+    const userIds = Object.keys(userMap);
     if (userIds.length === 0) { setRequests([]); setLoading(false); return; }
     const { data } = await supabase.from('requests').select('*').in('user_id', userIds).order('created_at', { ascending: false });
-    setRequests(data || []);
+    setRequests((data || []).map(r => ({ ...r, residentName: userMap[r.user_id]?.name || 'Unknown', residentAvatar: userMap[r.user_id]?.avatar_url || null })));
     setLoading(false);
   }, [barangay]);
 
@@ -76,7 +90,7 @@ function Requests() {
 
   const filtered = requests.filter(r => {
     const matchFilter = filter === 'all' || r.status === filter;
-    const matchSearch = !search || r.document_type?.toLowerCase().includes(search.toLowerCase()) || r.reference_number?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || r.document_type?.toLowerCase().includes(search.toLowerCase()) || r.reference_number?.toLowerCase().includes(search.toLowerCase()) || r.residentName?.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
@@ -153,26 +167,27 @@ function Requests() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={{ ...TH, width: '12%' }}>Ref No.</th>
-                    <th style={{ ...TH, width: '18%' }}>Document</th>
-                    <th style={{ ...TH, width: '16%' }}>Purpose</th>
-                    <th style={{ ...TH, width: '11%' }}>Payment</th>
+                    <th style={{ ...TH, width: '10%' }}>Ref No.</th>
+                    <th style={{ ...TH, width: '15%' }}>Resident</th>
+                    <th style={{ ...TH, width: '15%' }}>Document</th>
+                    <th style={{ ...TH, width: '13%' }}>Purpose</th>
+                    <th style={{ ...TH, width: '10%' }}>Payment</th>
                     <th style={{ ...TH, width: '7%' }}>Proof</th>
-                    <th style={{ ...TH, width: '14%' }}>Status</th>
-                    <th style={{ ...TH, width: '11%' }}>Date</th>
-                    <th style={{ ...TH, width: '11%' }}>Update</th>
+                    <th style={{ ...TH, width: '12%' }}>Status</th>
+                    <th style={{ ...TH, width: '9%' }}>Date</th>
+                    <th style={{ ...TH, width: '9%' }}>Update</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={8} style={{ textAlign: 'center', color: '#9ca3af', padding: '40px', fontSize: 13 }}>
+                    <tr><td colSpan={9} style={{ textAlign: 'center', color: '#9ca3af', padding: '40px', fontSize: 13 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg>
                         Loading requests...
                       </div>
                     </td></tr>
                   ) : filtered.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: '48px 24px' }}>
+                    <tr><td colSpan={9} style={{ padding: '48px 24px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 52, height: 52, borderRadius: 14, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
@@ -187,6 +202,12 @@ function Requests() {
                       onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
                       onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
                       <td style={{ ...TD, fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#1E3A5F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.reference_number}</td>
+                      <td style={{ ...TD }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={30} index={i} />
+                          <span style={{ fontWeight: 600, color: '#111827', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.residentName}</span>
+                        </div>
+                      </td>
                       <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.document_type}</td>
                       <td style={{ ...TD, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.purpose}</td>
                       <td style={{ ...TD, overflow: 'hidden' }}>
