@@ -9,6 +9,18 @@ const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct
 const MEDALS = ['🥇','🥈','🥉','🏅','🏅'];
 const avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
 
+function resolveAvatar(url) {
+  if (!url) return null;
+  if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+  return url;
+}
+function ResidentAvatar({ url, name, size = 32, index = 0 }) {
+  const src = resolveAvatar(url);
+  if (src) return <img src={src} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  return <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>{initials}</div>;
+}
+
 function getLastSixMonths() {
   const now = new Date();
   return Array.from({ length: 6 }, (_, i) => {
@@ -71,14 +83,14 @@ function AdminDashboard() {
         supabase.from('officials').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('reports').select('user_id, created_at, problem, barangay').order('created_at', { ascending: false }),
         supabase.from('requests').select('user_id, created_at, document_type, barangay').order('created_at', { ascending: false }),
-        supabase.from('users').select('auth_id, first_name, last_name, barangay'),
+        supabase.from('users').select('auth_id, first_name, last_name, barangay, avatar_url'),
       ]);
 
       setStats({ reports: reports||0, requests: requests||0, officials: officials||0, users: users||0, pendingReports: pendingReports||0, pendingRequests: pendingRequests||0, pendingOfficials: pendingOfficials||0 });
 
       // Build user name map
       const userMap = {};
-      (allUsers || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name||''} ${u.last_name||''}`.trim(), barangay: u.barangay }; });
+      (allUsers || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name||''} ${u.last_name||''}`.trim(), barangay: u.barangay, avatar_url: u.avatar_url }; });
 
       // Monthly chart — last 6 months
       const slots = getLastSixMonths();
@@ -209,9 +221,7 @@ function AdminDashboard() {
                 ) : contributors.map((c, i) => (
                   <div key={c.uid} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < contributors.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                     <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>{MEDALS[i]}</span>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarColors[i % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                      {(c.name || '?')[0].toUpperCase()}
-                    </div>
+                    <ResidentAvatar url={c.avatar_url} name={c.name} size={32} index={i} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 13, color: '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>{c.barangay}</div>

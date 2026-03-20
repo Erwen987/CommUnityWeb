@@ -7,6 +7,19 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { supabase } from '../../supabaseClient';
 
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
+
+function resolveAvatar(url) {
+  if (!url) return null;
+  if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+  return url;
+}
+function ResidentAvatar({ url, name, size = 30, index = 0 }) {
+  const src = resolveAvatar(url);
+  if (src) return <img src={src} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  return <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>{initials}</div>;
+}
 
 function getLastSixMonths() {
   const now = new Date();
@@ -66,7 +79,7 @@ function Dashboard() {
     ] = await Promise.all([
       supabase.from('reports').select('id, created_at, user_id').eq('barangay', barangay),
       supabase.from('requests').select('id, created_at').eq('barangay', barangay),
-      supabase.from('users').select('auth_id, first_name, last_name').eq('barangay', barangay),
+      supabase.from('users').select('auth_id, first_name, last_name, avatar_url').eq('barangay', barangay),
     ]);
 
     setTotalReports(reports.length);
@@ -85,9 +98,9 @@ function Dashboard() {
     const countMap = {};
     reports.forEach(r => { countMap[r.user_id] = (countMap[r.user_id] || 0) + 1; });
     const userMap  = {};
-    users.forEach(u => { userMap[u.auth_id] = `${u.first_name} ${u.last_name}`.trim(); });
+    users.forEach(u => { userMap[u.auth_id] = { name: `${u.first_name} ${u.last_name}`.trim(), avatar_url: u.avatar_url }; });
     const ranked = Object.entries(countMap)
-      .map(([uid, count]) => ({ name: userMap[uid] || 'Unknown', count }))
+      .map(([uid, count]) => ({ ...(userMap[uid] || { name: 'Unknown', avatar_url: null }), count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
     setTopContributors(ranked);
@@ -452,13 +465,10 @@ function Dashboard() {
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {topContributors.map((r, i) => {
                       const medals  = ['🥇','🥈','🥉'];
-                      const initials = r.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
                       return (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < topContributors.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#1E3A5F', flexShrink: 0 }}>
-                              {initials}
-                            </div>
+                            <ResidentAvatar url={r.avatar_url} name={r.name} size={30} index={i} />
                             <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{r.name}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

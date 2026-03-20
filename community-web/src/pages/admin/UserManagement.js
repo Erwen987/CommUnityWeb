@@ -39,6 +39,19 @@ function Avatar({ label, color }) {
   );
 }
 
+const _avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
+function resolveAvatar(url) {
+  if (!url) return null;
+  if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+  return url;
+}
+function ResidentAvatar({ url, name, size = 38, index = 0 }) {
+  const src = resolveAvatar(url);
+  if (src) return <img src={src} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
+  const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  return <div style={{ width: size, height: size, borderRadius: '50%', background: _avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>{initials}</div>;
+}
+
 function StatusDot({ status }) {
   const map = {
     pending:  { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Pending'  },
@@ -79,7 +92,7 @@ function UserManagement() {
     const [{ data: p }, { data: a }, { data: r }] = await Promise.all([
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at').eq('status','pending').order('created_at',{ascending:true}),
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at').eq('status','approved').order('created_at',{ascending:true}),
-      supabase.from('users').select('id,first_name,last_name,email,barangay,created_at').order('created_at',{ascending:false}),
+      supabase.from('users').select('id,first_name,last_name,email,barangay,created_at,avatar_url').order('created_at',{ascending:false}),
     ]);
     setPending(p   || []);
     setApproved(a  || []);
@@ -109,8 +122,6 @@ function UserManagement() {
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
   ];
   const activeTab = TABS.find(t => t.key === tab);
-
-  const avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
 
   return (
     <div className="off-layout">
@@ -268,7 +279,7 @@ function UserManagement() {
                                 style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
                                 onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
                                 onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
-                                <td style={TD}><div style={{ display:'flex', alignItems:'center', gap:10 }}><Avatar label={row.first_name?.[0]?.toUpperCase()||'?'} color={avatarColors[i%5]} /><div><div style={{ fontWeight:600, color:'#111827', fontSize:13 }}>{row.first_name} {row.last_name}</div><div style={{ fontSize:11, color:'#9ca3af' }}>Resident</div></div></div></td>
+                                <td style={TD}><div style={{ display:'flex', alignItems:'center', gap:10 }}><ResidentAvatar url={row.avatar_url} name={`${row.first_name||''} ${row.last_name||''}`.trim()} size={38} index={i} /><div><div style={{ fontWeight:600, color:'#111827', fontSize:13 }}>{row.first_name} {row.last_name}</div><div style={{ fontSize:11, color:'#9ca3af' }}>Resident</div></div></div></td>
                                 <td style={{ ...TD, color:'#6b7280' }}>{row.email}</td>
                                 <td style={TD}>{row.barangay ? <span style={{ background:'#f1f5f9', color:'#374151', padding:'3px 10px', borderRadius:6, fontSize:12, fontWeight:600 }}>{row.barangay}</span> : <span style={{ color:'#d1d5db' }}>—</span>}</td>
                                 <td style={{ ...TD, color:'#9ca3af', fontSize:12 }}>{fmt(row.created_at)}</td>
