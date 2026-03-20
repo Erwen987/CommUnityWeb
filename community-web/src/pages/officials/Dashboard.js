@@ -90,12 +90,17 @@ function Dashboard() {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + expiryDays);
 
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { error: insertErr } = await supabase.from('announcements').insert({
         barangay,
-        title:      title.trim(),
-        body:       body.trim(),
-        image_url:  imageUrl,
-        expires_at: expiresAt.toISOString(),
+        title:        title.trim(),
+        body:         body.trim(),
+        image_url:    imageUrl,
+        expires_at:   expiresAt.toISOString(),
+        is_published: true,
+        published_at: new Date().toISOString(),
+        posted_by:    user?.id ?? null,
       });
       if (insertErr) throw insertErr;
 
