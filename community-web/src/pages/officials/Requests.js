@@ -28,11 +28,14 @@ const fmt = d => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 
 
 function Requests() {
   const { barangay, loading: profileLoading } = useOfficialProfile();
-  const [requests, setRequests]     = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [updatingId, setUpdatingId] = useState(null);
-  const [search, setSearch]         = useState('');
-  const [filter, setFilter]         = useState('all');
+  const [requests, setRequests]         = useState([]);
+  const [loading, setLoading]           = useState(false);
+  const [updatingId, setUpdatingId]     = useState(null);
+  const [search, setSearch]             = useState('');
+  const [filter, setFilter]             = useState('all');
+  const [rejectModal, setRejectModal]   = useState(null); // { id }
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError]   = useState('');
 
   const fetchRequests = useCallback(async () => {
     if (!barangay) return;
@@ -47,11 +50,27 @@ function Requests() {
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
-  const updateStatus = async (id, status) => {
+  const handleStatusChange = (id, status) => {
+    if (status === 'rejected') {
+      setRejectReason('');
+      setRejectError('');
+      setRejectModal({ id });
+    } else {
+      updateStatus(id, status, null);
+    }
+  };
+
+  const updateStatus = async (id, status, reason) => {
     setUpdatingId(id);
-    await supabase.from('requests').update({ status }).eq('id', id);
+    await supabase.from('requests').update({ status, rejection_reason: reason ?? null }).eq('id', id);
     setUpdatingId(null);
     fetchRequests();
+  };
+
+  const confirmReject = async () => {
+    if (!rejectReason.trim()) { setRejectError('Please enter a reason for rejection.'); return; }
+    await updateStatus(rejectModal.id, 'rejected', rejectReason.trim());
+    setRejectModal(null);
   };
 
   const filtered = requests.filter(r => {
@@ -76,6 +95,7 @@ function Requests() {
   ];
 
   return (
+    <>
     <div className="off-layout">
       <OfficialSidebar />
       <div className="off-main">
@@ -182,7 +202,7 @@ function Requests() {
                       <td style={TD}><StatusBadge status={r.status} /></td>
                       <td style={{ ...TD, color: '#9ca3af', fontSize: 12 }}>{fmt(r.created_at)}</td>
                       <td style={TD}>
-                        <select value={r.status} disabled={updatingId===r.id} onChange={e => updateStatus(r.id, e.target.value)}
+                        <select value={r.status} disabled={updatingId===r.id} onChange={e => handleStatusChange(r.id, e.target.value)}
                           style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer', background: '#fff', color: '#374151', opacity: updatingId===r.id ? 0.5 : 1, outline: 'none' }}>
                           <option value="pending">Pending</option>
                           <option value="ready_for_pickup">Ready for Pickup</option>
@@ -200,6 +220,47 @@ function Requests() {
         </div>
       </div>
     </div>
+
+      {/* Rejection reason modal */}
+      {rejectModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: 420, maxWidth: '90vw', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>Reject Request</div>
+                <div style={{ fontSize: 12, color: '#9ca3af' }}>This will notify the resident</div>
+              </div>
+            </div>
+
+            <div style={{ height: 1, background: '#f1f5f9', margin: '14px 0' }} />
+
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reason for Rejection</label>
+            <textarea
+              rows={4}
+              placeholder="e.g. Incomplete requirements, invalid proof of payment..."
+              value={rejectReason}
+              onChange={e => { setRejectReason(e.target.value); setRejectError(''); }}
+              style={{ width: '100%', marginTop: 8, padding: '10px 12px', border: `1.5px solid ${rejectError ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, fontSize: 13, color: '#374151', resize: 'vertical', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+            />
+            {rejectError && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{rejectError}</div>}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
+              <button onClick={() => setRejectModal(null)}
+                style={{ padding: '8px 20px', borderRadius: 9, border: '1.5px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={confirmReject}
+                style={{ padding: '8px 20px', borderRadius: 9, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
