@@ -11,8 +11,8 @@ const STATUS_CFG = {
   rejected:         { bg: '#fee2e2', color: '#991b1b', dot: '#ef4444', label: 'Rejected'         },
 };
 
-const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
-const TD = { padding: '13px 16px', fontSize: 13, color: '#374151' };
+const TH = { padding: '10px 12px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
+const TD = { padding: '12px 12px', fontSize: 13, color: '#374151' };
 
 const avatarColors = ['#1E3A5F', '#0f766e', '#7c3aed', '#c2410c', '#0369a1'];
 
@@ -111,11 +111,11 @@ function AdminRequests() {
     try {
       const [{ data: reqs }, { data: users }] = await Promise.all([
         supabase.from('requests').select('*').order('created_at', { ascending: false }),
-        supabase.from('users').select('auth_id, full_name'),
+        supabase.from('users').select('auth_id, first_name, last_name'),
       ]);
 
       const userMap = {};
-      (users || []).forEach(u => { userMap[u.auth_id] = u.full_name; });
+      (users || []).forEach(u => { userMap[u.auth_id] = `${u.first_name || ''} ${u.last_name || ''}`.trim(); });
 
       const rows = (reqs || []).map(r => ({
         ...r,
@@ -172,8 +172,8 @@ function AdminRequests() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
             {STATS.map(c => (
               <div key={c.label} onClick={() => setFilter(c.filterKey)}
-                style={{ background: filter === c.filterKey ? '#eff6ff' : '#fff', borderRadius: 14, padding: '14px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 10, borderLeft: `4px solid ${c.accent}`, cursor: 'pointer', transition: 'background 0.15s' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
+                style={{ background: filter === c.filterKey ? c.iconBg : '#fff', borderRadius: 14, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 10, borderLeft: `4px solid ${c.accent}`, cursor: 'pointer', transition: 'background 0.15s', minHeight: 72, boxSizing: 'border-box', borderBottom: filter === c.filterKey ? `2px solid ${c.accent}` : '2px solid transparent' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: filter === c.filterKey ? '#fff' : c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>{c.icon}</div>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: 3 }}>{c.label}</div>
                   <div style={{ fontSize: 24, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{loading ? '—' : c.value}</div>
@@ -212,14 +212,14 @@ function AdminRequests() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={TH}>Request ID</th>
-                      <th style={TH}>Document</th>
-                      <th style={TH}>Resident</th>
-                      <th style={TH}>Barangay</th>
-                      <th style={TH}>Payment</th>
-                      <th style={TH}>Status</th>
-                      <th style={TH}>Date</th>
-                      <th style={TH}>Action</th>
+                      <th style={{ ...TH, width: '9%' }}>Request ID</th>
+                      <th style={{ ...TH, width: '20%' }}>Document</th>
+                      <th style={{ ...TH, width: '18%' }}>Resident</th>
+                      <th style={{ ...TH, width: '11%' }}>Barangay</th>
+                      <th style={{ ...TH, width: '11%' }}>Payment</th>
+                      <th style={{ ...TH, width: '14%' }}>Status</th>
+                      <th style={{ ...TH, width: '11%' }}>Date</th>
+                      <th style={{ ...TH, width: '6%' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -238,18 +238,18 @@ function AdminRequests() {
                         style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
                         onMouseEnter={e => e.currentTarget.style.backgroundColor = '#dbeafe'}
                         onMouseLeave={e => e.currentTarget.style.backgroundColor = i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
-                        <td style={{ ...TD, fontFamily: 'monospace', fontSize: 11, color: '#6b7280' }}>{r.shortId}</td>
-                        <td style={{ ...TD, fontWeight: 600, color: '#111827' }}>{r.document_type}</td>
-                        <td style={TD}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <td style={{ ...TD, fontFamily: 'monospace', fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.shortId}</td>
+                        <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.document_type}</td>
+                        <td style={{ ...TD, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
                             <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarColors[i % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
                               {(r.residentName || '?')[0].toUpperCase()}
                             </div>
-                            <span style={{ fontWeight: 500 }}>{r.residentName}</span>
+                            <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.residentName}</span>
                           </div>
                         </td>
-                        <td style={TD}><span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{r.barangay || '—'}</span></td>
-                        <td style={TD}><span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{r.payment_method || '—'}</span></td>
+                        <td style={{ ...TD, overflow: 'hidden' }}><span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.barangay || '—'}</span></td>
+                        <td style={{ ...TD, overflow: 'hidden' }}><span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.payment_method || '—'}</span></td>
                         <td style={TD}><StatusBadge status={r.status} /></td>
                         <td style={{ ...TD, color: '#9ca3af', fontSize: 12 }}>{r.dateLabel}</td>
                         <td style={TD}>

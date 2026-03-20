@@ -12,8 +12,8 @@ const STATUS_CFG = {
   rejected:         { bg: '#fee2e2', color: '#991b1b', dot: '#ef4444', label: 'Rejected'          },
 };
 
-const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
-const TD = { padding: '13px 16px', fontSize: 13, color: '#374151' };
+const TH = { padding: '10px 12px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
+const TD = { padding: '12px 12px', fontSize: 13, color: '#374151' };
 
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.pending;
@@ -83,15 +83,15 @@ function Requests() {
   const count = s => requests.filter(r => r.status === s).length;
 
   const STATS = [
-    { label: 'Total Requests',   value: requests.length,          accent: '#7c3aed', iconBg: '#ede9fe',
+    { label: 'Total Requests',   filterKey: 'all',             value: requests.length,          accent: '#7c3aed', iconBg: '#ede9fe',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg> },
-    { label: 'Pending',          value: count('pending'),          accent: '#f59e0b', iconBg: '#fef3c7',
+    { label: 'Pending',          filterKey: 'pending',         value: count('pending'),          accent: '#f59e0b', iconBg: '#fef3c7',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-    { label: 'Ready for Pickup', value: count('ready_for_pickup'), accent: '#8b5cf6', iconBg: '#ede9fe',
+    { label: 'Ready for Pickup', filterKey: 'ready_for_pickup', value: count('ready_for_pickup'), accent: '#8b5cf6', iconBg: '#ede9fe',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-    { label: 'Claimed',          value: count('claimed'),          accent: '#16a34a', iconBg: '#dcfce7',
+    { label: 'Claimed',          filterKey: 'claimed',         value: count('claimed'),          accent: '#16a34a', iconBg: '#dcfce7',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
-    { label: 'Rejected',         value: count('rejected'),         accent: '#ef4444', iconBg: '#fee2e2',
+    { label: 'Rejected',         filterKey: 'rejected',        value: count('rejected'),         accent: '#ef4444', iconBg: '#fee2e2',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> },
   ];
 
@@ -111,10 +111,11 @@ function Requests() {
           </div>
 
           {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
             {STATS.map(c => (
-              <div key={c.label} style={{ background: '#fff', borderRadius: 14, padding: '14px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 10, borderLeft: `4px solid ${c.accent}` }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
+              <div key={c.label} onClick={() => setFilter(c.filterKey)}
+                style={{ background: filter === c.filterKey ? c.iconBg : '#fff', borderRadius: 14, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 10, borderLeft: `4px solid ${c.accent}`, cursor: 'pointer', transition: 'background 0.15s', minHeight: 72, boxSizing: 'border-box', borderBottom: filter === c.filterKey ? `2px solid ${c.accent}` : '2px solid transparent' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: filter === c.filterKey ? '#fff' : c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>{c.icon}</div>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: 3 }}>{c.label}</div>
                   <div style={{ fontSize: 24, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{c.value}</div>
@@ -152,14 +153,14 @@ function Requests() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={TH}>Ref No.</th>
-                    <th style={TH}>Document</th>
-                    <th style={TH}>Purpose</th>
-                    <th style={TH}>Payment</th>
-                    <th style={TH}>Proof</th>
-                    <th style={TH}>Status</th>
-                    <th style={TH}>Date</th>
-                    <th style={TH}>Update</th>
+                    <th style={{ ...TH, width: '12%' }}>Ref No.</th>
+                    <th style={{ ...TH, width: '18%' }}>Document</th>
+                    <th style={{ ...TH, width: '16%' }}>Purpose</th>
+                    <th style={{ ...TH, width: '11%' }}>Payment</th>
+                    <th style={{ ...TH, width: '7%' }}>Proof</th>
+                    <th style={{ ...TH, width: '14%' }}>Status</th>
+                    <th style={{ ...TH, width: '11%' }}>Date</th>
+                    <th style={{ ...TH, width: '11%' }}>Update</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,12 +186,12 @@ function Requests() {
                       style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
                       onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
                       onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
-                      <td style={{ ...TD, fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#1E3A5F' }}>{r.reference_number}</td>
-                      <td style={{ ...TD, fontWeight: 600, color: '#111827' }}>{r.document_type}</td>
-                      <td style={{ ...TD, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.purpose}</td>
-                      <td style={{ ...TD, fontSize: 12 }}>
-                        <span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>
-                          {r.payment_method?.replace('_', ' ')}
+                      <td style={{ ...TD, fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: '#1E3A5F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.reference_number}</td>
+                      <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.document_type}</td>
+                      <td style={{ ...TD, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.purpose}</td>
+                      <td style={{ ...TD, overflow: 'hidden' }}>
+                        <span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, textTransform: 'capitalize', display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {r.payment_method?.replace(/_/g, ' ')}
                         </span>
                       </td>
                       <td style={TD}>

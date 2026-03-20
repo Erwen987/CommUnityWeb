@@ -108,8 +108,8 @@ const STATUS_CFG = {
   resolved:    { bg: '#dcfce7', color: '#166534', dot: '#22c55e', label: 'Resolved'    },
 };
 
-const TH = { padding: '11px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
-const TD = { padding: '13px 16px', fontSize: 13, color: '#374151' };
+const TH = { padding: '10px 12px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
+const TD = { padding: '12px 12px', fontSize: 13, color: '#374151' };
 
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.pending;
@@ -135,11 +135,13 @@ function Reports() {
   const fetchReports = useCallback(async () => {
     if (!barangay) return;
     setLoading(true);
-    const { data: users } = await supabase.from('users').select('auth_id').eq('barangay', barangay);
+    const { data: users } = await supabase.from('users').select('auth_id, first_name, last_name').eq('barangay', barangay);
     const userIds = (users || []).map(u => u.auth_id);
     if (userIds.length === 0) { setReports([]); setLoading(false); return; }
+    const userMap = {};
+    (users || []).forEach(u => { userMap[u.auth_id] = `${u.first_name || ''} ${u.last_name || ''}`.trim(); });
     const { data } = await supabase.from('reports').select('*').in('user_id', userIds).order('created_at', { ascending: false });
-    setReports(data || []);
+    setReports((data || []).map(r => ({ ...r, residentName: userMap[r.user_id] || 'Unknown' })));
     setLoading(false);
   }, [barangay]);
 
@@ -154,20 +156,21 @@ function Reports() {
 
   const filtered = reports.filter(r => {
     const matchFilter = filter === 'all' || r.status === filter;
-    const matchSearch = !search || r.problem?.toLowerCase().includes(search.toLowerCase()) || r.id?.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchSearch = !q || r.problem?.toLowerCase().includes(q) || r.residentName?.toLowerCase().includes(q);
     return matchFilter && matchSearch;
   });
 
   const count = s => reports.filter(r => r.status === s).length;
 
   const STATS = [
-    { label: 'Total Reports', value: reports.length, accent: '#1d4ed8', iconBg: '#dbeafe',
+    { label: 'Total Reports', filterKey: 'all',         value: reports.length,       accent: '#1d4ed8', iconBg: '#dbeafe',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-    { label: 'Pending',       value: count('pending'),     accent: '#f59e0b', iconBg: '#fef3c7',
+    { label: 'Pending',       filterKey: 'pending',     value: count('pending'),     accent: '#f59e0b', iconBg: '#fef3c7',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-    { label: 'In Progress',   value: count('in_progress'), accent: '#3b82f6', iconBg: '#dbeafe',
+    { label: 'In Progress',   filterKey: 'in_progress', value: count('in_progress'), accent: '#3b82f6', iconBg: '#dbeafe',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg> },
-    { label: 'Resolved',      value: count('resolved'),    accent: '#16a34a', iconBg: '#dcfce7',
+    { label: 'Resolved',      filterKey: 'resolved',    value: count('resolved'),    accent: '#16a34a', iconBg: '#dcfce7',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
   ];
 
@@ -190,8 +193,9 @@ function Reports() {
             {/* Stat cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
               {STATS.map(c => (
-                <div key={c.label} style={{ background: '#fff', borderRadius: 14, padding: '16px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 12, borderLeft: `4px solid ${c.accent}` }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 10, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
+                <div key={c.label} onClick={() => setFilter(c.filterKey)}
+                  style={{ background: filter === c.filterKey ? c.iconBg : '#fff', borderRadius: 14, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 12, borderLeft: `4px solid ${c.accent}`, cursor: 'pointer', transition: 'background 0.15s', minHeight: 72, boxSizing: 'border-box', borderBottom: filter === c.filterKey ? `2px solid ${c.accent}` : '2px solid transparent' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 10, background: filter === c.filterKey ? '#fff' : c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>{c.icon}</div>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280', marginBottom: 3 }}>{c.label}</div>
                     <div style={{ fontSize: 26, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{c.value}</div>
@@ -212,7 +216,7 @@ function Reports() {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{ position: 'relative' }}>
                     <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" placeholder="Search problem or ID…" value={search} onChange={e => setSearch(e.target.value)}
+                    <input type="text" placeholder="Search problem or resident…" value={search} onChange={e => setSearch(e.target.value)}
                       style={{ padding: '8px 12px 8px 32px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', width: 220 }} />
                   </div>
                   <select value={filter} onChange={e => setFilter(e.target.value)}
@@ -229,14 +233,14 @@ function Reports() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={TH}>Report ID</th>
-                      <th style={TH}>Problem</th>
-                      <th style={TH}>Description</th>
-                      <th style={TH}>Image</th>
-                      <th style={TH}>Location</th>
-                      <th style={TH}>Status</th>
-                      <th style={TH}>Date</th>
-                      <th style={TH}>Update</th>
+                      <th style={{ ...TH, width: '16%' }}>Resident</th>
+                      <th style={{ ...TH, width: '17%' }}>Problem</th>
+                      <th style={{ ...TH, width: '18%' }}>Description</th>
+                      <th style={{ ...TH, width: '7%' }}>Image</th>
+                      <th style={{ ...TH, width: '9%' }}>Location</th>
+                      <th style={{ ...TH, width: '13%' }}>Status</th>
+                      <th style={{ ...TH, width: '11%' }}>Date</th>
+                      <th style={{ ...TH, width: '9%' }}>Update</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -257,14 +261,21 @@ function Reports() {
                           <div style={{ fontSize: 12, color: '#9ca3af' }}>{search || filter !== 'all' ? 'Try adjusting your search or filter.' : `No reports submitted for ${barangay || 'your barangay'} yet.`}</div>
                         </div>
                       </td></tr>
-                    ) : filtered.map((r, i) => (
+                    ) : filtered.map((r, i) => {
+                      const initials = (r.residentName || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+                      return (
                       <tr key={r.id}
                         style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
                         onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
                         onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
-                        <td style={{ ...TD, fontFamily: 'monospace', fontSize: 11, color: '#9ca3af' }}>{r.id?.slice(0,8)}…</td>
-                        <td style={{ ...TD, fontWeight: 600, color: '#111827' }}>{r.problem}</td>
-                        <td style={{ ...TD, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.description || '—'}</td>
+                        <td style={{ ...TD, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e0e7ef', color: '#1E3A5F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 10, flexShrink: 0 }}>{initials}</div>
+                            <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>{r.residentName}</span>
+                          </div>
+                        </td>
+                        <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.problem}</td>
+                        <td style={{ ...TD, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.description || '—'}</td>
                         <td style={TD}>
                           {r.image_url
                             ? <a href={r.image_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#1E3A5F', fontSize: 12, fontWeight: 600, background: '#e0e7ef', padding: '3px 10px', borderRadius: 6, textDecoration: 'none' }}>
@@ -282,15 +293,16 @@ function Reports() {
                         <td style={TD}><StatusBadge status={r.status} /></td>
                         <td style={{ ...TD, color: '#9ca3af', fontSize: 12 }}>{fmt(r.created_at)}</td>
                         <td style={TD}>
-                          <select value={r.status} disabled={updatingId===r.id} onChange={e => updateStatus(r.id, e.target.value)}
-                            style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer', background: '#fff', color: '#374151', opacity: updatingId===r.id ? 0.5 : 1, outline: 'none' }}>
+                          <select value={r.status} disabled={updatingId === r.id} onChange={e => updateStatus(r.id, e.target.value)}
+                            style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 8px', fontSize: 11, cursor: updatingId === r.id ? 'not-allowed' : 'pointer', background: '#fff', color: '#374151', fontWeight: 600, outline: 'none', opacity: updatingId === r.id ? 0.5 : 1 }}>
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
                             <option value="resolved">Resolved</option>
                           </select>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
