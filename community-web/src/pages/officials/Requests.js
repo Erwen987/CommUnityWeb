@@ -52,9 +52,10 @@ function Requests() {
 
   const handleStatusChange = (id, status) => {
     if (status === 'rejected') {
+      const req = requests.find(r => r.id === id);
       setRejectReason('');
       setRejectError('');
-      setRejectModal({ id });
+      setRejectModal({ id, docType: req?.document_type, refNo: req?.reference_number });
     } else {
       updateStatus(id, status, null);
     }
@@ -221,40 +222,95 @@ function Requests() {
       </div>
     </div>
 
-      {/* Rejection reason modal */}
+      {/* Rejection modal */}
       {rejectModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: 420, maxWidth: '90vw', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={e => { if (e.target === e.currentTarget) setRejectModal(null); }}>
+          <div style={{ background: '#fff', borderRadius: 20, width: 480, maxWidth: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, #fef2f2, #fff1f1)', padding: '20px 24px 16px', borderBottom: '1px solid #fecaca' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fee2e2', border: '1.5px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 16, color: '#111827' }}>Reject Document Request</div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>The resident will be notified with your reason</div>
+                  </div>
+                </div>
+                <button onClick={() => setRejectModal(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 4, borderRadius: 6, lineHeight: 1 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>Reject Request</div>
-                <div style={{ fontSize: 12, color: '#9ca3af' }}>This will notify the resident</div>
-              </div>
+
+              {/* Document info pill */}
+              {rejectModal.docType && (
+                <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid #fecaca', borderRadius: 8, padding: '6px 12px' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>{rejectModal.docType}</span>
+                  {rejectModal.refNo && <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>• {rejectModal.refNo}</span>}
+                </div>
+              )}
             </div>
 
-            <div style={{ height: 1, background: '#f1f5f9', margin: '14px 0' }} />
+            {/* Body */}
+            <div style={{ padding: '20px 24px' }}>
 
-            <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reason for Rejection</label>
-            <textarea
-              rows={4}
-              placeholder="e.g. Incomplete requirements, invalid proof of payment..."
-              value={rejectReason}
-              onChange={e => { setRejectReason(e.target.value); setRejectError(''); }}
-              style={{ width: '100%', marginTop: 8, padding: '10px 12px', border: `1.5px solid ${rejectError ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, fontSize: 13, color: '#374151', resize: 'vertical', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
-            />
-            {rejectError && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{rejectError}</div>}
+              {/* Quick reason chips */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Quick Reasons</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {[
+                    'Incomplete requirements',
+                    'Invalid proof of payment',
+                    'Incorrect document type',
+                    'Duplicate request',
+                    'Insufficient information',
+                  ].map(r => (
+                    <button key={r} onClick={() => { setRejectReason(r); setRejectError(''); }}
+                      style={{ padding: '5px 12px', borderRadius: 20, border: `1.5px solid ${rejectReason === r ? '#dc2626' : '#e5e7eb'}`, background: rejectReason === r ? '#fee2e2' : '#f9fafb', color: rejectReason === r ? '#dc2626' : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
+              {/* Custom reason */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Or write a custom reason
+                </div>
+                <textarea
+                  rows={3}
+                  placeholder="Describe why this request is being rejected..."
+                  value={rejectReason}
+                  onChange={e => { setRejectReason(e.target.value); setRejectError(''); }}
+                  maxLength={300}
+                  style={{ width: '100%', padding: '10px 12px', border: `1.5px solid ${rejectError ? '#ef4444' : '#e5e7eb'}`, borderRadius: 10, fontSize: 13, color: '#374151', resize: 'none', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 1.5 }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  {rejectError
+                    ? <span style={{ color: '#ef4444', fontSize: 12 }}>{rejectError}</span>
+                    : <span />}
+                  <span style={{ fontSize: 11, color: rejectReason.length > 260 ? '#f59e0b' : '#d1d5db' }}>{rejectReason.length}/300</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '12px 24px 20px', display: 'flex', gap: 10, justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9' }}>
               <button onClick={() => setRejectModal(null)}
-                style={{ padding: '8px 20px', borderRadius: 9, border: '1.5px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                style={{ padding: '9px 22px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 Cancel
               </button>
               <button onClick={confirmReject}
-                style={{ padding: '8px 20px', borderRadius: 9, border: 'none', background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                Confirm Reject
+                style={{ padding: '9px 22px', borderRadius: 10, border: 'none', background: '#dc2626', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Reject Request
               </button>
             </div>
           </div>
