@@ -16,6 +16,7 @@ const NAV = [
   { to: '/admin/requests',        icon: HiOutlineClipboardList,  label: 'Requests'        },
   { to: '/admin/analytics',       icon: HiOutlineChartBar,       label: 'Analytics'       },
   { to: '/admin/rewards',         icon: HiOutlineGift,           label: 'Reward'          },
+  { to: '/admin/settings',        icon: HiOutlineCog,            label: 'Settings'        },
 ];
 
 function AdminSidebar() {
@@ -47,13 +48,6 @@ function AdminSidebar() {
       </nav>
 
       <div className="off-logout">
-        <NavLink
-          to="/admin/settings"
-          className={({ isActive }) => `off-logout-settings${isActive ? ' active' : ''}`}
-        >
-          <HiOutlineCog className="off-nav-icon" />
-          <span>Settings</span>
-        </NavLink>
         <button onClick={handleLogout}>
           <HiOutlineLogout className="off-nav-icon" />
           Log Out
