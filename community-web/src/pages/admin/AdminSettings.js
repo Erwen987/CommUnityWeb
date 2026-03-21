@@ -13,7 +13,7 @@ function Toggle({ value, onChange }) {
   );
 }
 
-function SectionCard({ icon, title, sub, accent = '#1E3A5F', children }) {
+function SectionCard({ icon, title, sub, children }) {
   return (
     <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.07)', overflow: 'hidden', marginBottom: 20 }}>
       <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -71,6 +71,7 @@ function Btn({ onClick, variant = 'primary', disabled, loading, children, icon }
     danger:    { background: disabled || loading ? '#fca5a5' : '#dc2626', color: '#fff', border: 'none' },
     ghost:     { background: '#f1f5f9', color: '#374151', border: '1.5px solid #e5e7eb' },
     dark:      { background: disabled || loading ? '#9ca3af' : '#1E3A5F', color: '#fff', border: 'none' },
+    warning:   { background: disabled || loading ? '#fcd34d' : '#d97706', color: '#fff', border: 'none' },
   };
   return (
     <button onClick={onClick} disabled={disabled || loading}
@@ -114,27 +115,42 @@ function Toast({ msg, type }) {
   );
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const FREQ_DAYS = { daily: 1, weekly: 7, monthly: 30 };
+
+function getBackupStatus(lastBackup, frequency) {
+  if (!lastBackup) return { overdue: true, daysAgo: null, nextDue: null };
+  const days = FREQ_DAYS[frequency] || 7;
+  const msAgo = Date.now() - new Date(lastBackup).getTime();
+  const daysAgo = Math.floor(msAgo / 86400000);
+  const overdue = msAgo > days * 86400000;
+  const nextDue = new Date(new Date(lastBackup).getTime() + days * 86400000);
+  return { overdue, daysAgo, nextDue };
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 function AdminSettings() {
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500); };
 
   // ── System preferences (from DB) ──────────────────────────────────────────
-  const [prefs, setPrefs] = useState({ maintenance_mode: false, email_notifications: true, backup_frequency: 'daily', auto_backup: true });
+  const [prefs, setPrefs] = useState({ maintenance_mode: false, email_notifications: true, backup_frequency: 'weekly', auto_backup: true });
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [prefsDirty, setPrefsDirty] = useState(false);
 
   useEffect(() => {
     supabase.from('system_settings').select('key,value').then(({ data }) => {
-      if (!data) return;
+      if (!data) { setPrefsLoaded(true); return; }
       const map = {};
       data.forEach(r => { map[r.key] = r.value; });
       setPrefs({
         maintenance_mode:    map.maintenance_mode    === 'true',
         email_notifications: map.email_notifications !== 'false',
-        backup_frequency:    map.backup_frequency    || 'daily',
+        backup_frequency:    map.backup_frequency    || 'weekly',
         auto_backup:         map.auto_backup         !== 'false',
       });
+      setPrefsLoaded(true);
     });
   }, []);
 
@@ -222,9 +238,24 @@ function AdminSettings() {
   };
 
   // ── Export / Backup ────────────────────────────────────────────────────────
-  const [exportLoading,  setExportLoading]  = useState(false);
-  const [backupLoading,  setBackupLoading]  = useState(false);
-  const [lastBackup,     setLastBackup]     = useState(localStorage.getItem('last_backup_time') || null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [lastBackup,    setLastBackup]    = useState(localStorage.getItem('last_backup_time') || null);
+  const [reminderDismissed, setReminderDismissed] = useState(
+    sessionStorage.getItem('backup_reminder_dismissed') === 'true'
+  );
+
+  // Compute backup status whenever prefs or lastBackup changes (after prefs loaded)
+  const backupStatus = prefsLoaded ? getBackupStatus(lastBackup, prefs.backup_frequency) : null;
+  const showReminderBanner = prefsLoaded && prefs.auto_backup && backupStatus?.overdue && !reminderDismissed;
+
+  const dismissReminder = () => {
+    sessionStorage.setItem('backup_reminder_dismissed', 'true');
+    setReminderDismissed(true);
+  };
+
+  const fmtDate = ts => ts ? new Date(ts).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+  const fmtDateShort = ts => ts ? new Date(ts).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
 
   const downloadJSON = (data, filename) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -257,19 +288,25 @@ function AdminSettings() {
       supabase.from('system_settings').select('*'),
     ]);
     const timestamp = new Date().toISOString();
-    downloadJSON({ backup_version: '1.0', created_at: timestamp, tables: { users, reports, requests, officials, system_settings: settings } }, `community_backup_${timestamp.slice(0,19).replace(/:/g,'-')}.json`);
+    downloadJSON(
+      { backup_version: '1.0', created_at: timestamp, tables: { users, reports, requests, officials, system_settings: settings } },
+      `community_backup_${timestamp.slice(0,19).replace(/:/g,'-')}.json`
+    );
     localStorage.setItem('last_backup_time', timestamp);
     setLastBackup(timestamp);
+    // Clear dismissed flag so the next overdue period shows fresh reminder
+    sessionStorage.removeItem('backup_reminder_dismissed');
+    setReminderDismissed(false);
     setBackupLoading(false);
     showToast('Backup created and downloaded.');
   };
 
   // ── Clear old records ──────────────────────────────────────────────────────
-  const [clearModal,   setClearModal]   = useState(false);
-  const [clearMonths,  setClearMonths]  = useState('6');
-  const [clearType,    setClearType]    = useState({ reports: true, requests: true });
-  const [clearing,     setClearing]     = useState(false);
-  const [clearMsg,     setClearMsg]     = useState(null);
+  const [clearModal,  setClearModal]  = useState(false);
+  const [clearMonths, setClearMonths] = useState('6');
+  const [clearType,   setClearType]   = useState({ reports: true, requests: true });
+  const [clearing,    setClearing]    = useState(false);
+  const [clearMsg,    setClearMsg]    = useState(null);
 
   const handleClear = async () => {
     setClearing(true);
@@ -290,8 +327,6 @@ function AdminSettings() {
     showToast(`Cleared ${deleted} old record${deleted !== 1 ? 's' : ''} successfully.`);
   };
 
-  const fmtBackup = ts => ts ? new Date(ts).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
-
   return (
     <div className="off-layout">
       <AdminSidebar />
@@ -303,6 +338,45 @@ function AdminSettings() {
             <h1 className="off-page-title">System Settings</h1>
             <p className="off-page-sub" style={{ margin: 0 }}>Manage admin accounts, security, backup, and system preferences</p>
           </div>
+
+          {/* ── Backup Reminder Banner ── */}
+          {showReminderBanner && (
+            <div style={{
+              marginBottom: 20, padding: '16px 20px', borderRadius: 14,
+              background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+              border: '1.5px solid #f59e0b',
+              display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+              boxShadow: '0 2px 12px rgba(245,158,11,0.15)',
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: 11, background: '#fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#92400e' }}>
+                  {lastBackup ? 'Backup Overdue' : 'No Backup Created Yet'}
+                </div>
+                <div style={{ fontSize: 12, color: '#b45309', marginTop: 3, lineHeight: 1.5 }}>
+                  {lastBackup
+                    ? `Your last backup was ${backupStatus.daysAgo === 0 ? 'today' : `${backupStatus.daysAgo} day${backupStatus.daysAgo !== 1 ? 's' : ''} ago`} (${fmtDateShort(lastBackup)}). Your schedule is set to <strong>${prefs.backup_frequency}</strong>.`
+                    : 'You have not created any backup yet. It\'s recommended to back up your data regularly.'
+                  }
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <Btn onClick={handleBackup} loading={backupLoading} variant="warning"
+                  icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}>
+                  Backup Now
+                </Btn>
+                <button onClick={dismissReminder} style={{ padding: '10px 16px', borderRadius: 9, border: '1.5px solid #fbbf24', background: 'transparent', color: '#92400e', fontFamily: 'Poppins, sans-serif', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── Change Password ── */}
           <SectionCard
@@ -426,53 +500,91 @@ function AdminSettings() {
             )}
           </SectionCard>
 
-          {/* ── Backup ── */}
+          {/* ── Backup & Reminder Schedule ── */}
           <SectionCard
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>}
-            title="Database Backup" sub="Download a full JSON snapshot of all system data">
+            title="Database Backup" sub="Download a full snapshot and configure reminder schedule">
+
             <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20, lineHeight: 1.6 }}>
-              Creates a downloadable backup file containing all users, reports, requests, and settings. Store it in a safe location.
+              Creates a downloadable JSON backup of all users, reports, requests, and settings. Store it in a safe location.
             </p>
+
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               <Btn onClick={handleBackup} loading={backupLoading} variant="dark"
                 icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}>
                 {backupLoading ? 'Creating...' : 'Create & Download Backup'}
               </Btn>
             </div>
-            <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: 9, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#6b7280' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              {lastBackup ? <>Last backup: <strong>{fmtBackup(lastBackup)}</strong></> : 'No backup created yet in this session'}
+
+            {/* Backup status row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+              <div style={{ padding: '12px 16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Last Backup</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: lastBackup ? '#1f2937' : '#9ca3af' }}>
+                  {lastBackup ? fmtDate(lastBackup) : 'Never'}
+                </div>
+              </div>
+              <div style={{ padding: '12px 16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Next Reminder Due</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: backupStatus?.overdue ? '#dc2626' : '#1f2937' }}>
+                  {!prefs.auto_backup
+                    ? <span style={{ color: '#9ca3af' }}>Reminders off</span>
+                    : backupStatus?.overdue
+                      ? <span style={{ color: '#dc2626' }}>Overdue now</span>
+                      : backupStatus?.nextDue
+                        ? fmtDateShort(backupStatus.nextDue)
+                        : '—'
+                  }
+                </div>
+              </div>
             </div>
 
-            {/* Auto backup preference */}
-            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #f1f5f9' }}>
-              <div style={{ fontWeight: 600, fontSize: 13, color: '#1f2937', marginBottom: 14 }}>Backup Reminder Schedule</div>
+            {/* Reminder schedule settings */}
+            <div style={{ paddingTop: 20, borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#1f2937', marginBottom: 4 }}>Backup Reminder Schedule</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16 }}>
+                When enabled, a reminder banner will appear on this page when a backup is overdue.
+              </div>
+
+              {/* Enable toggle */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb', marginBottom: 14 }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 13, color: '#1f2937' }}>Enable Backup Reminders</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Show a reminder banner to create a backup on schedule</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Show a reminder banner when a backup is overdue based on your schedule</div>
                 </div>
                 <Toggle value={prefs.auto_backup} onChange={() => setPref('auto_backup', !prefs.auto_backup)} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+
+              {/* Frequency + save */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, flexWrap: 'wrap' }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Reminder Frequency</label>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reminder Frequency</label>
                   <select value={prefs.backup_frequency} onChange={e => setPref('backup_frequency', e.target.value)}
-                    style={{ padding: '9px 14px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', cursor: 'pointer', width: 200, fontFamily: 'inherit' }}>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
+                    disabled={!prefs.auto_backup}
+                    style={{ padding: '9px 14px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: prefs.auto_backup ? '#374151' : '#9ca3af', outline: 'none', background: prefs.auto_backup ? '#f9fafb' : '#f3f4f6', cursor: prefs.auto_backup ? 'pointer' : 'not-allowed', width: 200, fontFamily: 'inherit' }}>
+                    <option value="daily">Daily (every 1 day)</option>
+                    <option value="weekly">Weekly (every 7 days)</option>
+                    <option value="monthly">Monthly (every 30 days)</option>
                   </select>
                 </div>
-                {prefsDirty && (
-                  <div style={{ marginTop: 20 }}>
-                    <Btn onClick={savePrefs} loading={savingPrefs} variant="primary"
-                      icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}>
-                      Save
-                    </Btn>
+
+                {/* Frequency helper text */}
+                {prefs.auto_backup && (
+                  <div style={{ fontSize: 12, color: '#6b7280', paddingBottom: 10 }}>
+                    Reminder fires every <strong>{FREQ_DAYS[prefs.backup_frequency]} day{FREQ_DAYS[prefs.backup_frequency] !== 1 ? 's' : ''}</strong> since last backup
                   </div>
                 )}
               </div>
+
+              {prefsDirty && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
+                  <Btn onClick={savePrefs} loading={savingPrefs} variant="primary"
+                    icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}>
+                    {savingPrefs ? 'Saving...' : 'Save Schedule'}
+                  </Btn>
+                  <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 600 }}>Unsaved changes</span>
+                </div>
+              )}
             </div>
           </SectionCard>
 
