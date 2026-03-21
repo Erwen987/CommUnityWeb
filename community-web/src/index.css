@@ -415,8 +415,7 @@ nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(-20px);
-  padding: 104px 24px 24px;
+  padding: 110px 24px 48px;
 }
 
 /* Card — matches original login-container */
@@ -597,3 +596,5 @@ nav {
   .auth-name-row { flex-direction: column; }
   .auth-container { transform: translateY(0); }
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }

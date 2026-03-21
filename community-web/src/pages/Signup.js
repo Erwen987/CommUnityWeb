@@ -13,70 +13,100 @@ const BARANGAYS = [
   'Pugaro Suit', 'Quezon', 'Salapingao', 'Talibaew', 'Tambacan',
 ];
 
+const EyeIcon = ({ open }) => open ? (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+) : (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+/* Step indicator used on OTP and Done screens */
+function StepBar({ active }) {
+  const steps = ['Details', 'Verify Email', 'Pending'];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
+      {steps.map((s, i) => (
+        <React.Fragment key={s}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              width: 22, height: 22, borderRadius: '50%', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800,
+              background: i < active ? '#2563eb' : i === active ? 'rgba(37,99,235,0.85)' : 'rgba(255,255,255,0.12)',
+              color: '#fff', border: i === active ? '2px solid #7AB1F1' : 'none',
+            }}>
+              {i < active
+                ? <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                : i + 1
+              }
+            </div>
+            <span style={{ fontSize: 11.5, fontWeight: i === active ? 700 : 500, color: i === active ? '#a7d4ff' : 'rgba(255,255,255,0.4)' }}>{s}</span>
+          </div>
+          {i < 2 && <div style={{ flex: 1, height: 1.5, background: i < active ? 'rgba(37,99,235,0.7)' : 'rgba(255,255,255,0.12)' }} />}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+/* Shared Navbar */
+function Navbar() {
+  return (
+    <header className="landing-header">
+      <nav>
+        <a href="/" className="logo">
+          <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" style={{ height: 36, width: 'auto' }} />
+          <span className="logo-text">CommUnity</span>
+        </a>
+        <ul className="nav-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="/#about">About</a></li>
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/#contact">Contact</a></li>
+          <li><a href="/#get-started" className="btn-get-started">Get Started</a></li>
+        </ul>
+      </nav>
+    </header>
+  );
+}
+
 function Signup() {
-  const [form, setForm] = useState({
-    barangay: '', email: '', password: '', confirmPassword: '',
-  });
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(false);
-  // 'form' | 'otp' | 'done'
-  const [step, setStep]       = useState('form');
-  const [otp, setOtp]         = useState('');
+  const [form, setForm]           = useState({ barangay: '', email: '', password: '', confirmPassword: '' });
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [step, setStep]           = useState('form');
+  const [otp, setOtp]             = useState('');
   const [pendingUserId, setPendingUserId] = useState(null);
-  const [showPass, setShowPass]       = useState(false);
+  const [showPass, setShowPass]   = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setError('');
-  };
+  const handleChange = e => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); };
 
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (form.password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
-
+    if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
+    if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setLoading(true);
 
-    // 1. Create Supabase auth account (Supabase will send an OTP to their email)
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: form.email.trim(),
-      password: form.password,
-    });
-
+    const { data, error: authError } = await supabase.auth.signUp({ email: form.email.trim(), password: form.password });
     setLoading(false);
+    if (authError) { setError(authError.message); return; }
 
-    if (authError) {
-      setError(authError.message);
-      return;
-    }
-
-    // If Supabase auto-confirmed (email confirmation disabled), session is available now
     if (data.session) {
-      // Insert immediately — user is already authenticated
       const { error: dbError } = await supabase.from('officials').insert({
-        auth_id:       data.user.id,
-        barangay_name: form.barangay,
-        barangay:      form.barangay,
-        email:         form.email.trim().toLowerCase(),
-        status:        'pending',
+        auth_id: data.user.id, barangay_name: form.barangay, barangay: form.barangay,
+        email: form.email.trim().toLowerCase(), status: 'pending',
       });
-      if (dbError) {
-        setError('Failed to save your details. Please contact admin.');
-        return;
-      }
+      if (dbError) { setError('Failed to save your details. Please contact admin.'); return; }
       await supabase.auth.signOut();
       setStep('done');
     } else {
-      // Email confirmation required — wait for OTP
       setPendingUserId(data.user.id);
       setStep('otp');
     }
@@ -87,305 +117,251 @@ function Signup() {
     setError('');
     if (!otp.trim()) { setError('Please enter the OTP code.'); return; }
     setLoading(true);
-
-    // Verify OTP — this gives the user an active session
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: form.email.trim(),
-      token: otp.trim(),
-      type:  'signup',
-    });
-
-    if (verifyError) {
-      setLoading(false);
-      setError('Invalid or expired OTP. Please check the code and try again.');
-      return;
-    }
-
-    // Now authenticated — insert into officials table
+    const { error: verifyError } = await supabase.auth.verifyOtp({ email: form.email.trim(), token: otp.trim(), type: 'signup' });
+    if (verifyError) { setLoading(false); setError('Invalid or expired code. Please try again.'); return; }
     const { error: dbError } = await supabase.from('officials').insert({
-      auth_id:       pendingUserId,
-      barangay_name: form.barangay,
-      barangay:      form.barangay,
-      email:         form.email.trim().toLowerCase(),
-      status:        'pending',
+      auth_id: pendingUserId, barangay_name: form.barangay, barangay: form.barangay,
+      email: form.email.trim().toLowerCase(), status: 'pending',
     });
-
     setLoading(false);
-
-    if (dbError) {
-      setError('Email confirmed but failed to save your details. Please contact admin. Error: ' + dbError.message);
-      return;
-    }
-
-    // Sign out — they need admin approval before they can use the portal
+    if (dbError) { setError('Confirmed but failed to save. Error: ' + dbError.message); return; }
     await supabase.auth.signOut();
     setStep('done');
   };
 
-  // ── OTP SCREEN ──
-  if (step === 'otp') {
-    return (
-      <div className="auth-page" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
-        <header>
-          <nav>
-            <a href="/" className="logo">
-              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
-              <span className="logo-text">CommUnity</span>
-            </a>
-          </nav>
-        </header>
-        <div className="auth-container">
-          <div style={{
-            background: 'rgba(255,255,255,0.95)', borderRadius: '20px',
-            padding: '48px 40px', textAlign: 'center', maxWidth: '420px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📬</div>
-            <h2 style={{ color: '#1E3A5F', marginBottom: '8px', fontSize: '22px' }}>Check Your Email</h2>
-            <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '24px', lineHeight: '1.6' }}>
-              We sent a 6-digit OTP to <strong>{form.email}</strong>.<br />
-              Enter it below to confirm your email address.
-            </p>
+  /* ── OTP SCREEN ── */
+  if (step === 'otp') return (
+    <div className="auth-page" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
+      <Navbar />
+      <div className="auth-container">
+        <div className="auth-card">
+
+          {/* LEFT — info */}
+          <div className="auth-overview">
+            <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
+            <h2>Check Your Inbox</h2>
+            <p>We sent a 6-digit verification code to <strong style={{ color: '#a7d4ff' }}>{form.email}</strong>. Enter it to confirm your email address.</p>
+            <ul className="auth-checklist">
+              <li>✔ Check your spam folder if you don't see it</li>
+              <li>✔ Code expires in 10 minutes</li>
+              <li>✔ One step closer to joining CommUnity</li>
+            </ul>
+          </div>
+
+          {/* RIGHT — OTP form */}
+          <div className="auth-form">
+            <StepBar active={1} />
+
+            <h2 style={{ marginBottom: 4 }}>Verify Your Email</h2>
+            <p className="auth-sub">Enter the 6-digit code we sent you</p>
+
             {error && (
-              <div style={{
-                background: '#fdecea', color: '#c62828', border: '1px solid #f5c6cb',
-                borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px',
-              }}>
+              <div style={{ display: 'flex', gap: 9, background: 'rgba(220,38,38,0.12)', color: '#fca5a5', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 9, padding: '10px 13px', marginBottom: 12, fontSize: 13, fontWeight: 500 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 {error}
               </div>
             )}
+
             <form onSubmit={handleVerifyOtp}>
+              <label>Verification Code</label>
               <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Enter 6-digit OTP"
-                value={otp}
-                onChange={e => { setOtp(e.target.value); setError(''); }}
-                style={{
-                  width: '100%', padding: '12px 16px', fontSize: '20px', textAlign: 'center',
-                  letterSpacing: '8px', border: '2px solid #e5e7eb', borderRadius: '10px',
-                  marginBottom: '16px', boxSizing: 'border-box', outline: 'none',
-                }}
+                type="text" inputMode="numeric" maxLength={6}
+                placeholder="0  0  0  0  0  0"
+                value={otp} onChange={e => { setOtp(e.target.value); setError(''); }}
+                style={{ fontSize: 22, textAlign: 'center', letterSpacing: '12px', fontWeight: 700 }}
               />
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: '100%', background: '#1E3A5F', color: '#fff',
-                  padding: '12px', borderRadius: '10px', border: 'none',
-                  fontWeight: '700', fontSize: '14px', cursor: 'pointer',
-                  opacity: loading ? 0.7 : 1,
-                }}>
-                {loading ? 'Verifying...' : 'Verify OTP'}
+              <button type="submit" disabled={loading}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {loading
+                  ? <><div style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Verifying…</>
+                  : 'VERIFY EMAIL'
+                }
               </button>
+              <p className="auth-switch-text" style={{ marginTop: 12 }}>
+                Didn't receive it? Check your spam folder.
+              </p>
             </form>
           </div>
+
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // ── SUCCESS SCREEN ──
-  if (step === 'done') {
-    return (
-      <div className="auth-page" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
-        <header>
-          <nav>
-            <a href="/" className="logo">
-              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
-              <span className="logo-text">CommUnity</span>
-            </a>
-          </nav>
-        </header>
-        <div className="auth-container">
-          <div style={{
-            background: 'rgba(255,255,255,0.95)', borderRadius: '20px',
-            padding: '56px 48px', textAlign: 'center', maxWidth: '480px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          }}>
-            <div style={{ fontSize: '56px', marginBottom: '16px' }}>✅</div>
-            <h2 style={{ color: '#1E3A5F', marginBottom: '12px', fontSize: '22px' }}>
-              Email Confirmed!
-            </h2>
-            <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-              <div style={{
-                background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px',
-                padding: '16px 20px',
-              }}>
-                <div style={{ fontWeight: '700', color: '#166534', marginBottom: '4px', fontSize: '14px' }}>
-                  Waiting for Admin Approval
-                </div>
-                <div style={{ color: '#4b5563', fontSize: '13px', lineHeight: '1.6' }}>
-                  Your account for <strong>{form.barangay}</strong> has been submitted. Once the admin approves it, you can log in using your email and password.
-                </div>
-              </div>
-            </div>
-            <a href="/login" style={{
-              display: 'inline-block', background: '#1E3A5F', color: '#fff',
-              padding: '12px 32px', borderRadius: '10px', textDecoration: 'none',
-              fontWeight: '700', fontSize: '14px',
-            }}>Back to Login</a>
+  /* ── SUCCESS SCREEN ── */
+  if (step === 'done') return (
+    <div className="auth-page" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
+      <Navbar />
+      <div className="auth-container">
+        <div className="auth-card">
+
+          {/* LEFT — info */}
+          <div className="auth-overview">
+            <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
+            <h2>You're Almost There!</h2>
+            <p>
+              Your registration has been submitted for <strong style={{ color: '#a7d4ff' }}>Barangay {form.barangay}</strong>.
+              The admin will review and approve your account shortly.
+            </p>
+            <ul className="auth-checklist">
+              <li>✔ Email confirmed</li>
+              <li>⏳ Waiting for admin review</li>
+              <li>🔓 Access granted after approval</li>
+            </ul>
           </div>
+
+          {/* RIGHT — done */}
+          <div className="auth-form">
+            <StepBar active={2} />
+
+            <h2 style={{ marginBottom: 4 }}>Registration Submitted!</h2>
+            <p className="auth-sub">Your account is pending admin approval</p>
+
+            {/* Status card */}
+            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '16px 18px', margin: '16px 0 22px' }}>
+              {[
+                { color: '#34d399', text: 'Email confirmed ✓' },
+                { color: '#fbbf24', text: 'Waiting for admin review' },
+                { color: 'rgba(255,255,255,0.3)', text: 'Access granted after approval' },
+              ].map((x, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: x.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{x.text}</span>
+                </div>
+              ))}
+            </div>
+
+            <a href="/login"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#173d63', color: '#fff', padding: '14px',
+                borderRadius: 10, textDecoration: 'none', fontWeight: 700,
+                fontSize: 14, letterSpacing: '0.05em', fontFamily: 'inherit',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#1f507f'}
+              onMouseLeave={e => e.currentTarget.style.background = '#173d63'}
+            >
+              BACK TO SIGN IN
+            </a>
+          </div>
+
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // ── FORM ──
+  /* ── SIGNUP FORM ── */
   return (
     <div className="auth-page" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
-
-      {/* NAVBAR */}
-      <header>
-        <nav>
-          <a href="/" className="logo">
-            <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
-            <span className="logo-text">CommUnity</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="/">Home</a></li>
-            <li><a href="/#about">About</a></li>
-            <li><a href="/#features">Features</a></li>
-            <li><a href="/#contact">Contact</a></li>
-            <li><a href="/#get-started">Get Started</a></li>
-          </ul>
-        </nav>
-      </header>
-
-      {/* CARD */}
+      <Navbar />
       <div className="auth-container">
         <div className="auth-card auth-card--signup">
 
-          {/* LEFT — signup form */}
+          {/* LEFT — form */}
           <div className="auth-form auth-form--left">
-            <h2>Official Sign Up</h2>
-            <p className="auth-sub">Register your barangay to get started</p>
+            <StepBar active={0} />
+
+            <h2 style={{ marginBottom: 4 }}>Create Your Account</h2>
+            <p className="auth-sub">For barangay officials only — requires admin approval</p>
 
             {error && (
-              <div style={{
-                background: '#fdecea', color: '#c62828',
-                border: '1px solid #f5c6cb', borderRadius: '8px',
-                padding: '10px 14px', marginBottom: '12px', fontSize: '14px',
-              }}>
+              <div style={{ display: 'flex', gap: 9, background: 'rgba(220,38,38,0.12)', color: '#fca5a5', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 9, padding: '10px 13px', marginBottom: 12, fontSize: 13, fontWeight: 500 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
 
-              <label>Select Barangay</label>
+              {/* Barangay */}
+              <label>Barangay</label>
               <select name="barangay" value={form.barangay} onChange={handleChange} required>
                 <option value="" disabled>Select your barangay</option>
                 {BARANGAYS.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
 
+              {/* Email */}
               <label>Email Address</label>
               <input
-                type="email"
-                name="email"
-                placeholder="Enter your official email"
-                value={form.email}
-                onChange={handleChange}
-                required
+                type="email" name="email" placeholder="Enter your email"
+                value={form.email} onChange={handleChange} required
               />
 
-              <label>Password</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Enter password"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                  style={{ paddingRight: '44px' }}
-                />
-                <button type="button" onClick={() => setShowPass(v => !v)}
-                  style={{
-                    position: 'absolute', right: '12px', top: '50%',
-                    transform: 'translateY(-50%)', background: 'none',
-                    border: 'none', cursor: 'pointer', padding: '4px',
-                    color: '#6b7280', display: 'flex', alignItems: 'center',
-                  }}>
-                  {showPass ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                      <line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  )}
-                </button>
+              {/* Passwords — 2 column */}
+              <div className="auth-name-row">
+                <div style={{ flex: 1 }}>
+                  <label>Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPass ? 'text' : 'password'} name="password"
+                      placeholder="Min. 8 chars" value={form.password}
+                      onChange={handleChange} required
+                      style={{ paddingRight: 40, marginBottom: 0 }}
+                    />
+                    <button type="button" onClick={() => setShowPass(v => !v)}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#8ba6c9', display: 'flex', padding: 4 }}>
+                      <EyeIcon open={showPass} />
+                    </button>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Confirm Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showConfirm ? 'text' : 'password'} name="confirmPassword"
+                      placeholder="Re-enter" value={form.confirmPassword}
+                      onChange={handleChange} required
+                      style={{ paddingRight: 40, marginBottom: 0 }}
+                    />
+                    <button type="button" onClick={() => setShowConfirm(v => !v)}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#8ba6c9', display: 'flex', padding: 4 }}>
+                      <EyeIcon open={showConfirm} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <label>Confirm Password</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showConfirm ? 'text' : 'password'}
-                  name="confirmPassword"
-                  placeholder="Confirm password"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  style={{ paddingRight: '44px' }}
-                />
-                <button type="button" onClick={() => setShowConfirm(v => !v)}
-                  style={{
-                    position: 'absolute', right: '12px', top: '50%',
-                    transform: 'translateY(-50%)', background: 'none',
-                    border: 'none', cursor: 'pointer', padding: '4px',
-                    color: '#6b7280', display: 'flex', alignItems: 'center',
-                  }}>
-                  {showConfirm ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                      <line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  )}
-                </button>
-              </div>
-
-              <button type="submit" disabled={loading}>
-                {loading ? 'Submitting...' : 'SUBMIT FOR APPROVAL'}
+              <button type="submit" disabled={loading}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+                {loading
+                  ? <><div style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Submitting…</>
+                  : 'SUBMIT FOR APPROVAL →'
+                }
               </button>
+
               <p className="auth-switch-text">
-                Already have an account? <Link to="/login">Log in</Link>
+                Already have an account? <Link to="/login">Sign in</Link>
               </p>
             </form>
           </div>
 
           {/* RIGHT — info panel */}
           <div className="auth-overview auth-overview--right">
-            <h2>Welcome to CommUnity</h2>
+            <h2>Join CommUnity Today</h2>
             <p>
-              Register your barangay to start managing reports, service requests,
-              and build a stronger community together.
+              Register your barangay and start managing community reports,
+              document requests, and residents — all in one place.
             </p>
             <ul className="auth-checklist">
-              <li>✔ Manage community reports</li>
-              <li>✔ Process document requests</li>
-              <li>✔ View barangay analytics</li>
+              <li>✔ Fill out the form</li>
+              <li>✔ Verify your email</li>
+              <li>⏳ Wait for admin approval</li>
+              <li>🔓 Access the portal</li>
             </ul>
+
+            <div style={{
+              marginTop: 28, display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'rgba(37,99,235,0.2)', border: '1px solid rgba(37,99,235,0.35)',
+              borderRadius: 999, padding: '6px 14px',
+            }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#60a5fa', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: '#93c5fd', fontWeight: 600 }}>Official Registration</span>
+            </div>
           </div>
 
         </div>
       </div>
-
     </div>
   );
 }
