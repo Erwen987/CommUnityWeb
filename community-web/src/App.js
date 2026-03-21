@@ -47,20 +47,18 @@ function Landing() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu when screen resizes to desktop
   useEffect(() => {
     const handleResize = () => { if (window.innerWidth > 768) setMenuOpen(false); };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Lock body scroll when menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
-  const scrollToTop = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   const closeMenu   = () => setMenuOpen(false);
 
   const navLinks = [
@@ -75,28 +73,39 @@ function Landing() {
     <div>
 
       {/* ── MOBILE FULL-SCREEN MENU ── */}
-      <div className={`mobile-menu${menuOpen ? ' open' : ''}`}>
-        {/* Logo */}
-        <div className="mobile-menu-logo">
-          <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
-          <span>CommUnity</span>
+      <div className={`mobile-menu${menuOpen ? ' open' : ''}`} aria-hidden={!menuOpen}>
+
+        {/* Top bar: logo + close */}
+        <div className="mobile-menu-topbar">
+          <div className="mobile-menu-logo">
+            <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
+            <span>CommUnity</span>
+          </div>
+          <button className="mobile-menu-close" onClick={closeMenu} aria-label="Close menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
 
-        {/* Close button */}
-        <button className="mobile-menu-close" onClick={closeMenu} aria-label="Close menu">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
+        {/* Badge */}
+        <div className="mobile-menu-badge">
+          <span className="mobile-menu-dot" />
+          Barangay Management System
+        </div>
 
         {/* Nav links */}
-        <nav>
+        <nav className="mobile-menu-nav">
           {navLinks.map(l => (
-            <a key={l.href} href={l.href} onClick={closeMenu}>{l.label}</a>
+            <a key={l.href} href={l.href} onClick={closeMenu}
+              className={l.label === 'Get Started' ? 'mobile-menu-cta' : ''}>
+              {l.label}
+            </a>
           ))}
         </nav>
 
-        <div className="mobile-menu-footer">© {new Date().getFullYear()} CommUnity</div>
+        {/* Footer */}
+        <div className="mobile-menu-footer">© {new Date().getFullYear()} CommUnity. All rights reserved.</div>
       </div>
 
       {/* ── STICKY NAVBAR ── */}
@@ -107,16 +116,16 @@ function Landing() {
             <span className="logo-text">CommUnity</span>
           </a>
 
-          {/* Desktop nav links */}
           <ul className="nav-links">
-            {navLinks.map(l => (
-              <li key={l.href}><a href={l.href}>{l.label}</a></li>
-            ))}
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#get-started" className="btn-get-started">Get Started</a></li>
           </ul>
 
-          {/* Hamburger — mobile only */}
           <button className="hamburger-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6"/>
               <line x1="3" y1="12" x2="21" y2="12"/>
               <line x1="3" y1="18" x2="21" y2="18"/>
@@ -132,15 +141,25 @@ function Landing() {
 
       {/* ── HERO ── */}
       <div className="hero-wrapper" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
+        <div className="hero-overlay" />
         <div style={{ height: 80 }} />
         <section id="home" className="hero-section">
-          <h1>CommUnity:<br />Report, Request, Reward</h1>
-          <p>Make your barangay better</p>
+          <div className="hero-badge">
+            <span className="hero-badge-dot" />
+            Barangay Management System
+          </div>
+          <h1>CommUnity:<br />Report, Request,<br className="hero-br" /> Reward</h1>
+          <p>Make your barangay better — together.</p>
+          <div className="hero-actions">
+            <a href="#get-started" className="hero-btn-primary">Get Started →</a>
+            <a href="#about" className="hero-btn-secondary">Learn More</a>
+          </div>
         </section>
       </div>
 
       {/* ── ABOUT ── */}
       <div className="section fade-element" id="about">
+        <div className="section-label">About</div>
         <h2 className="section-title">How CommUnity Works</h2>
         <p className="section-sub">Explore the powerful features of CommUnity</p>
         <div className="about-layout">
@@ -160,16 +179,21 @@ function Landing() {
 
       {/* ── WHO CAN USE ── */}
       <div className="who-section fade-element">
+        <div className="section-label">Users</div>
         <h2 className="section-title">Who Can Use It?</h2>
         <p className="section-sub">CommUnity is built for everyone in the barangay</p>
         <div className="card-row">
           <div className="who-card">
-            <img src={`${IMG}/features/whocanuseit_residents.png`} alt="Residents" />
+            <div className="who-card-img-wrap">
+              <img src={`${IMG}/features/whocanuseit_residents.png`} alt="Residents" />
+            </div>
             <h3>Residents</h3>
             <p>Report community issues, request barangay services, and earn rewards for active participation.</p>
           </div>
           <div className="who-card">
-            <img src={`${IMG}/features/whocanuseit_barangayofficials.png`} alt="Barangay Officials" />
+            <div className="who-card-img-wrap">
+              <img src={`${IMG}/features/whocanuseit_barangayofficials.png`} alt="Barangay Officials" />
+            </div>
             <h3>Barangay Officials</h3>
             <p>Manage reports, process document requests, and efficiently serve your community members.</p>
           </div>
@@ -178,21 +202,28 @@ function Landing() {
 
       {/* ── FEATURES ── */}
       <div className="section fade-element" id="features">
-        <h2 className="section-title">Features</h2>
+        <div className="section-label">Features</div>
+        <h2 className="section-title">What Can You Do?</h2>
         <p className="section-sub">Everything you need to report, track, and improve your community</p>
         <div className="card-grid">
           <div className="feature-card">
-            <img src={`${IMG}/features/features-reports.png`} alt="Report Issues" />
+            <div className="feature-card-icon">
+              <img src={`${IMG}/features/features-reports.png`} alt="Report Issues" />
+            </div>
             <h3>Report Issues</h3>
             <p>Easily report community problems like broken streetlights, potholes, and illegal dumping.</p>
           </div>
           <div className="feature-card">
-            <img src={`${IMG}/features/features-request.png`} alt="Request Assistance" />
+            <div className="feature-card-icon">
+              <img src={`${IMG}/features/features-request.png`} alt="Request Assistance" />
+            </div>
             <h3>Request Assistance</h3>
             <p>Request barangay documents and services directly from your phone — fast and hassle-free.</p>
           </div>
           <div className="feature-card">
-            <img src={`${IMG}/features/features-rewards.png`} alt="Earn Rewards" />
+            <div className="feature-card-icon">
+              <img src={`${IMG}/features/features-rewards.png`} alt="Earn Rewards" />
+            </div>
             <h3>Earn Rewards</h3>
             <p>Earn points for active participation and redeem them for exciting rewards from the barangay.</p>
           </div>
@@ -201,7 +232,8 @@ function Landing() {
 
       {/* ── CONTACT ── */}
       <div className="contact-section fade-element" id="contact">
-        <h2 className="section-title">Contact Us</h2>
+        <div className="section-label">Contact</div>
+        <h2 className="section-title">Get In Touch</h2>
         <p className="section-sub">We'd love to hear from you</p>
         <div className="contact-layout">
           <div className="contact-image">
@@ -211,13 +243,10 @@ function Landing() {
             <form>
               <label htmlFor="barangay">Barangay Name</label>
               <input type="text" id="barangay" placeholder="Enter your barangay name" required />
-
               <label htmlFor="email">Email Address</label>
               <input type="email" id="email" placeholder="Enter your email" required />
-
               <label htmlFor="message">Message</label>
               <textarea id="message" rows="5" placeholder="Write your message here..." required></textarea>
-
               <button type="submit">Send Message</button>
             </form>
           </div>
@@ -225,16 +254,17 @@ function Landing() {
       </div>
 
       {/* ── FOOTER / GET STARTED ── */}
-      <footer
-        id="get-started"
-        className="footer fade-element"
-        style={{ backgroundImage: `url(${IMG}/footer.png)` }}
-      >
-        <h2>Get Started</h2>
-        <p>Join and be part of building a better community.</p>
-        <div className="footer-buttons">
-          <a href="/login"  className="footer-btn btn-login">Login</a>
-          <a href="/signup" className="footer-btn btn-signup">Sign Up</a>
+      <footer id="get-started" className="footer fade-element"
+        style={{ backgroundImage: `url(${IMG}/footer.png)` }}>
+        <div className="footer-overlay" />
+        <div className="footer-content">
+          <div className="footer-badge">Join CommUnity Today</div>
+          <h2>Get Started</h2>
+          <p>Join and be part of building a better community.</p>
+          <div className="footer-buttons">
+            <a href="/login"  className="footer-btn btn-login">Login</a>
+            <a href="/signup" className="footer-btn btn-signup">Sign Up</a>
+          </div>
         </div>
       </footer>
 
@@ -246,7 +276,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
         <Route path="/"                element={<Landing />} />
         <Route path="/login"           element={<Login />} />
         <Route path="/signup"          element={<Signup />} />
@@ -254,7 +283,6 @@ function App() {
         <Route path="/reset-password"  element={<ResetPassword />} />
         <Route path="/admin-portal"    element={<AdminPortal />} />
 
-        {/* Officials — protected */}
         <Route path="/officials/dashboard" element={<ProtectedRoute role="official"><Dashboard /></ProtectedRoute>} />
         <Route path="/officials/reports"   element={<ProtectedRoute role="official"><Reports /></ProtectedRoute>} />
         <Route path="/officials/requests"  element={<ProtectedRoute role="official"><Requests /></ProtectedRoute>} />
@@ -263,7 +291,6 @@ function App() {
         <Route path="/officials/residents" element={<ProtectedRoute role="official"><Residents /></ProtectedRoute>} />
         <Route path="/officials/profile"   element={<ProtectedRoute role="official"><OfficialProfile /></ProtectedRoute>} />
 
-        {/* Admin — protected */}
         <Route path="/admin/dashboard"       element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/user-management" element={<ProtectedRoute role="admin"><UserManagement /></ProtectedRoute>} />
         <Route path="/admin/reports"         element={<ProtectedRoute role="admin"><AdminReports /></ProtectedRoute>} />
