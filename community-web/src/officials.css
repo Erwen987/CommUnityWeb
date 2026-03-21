@@ -219,6 +219,7 @@
 /* ── CONTENT ── */
 .off-content {
   padding: 8px 32px 32px;
+  overflow-x: hidden;
 }
 .off-page-title { font-size: 26px; font-weight: 700; color: #1a3a6b; }
 .off-page-sub { font-size: 13px; color: #6b7280; margin-top: 4px; margin-bottom: 24px; }
@@ -486,10 +487,17 @@
   color: #1a3a6b;
 }
 
-/* ── ANALYTICS STAT GRID ── */
+/* ── PAGE STAT GRIDS ── */
+/* Auto-wrapping grid used by all page stat cards */
 .off-analytics-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.off-page-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
   margin-bottom: 28px;
 }
@@ -508,6 +516,7 @@
   grid-template-columns: 1fr 320px;
   gap: 20px;
   align-items: start;
+  min-width: 0;
 }
 
 /* ── REWARDS ── */
