@@ -53,7 +53,6 @@ function Spinner() {
 
 function RequestModal({ req, onClose }) {
   if (!req) return null;
-  const s = STATUS_CFG[req.status] || STATUS_CFG.pending;
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
       onClick={onClose}>
