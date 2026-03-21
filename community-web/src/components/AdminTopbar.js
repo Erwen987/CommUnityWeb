@@ -72,13 +72,22 @@ function AdminTopbar() {
       </div>
 
       <div className="off-topbar-actions">
-        <span style={{
-          fontSize: '13px', fontWeight: '600', color: '#1e3a5f',
-          background: '#e0e7ef', padding: '4px 12px', borderRadius: '999px',
-          whiteSpace: 'nowrap',
-        }}>
-          System Admin
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{
+            fontSize: '13px', fontWeight: '600', color: '#1e3a5f',
+            background: '#e0e7ef', padding: '4px 12px', borderRadius: '999px',
+            whiteSpace: 'nowrap',
+          }}>
+            {profile?.full_name || 'System Admin'}
+          </span>
+          <span style={{
+            fontSize: '10px', fontWeight: '700', color: '#fff',
+            background: '#2563eb', padding: '3px 8px', borderRadius: '999px',
+            letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+          }}>
+            Admin
+          </span>
+        </div>
         <button className="off-notif">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
