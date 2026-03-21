@@ -41,9 +41,6 @@ const STATUS_COLORS = {
 function OfficialProfile() {
   const [profile,  setProfile]  = useState(null);
   const [loading,  setLoading]  = useState(true);
-  const [phone,    setPhone]    = useState('');
-  const [saving,   setSaving]   = useState(false);
-  const [editPhone,setEditPhone]= useState(false);
   const [toast,       setToast]       = useState(null);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [showPicker,   setShowPicker]  = useState(false);
@@ -66,6 +63,29 @@ function OfficialProfile() {
     showToast('Avatar updated!');
   };
 
+  // Activity stats
+  const [stats, setStats] = useState(null);
+
+  const loadStats = useCallback(async (barangay) => {
+    if (!barangay) return;
+    const [
+      { count: totalReports },
+      { count: resolvedReports },
+      { count: pendingReports },
+      { count: totalRequests },
+      { count: pendingRequests },
+      { count: claimedRequests },
+    ] = await Promise.all([
+      supabase.from('reports').select('id', { count: 'exact', head: true }).eq('barangay', barangay),
+      supabase.from('reports').select('id', { count: 'exact', head: true }).eq('barangay', barangay).eq('status', 'resolved'),
+      supabase.from('reports').select('id', { count: 'exact', head: true }).eq('barangay', barangay).eq('status', 'pending'),
+      supabase.from('requests').select('id', { count: 'exact', head: true }).eq('barangay', barangay),
+      supabase.from('requests').select('id', { count: 'exact', head: true }).eq('barangay', barangay).eq('status', 'pending'),
+      supabase.from('requests').select('id', { count: 'exact', head: true }).eq('barangay', barangay).eq('status', 'claimed'),
+    ]);
+    setStats({ totalReports, resolvedReports, pendingReports, totalRequests, pendingRequests, claimedRequests });
+  }, []);
+
   // Password change
   const [newPass,     setNewPass]     = useState('');
   const [confirmPass, setConfirmPass] = useState('');
@@ -85,31 +105,18 @@ function OfficialProfile() {
 
     const { data } = await supabase
       .from('officials')
-      .select('id, full_name, email, phone, barangay, barangay_name, status, created_at, avatar_url')
+      .select('id, email, barangay, barangay_name, status, created_at, avatar_url')
       .eq('auth_id', user.id)
       .single();
 
     if (data) {
       setProfile({ ...data, auth_email: user.email });
-      setPhone(data.phone || '');
+      loadStats(data.barangay);
     }
     setLoading(false);
-  }, []);
+  }, [loadStats]);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
-
-  const handleSavePhone = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from('officials')
-      .update({ phone: phone.trim() || null })
-      .eq('id', profile.id);
-    setSaving(false);
-    if (error) { showToast('Failed to update phone number.', 'error'); return; }
-    setProfile(p => ({ ...p, phone: phone.trim() || null }));
-    setEditPhone(false);
-    showToast('Phone number updated.');
-  };
 
   const handleChangePassword = async () => {
     setPassMsg(null);
@@ -127,9 +134,7 @@ function OfficialProfile() {
   const fmt = d => d ? new Date(d).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
   const statusStyle = STATUS_COLORS[profile?.status] || STATUS_COLORS.pending;
 
-  const initials = profile?.full_name
-    ? profile.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    : (profile?.email || 'OF').slice(0, 2).toUpperCase();
+  const initials = (profile?.email || 'OF').slice(0, 2).toUpperCase();
 
   return (
     <div className="off-layout">
@@ -189,7 +194,7 @@ function OfficialProfile() {
                   )}
 
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>{profile.full_name || '—'}</div>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>{profile.barangay_name ? `Barangay ${profile.barangay_name}` : profile.barangay || '—'}</div>
                     <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>Barangay Official</div>
                   </div>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: statusStyle.bg, color: statusStyle.color, padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
@@ -219,44 +224,52 @@ function OfficialProfile() {
                     </div>
                   </div>
                   <div style={{ padding: '22px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                    <Field label="Full Name"  value={profile.full_name} />
                     <Field label="Email"      value={profile.auth_email} />
                     <Field label="Barangay"   value={profile.barangay_name ? `Barangay ${profile.barangay_name}` : profile.barangay} />
                     <Field label="Status"     value={statusStyle.label} />
+                    <Field label="Member Since" value={fmt(profile.created_at)} />
+                  </div>
+                </div>
 
-                    {/* Phone — editable */}
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Phone Number</div>
-                      {editPhone ? (
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <input
-                            type="tel"
-                            value={phone}
-                            onChange={e => setPhone(e.target.value)}
-                            placeholder="e.g. 09171234567"
-                            style={{ flex: 1, padding: '9px 12px', border: '1.5px solid #2563eb', borderRadius: 9, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}
-                          />
-                          <button onClick={handleSavePhone} disabled={saving}
-                            style={{ padding: '9px 18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-                            {saving ? 'Saving…' : 'Save'}
-                          </button>
-                          <button onClick={() => { setEditPhone(false); setPhone(profile.phone || ''); }}
-                            style={{ padding: '9px 14px', background: '#f1f5f9', color: '#374151', border: '1.5px solid #e5e7eb', borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 14, color: profile.phone ? '#1f2937' : '#9ca3af', fontWeight: 500 }}>
-                            {profile.phone || 'Not set'}
-                          </span>
-                          <button onClick={() => setEditPhone(true)}
-                            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: '2px 8px', borderRadius: 6, background: '#eff6ff' }}>
-                            Edit
-                          </button>
-                        </div>
-                      )}
+                {/* ── Activity Stats ── */}
+                <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+                  <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 11, background: '#f0f4ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>Barangay Activity</div>
+                      <div style={{ fontSize: 12, color: '#9ca3af' }}>Overview of reports and requests in your barangay</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '22px 24px' }}>
+                    {!stats ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+                        <div style={{ width: 24, height: 24, border: '3px solid #e5e7eb', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                        {[
+                          { label: 'Total Reports',     value: stats.totalReports,    accent: '#2563eb', bg: '#eff6ff',
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
+                          { label: 'Resolved',          value: stats.resolvedReports, accent: '#059669', bg: '#d1fae5',
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
+                          { label: 'Pending Reports',   value: stats.pendingReports,  accent: '#d97706', bg: '#fef3c7',
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+                          { label: 'Total Requests',    value: stats.totalRequests,   accent: '#7c3aed', bg: '#ede9fe',
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg> },
+                          { label: 'Claimed',           value: stats.claimedRequests, accent: '#16a34a', bg: '#dcfce7',
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+                          { label: 'Pending Requests',  value: stats.pendingRequests, accent: '#e11d48', bg: '#ffe4e6',
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> },
+                        ].map(s => (
+                          <div key={s.label} style={{ background: s.bg, borderRadius: 12, padding: '14px 16px', borderLeft: `3px solid ${s.accent}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>{s.icon}<span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</span></div>
+                            <div style={{ fontSize: 28, fontWeight: 800, color: s.accent, lineHeight: 1 }}>{s.value ?? 0}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

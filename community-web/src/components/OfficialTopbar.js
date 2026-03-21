@@ -8,13 +8,11 @@ function resolveAvatar(url) {
 }
 
 function OfficialTopbar({ badge = false }) {
-  const { barangay, fullName, avatarUrl, loading } = useOfficialProfile();
+  const { barangay, avatarUrl, loading } = useOfficialProfile();
 
-  const initials = fullName
-    ? fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    : barangay
-      ? barangay.replace('Barangay ', '').slice(0, 2).toUpperCase()
-      : 'OF';
+  const initials = barangay
+    ? barangay.replace('Barangay ', '').slice(0, 2).toUpperCase()
+    : 'OF';
 
   const avatarSrc = resolveAvatar(avatarUrl);
 
@@ -44,7 +42,7 @@ function OfficialTopbar({ badge = false }) {
           </svg>
           {badge && <span className="off-notif-badge" />}
         </button>
-        <div className="off-avatar" title={fullName || barangay}>
+        <div className="off-avatar" title={barangay}>
           {avatarSrc
             ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             : <span>{initials}</span>
