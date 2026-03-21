@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 const IMG = process.env.PUBLIC_URL + '/images';
@@ -10,6 +10,8 @@ function Login() {
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
   const navigate                = useNavigate();
+  const location                = useLocation();
+  const successMsg              = location.state?.message || '';
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -150,6 +152,15 @@ function Login() {
           <div className="auth-form">
             <h2>WELCOME BACK!</h2>
             <form onSubmit={handleSubmit}>
+              {successMsg && (
+                <div style={{
+                  background: '#f0fdf4', color: '#16a34a',
+                  border: '1px solid #bbf7d0', borderRadius: '8px',
+                  padding: '10px 14px', marginBottom: '12px', fontSize: '14px'
+                }}>
+                  {successMsg}
+                </div>
+              )}
               {error && (
                 <div style={{
                   background: '#fdecea', color: '#c62828',
@@ -211,6 +222,11 @@ function Login() {
               <button type="submit" disabled={loading}>
                 {loading ? 'Logging in...' : 'LOGIN'}
               </button>
+              <p style={{ textAlign: 'right', margin: '4px 0 0' }}>
+                <Link to="/forgot-password" style={{ fontSize: '13px', color: '#2563eb', fontWeight: 600 }}>
+                  Forgot password?
+                </Link>
+              </p>
               <p className="auth-switch-text">
                 Don't have an account? <Link to="/signup">Sign up</Link>
               </p>

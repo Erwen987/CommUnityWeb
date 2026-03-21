@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   HiOutlineHome, HiOutlineUserGroup, HiOutlineDocumentText,
   HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift,
-  HiOutlineCog, HiOutlineLogout
+  HiOutlineCog, HiOutlineLogout, HiOutlineUser
 } from 'react-icons/hi';
 import { supabase } from '../supabaseClient';
 
@@ -17,6 +17,7 @@ const NAV = [
   { to: '/admin/analytics',       icon: HiOutlineChartBar,       label: 'Analytics'       },
   { to: '/admin/rewards',         icon: HiOutlineGift,           label: 'Reward'          },
   { to: '/admin/settings',        icon: HiOutlineCog,            label: 'Settings'        },
+  { to: '/admin/profile',         icon: HiOutlineUser,           label: 'Profile'         },
 ];
 
 function AdminSidebar() {

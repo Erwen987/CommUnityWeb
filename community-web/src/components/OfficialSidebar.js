@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout, HiOutlineUserGroup } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout, HiOutlineUserGroup, HiOutlineUser } from 'react-icons/hi';
 import { supabase } from '../supabaseClient';
 
 const IMG = process.env.PUBLIC_URL + '/images';
@@ -12,6 +12,7 @@ const NAV = [
   { to: '/officials/analytics', icon: HiOutlineChartBar,       label: 'Analytics' },
   { to: '/officials/rewards',   icon: HiOutlineGift,           label: 'Rewards'   },
   { to: '/officials/residents', icon: HiOutlineUserGroup,      label: 'Residents' },
+  { to: '/officials/profile',   icon: HiOutlineUser,           label: 'Profile'   },
 ];
 
 function OfficialSidebar() {

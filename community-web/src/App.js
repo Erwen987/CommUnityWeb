@@ -1,14 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/officials/Dashboard';
-import Reports   from './pages/officials/Reports';
-import Requests  from './pages/officials/Requests';
-import Analytics from './pages/officials/Analytics';
-import Rewards   from './pages/officials/Rewards';
-import Residents from './pages/officials/Residents';
+
+import ProtectedRoute    from './components/ProtectedRoute';
+import Login             from './pages/Login';
+import Signup            from './pages/Signup';
+import ForgotPassword    from './pages/ForgotPassword';
+import ResetPassword     from './pages/ResetPassword';
+
+import Dashboard   from './pages/officials/Dashboard';
+import Reports     from './pages/officials/Reports';
+import Requests    from './pages/officials/Requests';
+import Analytics   from './pages/officials/Analytics';
+import Rewards     from './pages/officials/Rewards';
+import Residents   from './pages/officials/Residents';
+import OfficialProfile from './pages/officials/Profile';
+
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import AdminReports   from './pages/admin/AdminReports';
@@ -17,12 +24,13 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminRewards   from './pages/admin/AdminRewards';
 import AdminSettings  from './pages/admin/AdminSettings';
 import AdminPortal    from './pages/admin/AdminPortal';
+import AdminProfile   from './pages/admin/AdminProfile';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
 function Landing() {
-  const [navScrolled, setNavScrolled] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [navScrolled,    setNavScrolled]    = useState(false);
+  const [showScrollTop,  setShowScrollTop]  = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -174,7 +182,7 @@ function Landing() {
         <h2>Get Started</h2>
         <p>Join and be part of building a better community.</p>
         <div className="footer-buttons">
-          <a href="/login" className="footer-btn btn-login">Login</a>
+          <a href="/login"  className="footer-btn btn-login">Login</a>
           <a href="/signup" className="footer-btn btn-signup">Sign Up</a>
         </div>
       </footer>
@@ -187,27 +195,32 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login"  element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/officials/dashboard" element={<Dashboard />} />
-        <Route path="/officials/reports"   element={<Reports />} />
-        <Route path="/officials/requests"  element={<Requests />} />
-        <Route path="/officials/analytics" element={<Analytics />} />
-        <Route path="/officials/rewards"   element={<Rewards />} />
-        <Route path="/officials/residents" element={<Residents />} />
+        {/* Public */}
+        <Route path="/"                element={<Landing />} />
+        <Route path="/login"           element={<Login />} />
+        <Route path="/signup"          element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password"  element={<ResetPassword />} />
+        <Route path="/admin-portal"    element={<AdminPortal />} />
 
-        {/* Admin Portal */}
-        <Route path="/admin-portal" element={<AdminPortal />} />
+        {/* Officials — protected */}
+        <Route path="/officials/dashboard" element={<ProtectedRoute role="official"><Dashboard /></ProtectedRoute>} />
+        <Route path="/officials/reports"   element={<ProtectedRoute role="official"><Reports /></ProtectedRoute>} />
+        <Route path="/officials/requests"  element={<ProtectedRoute role="official"><Requests /></ProtectedRoute>} />
+        <Route path="/officials/analytics" element={<ProtectedRoute role="official"><Analytics /></ProtectedRoute>} />
+        <Route path="/officials/rewards"   element={<ProtectedRoute role="official"><Rewards /></ProtectedRoute>} />
+        <Route path="/officials/residents" element={<ProtectedRoute role="official"><Residents /></ProtectedRoute>} />
+        <Route path="/officials/profile"   element={<ProtectedRoute role="official"><OfficialProfile /></ProtectedRoute>} />
 
-        {/* Admin */}
-        <Route path="/admin/dashboard"       element={<AdminDashboard />} />
-        <Route path="/admin/user-management" element={<UserManagement />} />
-        <Route path="/admin/reports"         element={<AdminReports />} />
-        <Route path="/admin/requests"        element={<AdminRequests />} />
-        <Route path="/admin/analytics"       element={<AdminAnalytics />} />
-        <Route path="/admin/rewards"         element={<AdminRewards />} />
-        <Route path="/admin/settings"        element={<AdminSettings />} />
+        {/* Admin — protected */}
+        <Route path="/admin/dashboard"       element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/user-management" element={<ProtectedRoute role="admin"><UserManagement /></ProtectedRoute>} />
+        <Route path="/admin/reports"         element={<ProtectedRoute role="admin"><AdminReports /></ProtectedRoute>} />
+        <Route path="/admin/requests"        element={<ProtectedRoute role="admin"><AdminRequests /></ProtectedRoute>} />
+        <Route path="/admin/analytics"       element={<ProtectedRoute role="admin"><AdminAnalytics /></ProtectedRoute>} />
+        <Route path="/admin/rewards"         element={<ProtectedRoute role="admin"><AdminRewards /></ProtectedRoute>} />
+        <Route path="/admin/settings"        element={<ProtectedRoute role="admin"><AdminSettings /></ProtectedRoute>} />
+        <Route path="/admin/profile"         element={<ProtectedRoute role="admin"><AdminProfile /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

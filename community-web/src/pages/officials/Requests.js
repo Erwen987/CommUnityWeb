@@ -52,6 +52,8 @@ function Requests() {
   const [updatingId, setUpdatingId]     = useState(null);
   const [search, setSearch]             = useState('');
   const [filter, setFilter]             = useState('all');
+  const [page,   setPage]               = useState(1);
+  const PAGE_SIZE = 10;
   const [rejectModal, setRejectModal]   = useState(null); // { id }
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError]   = useState('');
@@ -70,6 +72,21 @@ function Requests() {
   }, [barangay]);
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!barangay) return;
+    const channel = supabase
+      .channel(`requests-realtime-${barangay}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => {
+        fetchRequests();
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [barangay, fetchRequests]);
+
+  // Reset to page 1 on filter/search change
+  useEffect(() => setPage(1), [filter, search]);
 
   const handleStatusChange = (id, status) => {
     if (status === 'rejected') {
@@ -102,6 +119,8 @@ function Requests() {
   });
 
   const count = s => requests.filter(r => r.status === s).length;
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const STATS = [
     { label: 'Total Requests',   filterKey: 'all',             value: requests.length,          accent: '#7c3aed', iconBg: '#ede9fe',
@@ -151,7 +170,7 @@ function Requests() {
             <div style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>Requests List</div>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>{filtered.length} of {requests.length} records</div>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>{filtered.length} of {requests.length} records · page {page} of {totalPages || 1}</div>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
@@ -203,7 +222,7 @@ function Requests() {
                         <div style={{ fontSize: 12, color: '#9ca3af' }}>{search || filter !== 'all' ? 'Try adjusting your search or filter.' : `No requests submitted for ${barangay || 'your barangay'} yet.`}</div>
                       </div>
                     </td></tr>
-                  ) : filtered.map((r, i) => (
+                  ) : paginated.map((r, i) => (
                     <tr key={r.id}
                       style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
                       onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
@@ -244,6 +263,40 @@ function Requests() {
                   ))}
                 </tbody>
               </table>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div style={{ padding: '14px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                    Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                  </span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                      style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: page === 1 ? '#f9fafb' : '#fff', color: page === 1 ? '#d1d5db' : '#374151', fontWeight: 600, fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+                      ← Prev
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                      .reduce((acc, p, idx, arr) => {
+                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('…');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, i) => p === '…'
+                        ? <span key={`e-${i}`} style={{ padding: '6px 4px', color: '#9ca3af', fontSize: 12 }}>…</span>
+                        : <button key={p} onClick={() => setPage(p)}
+                            style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: page === p ? '#2563eb' : '#fff', color: page === p ? '#fff' : '#374151', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            {p}
+                          </button>
+                      )
+                    }
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                      style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: page === totalPages ? '#f9fafb' : '#fff', color: page === totalPages ? '#d1d5db' : '#374151', fontWeight: 600, fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
 
           </div>
