@@ -1,18 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
+function resolveAvatar(url) {
+  if (!url) return null;
+  if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+  return url;
+}
+
 function AdminTopbar() {
-  const [email, setEmail] = useState('');
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setEmail(user.email);
-    });
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('admins')
+        .select('full_name, email, avatar_url')
+        .eq('auth_id', user.id)
+        .maybeSingle();
+      setProfile(data ? { ...data, auth_email: user.email } : { auth_email: user.email });
+    };
+    load();
   }, []);
 
-  const initials = email
-    ? email.slice(0, 2).toUpperCase()
-    : 'AD';
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : (profile?.auth_email || 'AD').slice(0, 2).toUpperCase();
+
+  const avatarSrc = resolveAvatar(profile?.avatar_url);
 
   return (
     <div className="off-topbar">
@@ -37,8 +53,11 @@ function AdminTopbar() {
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
         </button>
-        <div className="off-avatar" title={email}>
-          <span>{initials}</span>
+        <div className="off-avatar" title={profile?.full_name || profile?.auth_email || ''}>
+          {avatarSrc
+            ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            : <span>{initials}</span>
+          }
         </div>
       </div>
     </div>

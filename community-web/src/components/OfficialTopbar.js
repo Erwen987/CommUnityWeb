@@ -1,12 +1,22 @@
 import React from 'react';
 import { useOfficialProfile } from '../hooks/useOfficialProfile';
 
-function OfficialTopbar({ badge = false }) {
-  const { barangay, loading } = useOfficialProfile();
+function resolveAvatar(url) {
+  if (!url) return null;
+  if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+  return url;
+}
 
-  const initials = barangay
-    ? barangay.replace('Barangay ', '').slice(0, 2).toUpperCase()
-    : 'OF';
+function OfficialTopbar({ badge = false }) {
+  const { barangay, fullName, avatarUrl, loading } = useOfficialProfile();
+
+  const initials = fullName
+    ? fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : barangay
+      ? barangay.replace('Barangay ', '').slice(0, 2).toUpperCase()
+      : 'OF';
+
+  const avatarSrc = resolveAvatar(avatarUrl);
 
   return (
     <div className="off-topbar">
@@ -34,8 +44,11 @@ function OfficialTopbar({ badge = false }) {
           </svg>
           {badge && <span className="off-notif-badge" />}
         </button>
-        <div className="off-avatar">
-          <span>{initials}</span>
+        <div className="off-avatar" title={fullName || barangay}>
+          {avatarSrc
+            ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            : <span>{initials}</span>
+          }
         </div>
       </div>
     </div>

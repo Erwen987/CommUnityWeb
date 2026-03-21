@@ -30,27 +30,6 @@ function SectionCard({ icon, title, sub, children }) {
   );
 }
 
-function PasswordInput({ label, value, onChange, show, onToggle, placeholder }) {
-  return (
-    <div>
-      <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {label} <span style={{ color: '#dc2626' }}>*</span>
-      </label>
-      <div style={{ position: 'relative' }}>
-        <input type={show ? 'text' : 'password'} value={value} onChange={onChange} placeholder={placeholder}
-          style={{ width: '100%', padding: '10px 40px 10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-        <button type="button" onClick={onToggle}
-          style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', padding: 4 }}>
-          {show
-            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          }
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function StatusMsg({ msg }) {
   if (!msg) return null;
   return (
@@ -165,27 +144,6 @@ function AdminSettings() {
     setSavingPrefs(false);
     setPrefsDirty(false);
     showToast('Settings saved successfully.');
-  };
-
-  // ── Change password ────────────────────────────────────────────────────────
-  const [newPass,     setNewPass]     = useState('');
-  const [confirmPass, setConfirmPass] = useState('');
-  const [showNew,     setShowNew]     = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [passLoading, setPassLoading] = useState(false);
-  const [passMsg,     setPassMsg]     = useState(null);
-
-  const handleChangePassword = async () => {
-    setPassMsg(null);
-    if (!newPass)               return setPassMsg({ type: 'error', text: 'Please enter a new password.' });
-    if (newPass.length < 6)     return setPassMsg({ type: 'error', text: 'Password must be at least 6 characters.' });
-    if (newPass !== confirmPass) return setPassMsg({ type: 'error', text: 'Passwords do not match.' });
-    setPassLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: newPass });
-    setPassLoading(false);
-    if (error) return setPassMsg({ type: 'error', text: error.message });
-    setPassMsg({ type: 'success', text: 'Password updated successfully.' });
-    setNewPass(''); setConfirmPass('');
   };
 
   // ── Admin management ───────────────────────────────────────────────────────
@@ -336,7 +294,7 @@ function AdminSettings() {
 
           <div style={{ marginBottom: 24 }}>
             <h1 className="off-page-title">System Settings</h1>
-            <p className="off-page-sub" style={{ margin: 0 }}>Manage admin accounts, security, backup, and system preferences</p>
+            <p className="off-page-sub" style={{ margin: 0 }}>Manage admin accounts, backup, and system preferences — to change your password, go to <a href="/admin/profile" style={{ color: '#2563eb', fontWeight: 600 }}>Profile</a></p>
           </div>
 
           {/* ── Backup Reminder Banner ── */}
@@ -378,21 +336,6 @@ function AdminSettings() {
             </div>
           )}
 
-          {/* ── Change Password ── */}
-          <SectionCard
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>}
-            title="Change Password" sub="Update your admin account password">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 420 }}>
-              <PasswordInput label="New Password"     value={newPass}     onChange={e => setNewPass(e.target.value)}     show={showNew}     onToggle={() => setShowNew(v => !v)}     placeholder="Minimum 6 characters" />
-              <PasswordInput label="Confirm Password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} show={showConfirm} onToggle={() => setShowConfirm(v => !v)} placeholder="Re-enter new password" />
-              <Btn onClick={handleChangePassword} loading={passLoading} variant="dark"
-                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}>
-                {passLoading ? 'Saving...' : 'Update Password'}
-              </Btn>
-              <StatusMsg msg={passMsg} />
-            </div>
-          </SectionCard>
-
           {/* ── Admin Management ── */}
           <SectionCard
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
@@ -413,7 +356,18 @@ function AdminSettings() {
                 ))}
               </div>
               <div style={{ marginBottom: 14, maxWidth: 320 }}>
-                <PasswordInput label="Temporary Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} show={showNewPw} onToggle={() => setShowNewPw(v => !v)} placeholder="Minimum 6 characters" />
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Temporary Password <span style={{ color: '#dc2626' }}>*</span></label>
+                <div style={{ position: 'relative' }}>
+                  <input type={showNewPw ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 6 characters"
+                    style={{ width: '100%', padding: '10px 40px 10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                  <button type="button" onClick={() => setShowNewPw(v => !v)}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', padding: 4 }}>
+                    {showNewPw
+                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    }
+                  </button>
+                </div>
               </div>
               <div style={{ fontSize: 12, color: '#6b7280', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', marginBottom: 14, display: 'flex', gap: 8 }}>
                 <svg style={{ flexShrink: 0, marginTop: 1 }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

@@ -38,8 +38,18 @@ function AdminProfile() {
 
   // Edit name
   const [editName, setEditName]   = useState(false);
-  const [name,     setName]       = useState('');
-  const [savingName, setSavingName] = useState(false);
+  const [name,        setName]        = useState('');
+  const [savingName,  setSavingName]  = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [showPicker,   setShowPicker]  = useState(false);
+
+  const PRESETS = Array.from({ length: 10 }, (_, i) => `preset_${i + 1}`);
+
+  const resolveAvatar = url => {
+    if (!url) return null;
+    if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+    return url;
+  };
 
   // Change password
   const [newPass,     setNewPass]     = useState('');
@@ -60,7 +70,7 @@ function AdminProfile() {
 
     const { data } = await supabase
       .from('admins')
-      .select('id, full_name, email, created_at')
+      .select('id, full_name, email, created_at, avatar_url')
       .eq('auth_id', user.id)
       .single();
 
@@ -72,6 +82,16 @@ function AdminProfile() {
   }, []);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  const handleSelectAvatar = async (preset) => {
+    setSavingAvatar(true);
+    const { error } = await supabase.from('admins').update({ avatar_url: preset }).eq('id', profile.id);
+    setSavingAvatar(false);
+    if (error) { showToast('Failed to update avatar.', 'error'); return; }
+    setProfile(p => ({ ...p, avatar_url: preset }));
+    setShowPicker(false);
+    showToast('Avatar updated!');
+  };
 
   const handleSaveName = async () => {
     if (!name.trim()) return;
@@ -130,9 +150,39 @@ function AdminProfile() {
               {/* ── Left: Avatar card ── */}
               <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
                 <div style={{ background: 'linear-gradient(135deg, #1E3A5F 0%, #374151 100%)', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '3px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#fff' }}>
-                    {initials}
+                  {/* Avatar with edit button */}
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ width: 84, height: 84, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.4)', overflow: 'hidden', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#fff' }}>
+                      {resolveAvatar(profile.avatar_url)
+                        ? <img src={resolveAvatar(profile.avatar_url)} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span>{initials}</span>
+                      }
+                    </div>
+                    <button onClick={() => setShowPicker(v => !v)} disabled={savingAvatar}
+                      style={{ position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: '50%', background: '#fff', border: '2px solid #1E3A5F', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+                      title="Change avatar">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1E3A5F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
                   </div>
+
+                  {/* Avatar picker */}
+                  {showPicker && (
+                    <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 14, padding: '14px', backdropFilter: 'blur(4px)' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textAlign: 'center', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Choose Avatar</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+                        {PRESETS.map(p => (
+                          <button key={p} onClick={() => handleSelectAvatar(p)}
+                            style={{ padding: 0, border: profile.avatar_url === p ? '3px solid #1E3A5F' : '3px solid transparent', borderRadius: '50%', cursor: 'pointer', background: 'none', transition: 'border 0.15s' }}>
+                            <img src={`/avatar_${p}.png`} alt={p} style={{ width: 40, height: 40, borderRadius: '50%', display: 'block', objectFit: 'cover' }} />
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={() => setShowPicker(false)} style={{ marginTop: 10, width: '100%', padding: '6px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#f9fafb', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#6b7280', fontFamily: 'inherit' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>{profile.full_name || '—'}</div>
                     <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>{profile.auth_email}</div>
