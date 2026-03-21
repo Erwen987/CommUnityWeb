@@ -8,6 +8,7 @@ import Reports   from './pages/officials/Reports';
 import Requests  from './pages/officials/Requests';
 import Analytics from './pages/officials/Analytics';
 import Rewards   from './pages/officials/Rewards';
+import Residents from './pages/officials/Residents';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import AdminReports   from './pages/admin/AdminReports';
@@ -194,6 +195,7 @@ function App() {
         <Route path="/officials/requests"  element={<Requests />} />
         <Route path="/officials/analytics" element={<Analytics />} />
         <Route path="/officials/rewards"   element={<Rewards />} />
+        <Route path="/officials/residents" element={<Residents />} />
 
         {/* Admin Portal */}
         <Route path="/admin-portal" element={<AdminPortal />} />

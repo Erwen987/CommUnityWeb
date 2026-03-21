@@ -60,7 +60,7 @@ function Login() {
     // Look up in officials table
     const { data: official, error: dbError } = await supabase
       .from('officials')
-      .select('status, barangay')
+      .select('status, barangay, ban_reason')
       .eq('auth_id', data.user.id)
       .single();
 
@@ -81,6 +81,13 @@ function Login() {
     if (official.status === 'rejected') {
       await supabase.auth.signOut();
       setError('Your account was not approved. Please contact the admin.');
+      return;
+    }
+
+    if (official.status === 'banned') {
+      await supabase.auth.signOut();
+      const reason = official.ban_reason ? ` Reason: ${official.ban_reason}` : '';
+      setError(`Your account has been suspended.${reason} Please contact the admin.`);
       return;
     }
 
