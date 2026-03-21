@@ -366,12 +366,191 @@ nav {
 .btn-login { background: #7AB1F1; color: #fff; }
 .btn-signup { background: #7AB1F1; color: #fff; }
 
+/* ══════════════════════════════════════════
+   HAMBURGER BUTTON (hidden on desktop)
+══════════════════════════════════════════ */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  padding: 6px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.hamburger-btn:hover { background: rgba(255,255,255,0.12); }
+
+/* ══════════════════════════════════════════
+   MOBILE FULL-SCREEN MENU
+══════════════════════════════════════════ */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(160deg, #080f1e 0%, #0f2444 55%, #1a4070 100%);
+  z-index: 1200;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.mobile-menu.open {
+  display: flex;
+  opacity: 1;
+  pointer-events: all;
+}
+.mobile-menu-logo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mobile-menu-logo img { height: 36px; width: auto; }
+.mobile-menu-logo span {
+  font-weight: 700;
+  font-size: 20px;
+  background: linear-gradient(135deg, #80c0ff, #698bab);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.mobile-menu-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.mobile-menu-close:hover { background: rgba(255,255,255,0.16); }
+.mobile-menu nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 32px;
+}
+.mobile-menu nav a {
+  color: rgba(255,255,255,0.8);
+  font-size: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 14px 40px;
+  border-radius: 14px;
+  width: 100%;
+  text-align: center;
+  transition: color 0.15s, background 0.15s;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.mobile-menu nav a:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.14);
+}
+.mobile-menu-footer {
+  position: absolute;
+  bottom: 32px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.25);
+}
+
+/* ══════════════════════════════════════════
+   TABLET (≤ 900px)
+══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .section { padding: 64px 32px; }
+  .who-section { padding: 56px 32px; }
+  .contact-section { padding: 56px 32px; }
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-section h1 { font-size: 42px; }
+}
+
+/* ══════════════════════════════════════════
+   MOBILE (≤ 768px)
+══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .hero-section { padding: 60px 24px 80px; }
-  .hero-section h1 { font-size: 32px; }
+  /* Navbar */
+  .landing-header { padding: 0 18px; }
+  nav { height: 62px; }
+  .logo img { height: 38px; }
+  .logo-text { font-size: 22px; }
   .nav-links { display: none; }
-  .card-row, .card-grid { grid-template-columns: 1fr; }
-  .about-layout, .contact-layout { flex-direction: column; }
+  .hamburger-btn { display: flex; }
+
+  /* Hero */
+  .hero-section { padding: 40px 22px 64px; max-width: 100%; }
+  .hero-section h1 { font-size: 30px; line-height: 1.25; }
+  .hero-section p { font-size: 15px; margin-top: 10px; }
+
+  /* Sections — remove full-height, tighten padding */
+  .section { min-height: auto; padding: 56px 20px; }
+  .section-title { font-size: 24px; }
+  .section-sub { font-size: 13.5px; }
+
+  /* About */
+  .about-layout { flex-direction: column; gap: 24px; text-align: center; margin-top: 28px; }
+  .about-image img { width: 220px; }
+  .about-text { min-width: unset; }
+  .about-text h3 { font-size: 18px; }
+  .about-text p { font-size: 14px; }
+
+  /* Who section */
+  .who-section { min-height: auto; padding: 50px 20px; border-radius: 18px; margin: 0 12px; }
+  .card-row { grid-template-columns: 1fr; gap: 16px; margin-top: 28px; }
+  .who-card { padding: 28px 20px; }
+
+  /* Features */
+  .card-grid { grid-template-columns: 1fr; gap: 16px; margin-top: 28px; }
+  .feature-card { padding: 24px 20px; }
+
+  /* Contact */
+  .contact-section { min-height: auto; padding: 50px 20px; border-radius: 18px; margin: 0 12px; }
+  .contact-layout { flex-direction: column; gap: 24px; margin-top: 28px; }
+  .contact-image { text-align: center; }
+  .contact-image img { width: 180px; }
+  .contact-form { min-width: unset; }
+
+  /* Footer */
+  .footer { padding: 64px 24px; margin-top: 40px; }
+  .footer h2 { font-size: 26px; }
+  .footer p { font-size: 14px; }
+  .footer-buttons { flex-direction: column; align-items: center; gap: 14px; }
+  .footer-btn { padding: 13px 56px; }
+
+  /* Scroll FAB */
+  .scroll-top-fab { bottom: 20px; right: 20px; width: 42px; height: 42px; font-size: 18px; }
+}
+
+/* ══════════════════════════════════════════
+   SMALL PHONES (≤ 420px)
+══════════════════════════════════════════ */
+@media (max-width: 420px) {
+  .hero-section h1 { font-size: 26px; }
+  .hero-section p { font-size: 14px; }
+  .section { padding: 48px 16px; }
+  .section-title { font-size: 20px; }
+  .who-section, .contact-section { padding: 40px 16px; margin: 0 8px; border-radius: 14px; }
+  .who-card img { height: 130px; }
+  .feature-card img { height: 110px; }
+  .footer { padding: 52px 18px; }
+  .footer-btn { padding: 12px 44px; }
 }
 
 /* ── AUTH PAGES (Login / Signup) ── */

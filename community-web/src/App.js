@@ -29,8 +29,9 @@ import AdminProfile   from './pages/admin/AdminProfile';
 const IMG = process.env.PUBLIC_URL + '/images';
 
 function Landing() {
-  const [navScrolled,    setNavScrolled]    = useState(false);
-  const [showScrollTop,  setShowScrollTop]  = useState(false);
+  const [navScrolled,   setNavScrolled]   = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [menuOpen,      setMenuOpen]      = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,37 +47,87 @@ function Landing() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Close mobile menu when screen resizes to desktop
+  useEffect(() => {
+    const handleResize = () => { if (window.innerWidth > 768) setMenuOpen(false); };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  const scrollToTop = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const closeMenu   = () => setMenuOpen(false);
+
+  const navLinks = [
+    { href: '#home',        label: 'Home'        },
+    { href: '#about',       label: 'About'       },
+    { href: '#features',    label: 'Features'    },
+    { href: '#contact',     label: 'Contact'     },
+    { href: '#get-started', label: 'Get Started' },
+  ];
 
   return (
     <div>
 
+      {/* ── MOBILE FULL-SCREEN MENU ── */}
+      <div className={`mobile-menu${menuOpen ? ' open' : ''}`}>
+        {/* Logo */}
+        <div className="mobile-menu-logo">
+          <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
+          <span>CommUnity</span>
+        </div>
+
+        {/* Close button */}
+        <button className="mobile-menu-close" onClick={closeMenu} aria-label="Close menu">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+
+        {/* Nav links */}
+        <nav>
+          {navLinks.map(l => (
+            <a key={l.href} href={l.href} onClick={closeMenu}>{l.label}</a>
+          ))}
+        </nav>
+
+        <div className="mobile-menu-footer">© {new Date().getFullYear()} CommUnity</div>
+      </div>
+
       {/* ── STICKY NAVBAR ── */}
       <header className={`landing-header${navScrolled ? ' landing-header--scrolled' : ''}`}>
         <nav>
-          <a
-            href="#home"
-            className="logo"
-            onClick={e => { e.preventDefault(); scrollToTop(); }}
-          >
+          <a href="#home" className="logo" onClick={e => { e.preventDefault(); scrollToTop(); }}>
             <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
             <span className="logo-text">CommUnity</span>
           </a>
+
+          {/* Desktop nav links */}
           <ul className="nav-links">
-            <li><a href="#home">Home</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><a href="#get-started">Get Started</a></li>
+            {navLinks.map(l => (
+              <li key={l.href}><a href={l.href}>{l.label}</a></li>
+            ))}
           </ul>
+
+          {/* Hamburger — mobile only */}
+          <button className="hamburger-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
         </nav>
       </header>
 
       {/* ── SCROLL TO TOP FAB ── */}
       {showScrollTop && (
-        <button className="scroll-top-fab" onClick={scrollToTop} aria-label="Scroll to top">
-          ↑
-        </button>
+        <button className="scroll-top-fab" onClick={scrollToTop} aria-label="Scroll to top">↑</button>
       )}
 
       {/* ── HERO ── */}
@@ -173,7 +224,7 @@ function Landing() {
         </div>
       </div>
 
-      {/* ── FOOTER ── */}
+      {/* ── FOOTER / GET STARTED ── */}
       <footer
         id="get-started"
         className="footer fade-element"
