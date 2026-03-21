@@ -95,19 +95,41 @@ function BanModal({ target, type, onConfirm, onCancel, loading }) {
           <strong>{label}</strong>
         </div>
 
-        <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 8 }}>
-          Reason for ban <span style={{ color: '#dc2626' }}>*</span>
-        </label>
+        {/* Quick reason chips */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Quick Reasons</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {[
+              'Spam or false reports',
+              'Abusive behavior',
+              'Harassment of residents',
+              'Multiple policy violations',
+              'Inappropriate content',
+            ].map(r => (
+              <button key={r} onClick={() => setReason(r)}
+                style={{ padding: '5px 12px', borderRadius: 20, border: `1.5px solid ${reason === r ? '#dc2626' : '#e5e7eb'}`, background: reason === r ? '#fee2e2' : '#f9fafb', color: reason === r ? '#dc2626' : '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Poppins, sans-serif', transition: 'all 0.15s' }}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom reason */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Or write a custom reason <span style={{ color: '#dc2626' }}>*</span></div>
         <textarea
           rows={3}
-          placeholder="e.g. Repeated spam reports, abusive behavior, false information..."
+          placeholder="Describe why this account is being banned..."
           value={reason}
           onChange={e => setReason(e.target.value)}
+          maxLength={300}
           style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #e5e7eb', fontFamily: 'Poppins, sans-serif', fontSize: 13, resize: 'none', outline: 'none', boxSizing: 'border-box', color: '#374151', transition: 'border-color 0.2s' }}
           onFocus={e => e.target.style.borderColor = '#dc2626'}
           onBlur={e => e.target.style.borderColor = '#e5e7eb'}
         />
-        <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>The reason will be shown to the user when they try to log in.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+          <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Shown to the user when they try to log in.</p>
+          <span style={{ fontSize: 11, color: reason.length > 260 ? '#f59e0b' : '#d1d5db' }}>{reason.length}/300</span>
+        </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
           <button onClick={onCancel} style={{ padding: '10px 22px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#fff', fontFamily: 'Poppins, sans-serif', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#374151', transition: 'background 0.15s' }}>
