@@ -15,6 +15,10 @@ function AdminTopbar() {
   useEffect(() => {
     let userId = null;
 
+    // Load cached profile instantly to avoid flash
+    const cached = sessionStorage.getItem('admin_profile');
+    if (cached) { try { setProfile(JSON.parse(cached)); } catch {} }
+
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -24,7 +28,9 @@ function AdminTopbar() {
         .select('full_name, email, avatar_url')
         .eq('auth_id', user.id)
         .maybeSingle();
-      setProfile(data ? { ...data, auth_email: user.email } : { auth_email: user.email });
+      const profile = data ? { ...data, auth_email: user.email } : { auth_email: user.email };
+      setProfile(profile);
+      sessionStorage.setItem('admin_profile', JSON.stringify(profile));
     };
 
     load();
@@ -33,7 +39,11 @@ function AdminTopbar() {
       .channel('admin-topbar-profile')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'admins' }, payload => {
         if (payload.new && userId && payload.new.auth_id === userId) {
-          setProfile(prev => prev ? { ...prev, ...payload.new } : payload.new);
+          setProfile(prev => {
+            const updated = prev ? { ...prev, ...payload.new } : payload.new;
+            sessionStorage.setItem('admin_profile', JSON.stringify(updated));
+            return updated;
+          });
         }
       })
       .subscribe();
