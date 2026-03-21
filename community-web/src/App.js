@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
 import Login from './pages/Login';
@@ -20,39 +20,59 @@ import AdminPortal    from './pages/admin/AdminPortal';
 const IMG = process.env.PUBLIC_URL + '/images';
 
 function Landing() {
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
   useEffect(() => {
-    const check = () => {
+    const handleScroll = () => {
+      setNavScrolled(window.scrollY > 60);
+      setShowScrollTop(window.scrollY > 300);
       document.querySelectorAll('.fade-element').forEach(el => {
         const r = el.getBoundingClientRect();
         if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('fade-in');
       });
     };
-    check();
-    window.addEventListener('scroll', check);
-    return () => window.removeEventListener('scroll', check);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   return (
     <div>
 
+      {/* ── STICKY NAVBAR ── */}
+      <header className={`landing-header${navScrolled ? ' landing-header--scrolled' : ''}`}>
+        <nav>
+          <a
+            href="#home"
+            className="logo"
+            onClick={e => { e.preventDefault(); scrollToTop(); }}
+          >
+            <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
+            <span className="logo-text">CommUnity</span>
+          </a>
+          <ul className="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#get-started">Get Started</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      {/* ── SCROLL TO TOP FAB ── */}
+      {showScrollTop && (
+        <button className="scroll-top-fab" onClick={scrollToTop} aria-label="Scroll to top">
+          ↑
+        </button>
+      )}
+
       {/* ── HERO ── */}
       <div className="hero-wrapper" style={{ backgroundImage: `url(${IMG}/header.png)` }}>
-        <header>
-          <nav>
-            <a href="#home" className="logo">
-              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
-              <span className="logo-text">CommUnity</span>
-            </a>
-            <ul className="nav-links">
-              <li><a href="#home">Home</a></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#features">Features</a></li>
-              <li><a href="#contact">Contact</a></li>
-              <li><a href="#get-started">Get Started</a></li>
-            </ul>
-          </nav>
-        </header>
-
+        <div style={{ height: 80 }} />
         <section id="home" className="hero-section">
           <h1>CommUnity:<br />Report, Request, Reward</h1>
           <p>Make your barangay better</p>

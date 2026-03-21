@@ -53,11 +53,12 @@ const STAT_CARDS = (s) => [
 ];
 
 function AdminDashboard() {
-  const [stats, setStats]           = useState({ reports: 0, requests: 0, officials: 0, users: 0, pendingReports: 0, pendingRequests: 0, pendingOfficials: 0 });
+  const [stats, setStats]             = useState({ reports: 0, requests: 0, officials: 0, users: 0, pendingReports: 0, pendingRequests: 0, pendingOfficials: 0 });
   const [monthlyData, setMonthlyData] = useState([]);
   const [contributors, setContributors] = useState([]);
   const [activities, setActivities]   = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [actExpanded, setActExpanded] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -232,34 +233,59 @@ function AdminDashboard() {
               </div>
 
               {/* Recent Activities */}
-              <div style={{ background: '#fff', borderRadius: 16, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937', marginBottom: 4 }}>Recent Activities</div>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>Latest reports & requests</div>
-                {loading ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
-                    <div style={{ width: 24, height: 24, border: '3px solid #e5e7eb', borderTopColor: '#1E3A5F', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+              <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+
+                {/* Collapsible header */}
+                <button onClick={() => setActExpanded(v => !v)}
+                  style={{ width: '100%', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recent Activities</span>
                   </div>
-                ) : activities.length === 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0', gap: 6 }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span style={{ fontSize: 12, color: '#9ca3af' }}>No recent activity</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#1E3A5F', background: '#e0e7ef', padding: '2px 10px', borderRadius: 999 }}>
+                      {activities.length}
+                    </span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ transform: actExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
                   </div>
-                ) : activities.map((a, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < activities.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: a.type === 'report' ? '#dbeafe' : '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                      {a.type === 'report'
-                        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>
-                        {a.name} · {a.barangay || '—'}
+                </button>
+
+                {actExpanded && (
+                  <div>
+                    {loading ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+                        <div style={{ width: 22, height: 22, border: '3px solid #e5e7eb', borderTopColor: '#1E3A5F', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                       </div>
-                    </div>
-                    <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', flexShrink: 0 }}>{timeAgo(a.date)}</div>
+                    ) : activities.length === 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0', gap: 6 }}>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span style={{ fontSize: 12, color: '#9ca3af' }}>No recent activity</span>
+                      </div>
+                    ) : activities.map((a, i) => {
+                      const isReport = a.type === 'report';
+                      return (
+                        <div key={i}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 20px', borderBottom: i < activities.length - 1 ? '1px solid #f8fafc' : 'none', borderLeft: `3px solid ${isReport ? '#3b82f6' : '#8b5cf6'}`, transition: 'background 0.12s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, background: isReport ? '#dbeafe' : '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {isReport
+                              ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                              : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{a.name} · {a.barangay || '—'}</div>
+                          </div>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', background: '#f1f5f9', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>{timeAgo(a.date)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                )}
               </div>
 
             </div>

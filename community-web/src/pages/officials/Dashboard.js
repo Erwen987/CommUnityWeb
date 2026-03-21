@@ -53,7 +53,7 @@ function Dashboard() {
   const [announcements,   setAnnouncements]   = useState([]);
   const [loadingList,     setLoadingList]     = useState(false);
   const [deletingId,      setDeletingId]      = useState(null);
-  const [listExpanded,    setListExpanded]    = useState(true);
+  const [listExpanded,    setListExpanded]    = useState(false);
 
   // Dashboard stats
   const [statsLoading,    setStatsLoading]    = useState(false);
