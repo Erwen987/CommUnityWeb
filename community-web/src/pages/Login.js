@@ -23,12 +23,25 @@ function Login() {
     const email = form.email.trim().toLowerCase();
     setLoading(true);
 
+    // Check maintenance mode (skip for admins)
+    const { data: maintSetting } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'maintenance_mode')
+      .maybeSingle();
+
     // Check if email belongs to an admin
     const { data: adminRow } = await supabase
       .from('admins')
       .select('id')
       .eq('email', email)
       .maybeSingle();
+
+    if (!adminRow && maintSetting?.value === 'true') {
+      setLoading(false);
+      setError('The system is currently under maintenance. Please try again later.');
+      return;
+    }
 
     if (adminRow) {
       const { error: authError } = await supabase.auth.signInWithPassword({
