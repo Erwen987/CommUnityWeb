@@ -138,11 +138,21 @@ function Login() {
 
           {/* RIGHT — login form */}
           <div className="auth-form">
+
+            {/* Mobile-only brand (hidden on desktop via CSS) */}
+            <div className="auth-mobile-brand" style={{ display: 'none', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" style={{ height: 32, width: 'auto' }} />
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>CommUnity</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Official Portal</div>
+              </div>
+            </div>
+
             <h2 style={{ marginBottom: 4 }}>Sign In</h2>
             <p className="auth-sub">Select your role and enter your credentials</p>
 
             {/* Role cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginBottom: 18 }}>
+            <div className="auth-role-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginBottom: 18 }}>
               {[
                 { key: 'official', icon: '🏛️', label: 'Barangay Official', sub: 'Portal access' },
                 { key: 'admin',    icon: '🛡️', label: 'System Admin',      sub: 'Full access'   },

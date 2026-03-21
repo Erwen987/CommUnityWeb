@@ -584,17 +584,58 @@ nav {
   text-decoration: underline;
 }
 
+/* ── Tablet: stack card, keep overview compact ── */
 @media (max-width: 900px) {
   .auth-card, .auth-card--signup {
     grid-template-columns: 1fr;
+    width: min(560px, 94%);
     height: auto;
   }
-  .auth-overview { padding: 40px; text-align: center; }
-  .auth-form { padding: 40px; }
+  .auth-overview { padding: 36px 40px 28px; text-align: center; }
+  .auth-checklist { align-items: center; }
+  .auth-form { padding: 36px 40px; }
 }
+
+/* ── Mobile: hide overview, full-width form ── */
 @media (max-width: 768px) {
-  .auth-name-row { flex-direction: column; }
-  .auth-container { transform: translateY(0); }
+  .landing-header { padding: 0 18px; }
+  nav { height: 62px; }
+  .logo img { height: 34px; }
+  .logo-text { font-size: 21px; }
+
+  .auth-container { padding: 78px 14px 28px; }
+
+  .auth-card, .auth-card--signup {
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  /* Hide info panel on mobile — form is self-contained */
+  .auth-overview { display: none; }
+
+  /* Reveal the compact brand bar inside the form */
+  .auth-mobile-brand { display: flex !important; }
+
+  .auth-form { padding: 26px 20px 30px; }
+  .auth-form h2 { font-size: 19px; }
+  .auth-form--left { padding: 26px 20px 30px; }
+
+  /* 2-col passwords → single col */
+  .auth-name-row { flex-direction: column; gap: 0; }
+
+  /* Role cards */
+  .auth-role-cards { gap: 8px !important; }
+  .auth-role-cards > button { padding: 10px 8px !important; }
+
+  /* Step bar */
+  .auth-step-bar .step-label { font-size: 10px !important; }
+}
+
+/* ── Small phones ── */
+@media (max-width: 420px) {
+  .auth-container { padding: 72px 8px 20px; }
+  .auth-form, .auth-form--left { padding: 22px 16px 26px; }
+  .auth-role-cards { grid-template-columns: 1fr !important; }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }

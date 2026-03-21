@@ -15,41 +15,50 @@ const NAV = [
   { to: '/officials/profile',   icon: HiOutlineUser,           label: 'Profile'   },
 ];
 
+const closeSidebar = () => document.body.classList.remove('sidebar-open');
+
 function OfficialSidebar() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    closeSidebar();
     await supabase.auth.signOut();
     navigate('/login');
   };
 
   return (
-    <aside className="off-sidebar">
-      <div className="off-sidebar-logo">
-        <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
-        <span>CommUnity</span>
-      </div>
+    <>
+      {/* Mobile overlay — tap to close sidebar */}
+      <div className="off-sidebar-overlay" onClick={closeSidebar} />
 
-      <nav className="off-nav">
-        {NAV.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) => `off-nav-item${isActive ? ' active' : ''}`}
-          >
-            <Icon className="off-nav-icon" />
-            <span>{label}</span>
-          </NavLink>
-        ))}
-      </nav>
+      <aside className="off-sidebar">
+        <div className="off-sidebar-logo">
+          <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" />
+          <span>CommUnity</span>
+        </div>
 
-      <div className="off-logout">
-        <button onClick={handleLogout}>
-          <HiOutlineLogout className="off-nav-icon" />
-          Log Out
-        </button>
-      </div>
-    </aside>
+        <nav className="off-nav">
+          {NAV.map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={closeSidebar}
+              className={({ isActive }) => `off-nav-item${isActive ? ' active' : ''}`}
+            >
+              <Icon className="off-nav-icon" />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="off-logout">
+          <button onClick={handleLogout}>
+            <HiOutlineLogout className="off-nav-icon" />
+            Log Out
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
 

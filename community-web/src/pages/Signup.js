@@ -30,24 +30,24 @@ const EyeIcon = ({ open }) => open ? (
 function StepBar({ active }) {
   const steps = ['Details', 'Verify Email', 'Pending'];
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
+    <div className="auth-step-bar" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
       {steps.map((s, i) => (
         <React.Fragment key={s}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
             <div style={{
               width: 22, height: 22, borderRadius: '50%', display: 'flex',
               alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800,
               background: i < active ? '#2563eb' : i === active ? 'rgba(37,99,235,0.85)' : 'rgba(255,255,255,0.12)',
-              color: '#fff', border: i === active ? '2px solid #7AB1F1' : 'none',
+              color: '#fff', border: i === active ? '2px solid #7AB1F1' : 'none', flexShrink: 0,
             }}>
               {i < active
                 ? <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 : i + 1
               }
             </div>
-            <span style={{ fontSize: 11.5, fontWeight: i === active ? 700 : 500, color: i === active ? '#a7d4ff' : 'rgba(255,255,255,0.4)' }}>{s}</span>
+            <span className="step-label" style={{ fontSize: 11.5, fontWeight: i === active ? 700 : 500, color: i === active ? '#a7d4ff' : 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>{s}</span>
           </div>
-          {i < 2 && <div style={{ flex: 1, height: 1.5, background: i < active ? 'rgba(37,99,235,0.7)' : 'rgba(255,255,255,0.12)' }} />}
+          {i < 2 && <div style={{ flex: 1, minWidth: 8, height: 1.5, background: i < active ? 'rgba(37,99,235,0.7)' : 'rgba(255,255,255,0.12)' }} />}
         </React.Fragment>
       ))}
     </div>
@@ -150,6 +150,13 @@ function Signup() {
 
           {/* RIGHT — OTP form */}
           <div className="auth-form">
+            <div className="auth-mobile-brand" style={{ display: 'none', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" style={{ height: 32, width: 'auto' }} />
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>CommUnity</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Official Portal</div>
+              </div>
+            </div>
             <StepBar active={1} />
 
             <h2 style={{ marginBottom: 4 }}>Verify Your Email</h2>
@@ -212,6 +219,13 @@ function Signup() {
 
           {/* RIGHT — done */}
           <div className="auth-form">
+            <div className="auth-mobile-brand" style={{ display: 'none', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" style={{ height: 32, width: 'auto' }} />
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>CommUnity</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Official Portal</div>
+              </div>
+            </div>
             <StepBar active={2} />
 
             <h2 style={{ marginBottom: 4 }}>Registration Submitted!</h2>
@@ -260,6 +274,13 @@ function Signup() {
 
           {/* LEFT — form */}
           <div className="auth-form auth-form--left">
+            <div className="auth-mobile-brand" style={{ display: 'none', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <img src={`${IMG}/CommUnity Logo.png`} alt="CommUnity" style={{ height: 32, width: 'auto' }} />
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>CommUnity</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Official Portal</div>
+              </div>
+            </div>
             <StepBar active={0} />
 
             <h2 style={{ marginBottom: 4 }}>Create Your Account</h2>

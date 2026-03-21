@@ -49,6 +49,19 @@ function AdminTopbar() {
 
   return (
     <div className="off-topbar">
+      {/* Hamburger — visible on mobile only (CSS controls display) */}
+      <button
+        className="off-hamburger"
+        onClick={() => document.body.classList.toggle('sidebar-open')}
+        aria-label="Toggle menu"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
       <div className="off-search">
         <input type="text" placeholder="Search..." />
         <button>
@@ -57,10 +70,12 @@ function AdminTopbar() {
           </svg>
         </button>
       </div>
+
       <div className="off-topbar-actions">
         <span style={{
           fontSize: '13px', fontWeight: '600', color: '#1e3a5f',
           background: '#e0e7ef', padding: '4px 12px', borderRadius: '999px',
+          whiteSpace: 'nowrap',
         }}>
           System Admin
         </span>
