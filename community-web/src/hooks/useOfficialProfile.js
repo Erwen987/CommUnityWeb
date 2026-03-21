@@ -6,9 +6,12 @@ export function useOfficialProfile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let userId = null;
+
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
+      userId = user.id;
 
       const { data } = await supabase
         .from('officials')
@@ -19,7 +22,19 @@ export function useOfficialProfile() {
       setProfile(data || null);
       setLoading(false);
     };
+
     load();
+
+    const channel = supabase
+      .channel('official-profile-hook')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'officials' }, payload => {
+        if (payload.new && userId && payload.new.auth_id === userId) {
+          setProfile(prev => prev ? { ...prev, ...payload.new } : payload.new);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   return {

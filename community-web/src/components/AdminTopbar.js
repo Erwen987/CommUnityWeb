@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 function resolveAvatar(url) {
@@ -9,11 +10,15 @@ function resolveAvatar(url) {
 
 function AdminTopbar() {
   const [profile, setProfile] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    let userId = null;
+
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      userId = user.id;
       const { data } = await supabase
         .from('admins')
         .select('full_name, email, avatar_url')
@@ -21,7 +26,19 @@ function AdminTopbar() {
         .maybeSingle();
       setProfile(data ? { ...data, auth_email: user.email } : { auth_email: user.email });
     };
+
     load();
+
+    const channel = supabase
+      .channel('admin-topbar-profile')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'admins' }, payload => {
+        if (payload.new && userId && payload.new.auth_id === userId) {
+          setProfile(prev => prev ? { ...prev, ...payload.new } : payload.new);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const initials = profile?.full_name
@@ -53,7 +70,14 @@ function AdminTopbar() {
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
         </button>
-        <div className="off-avatar" title={profile?.full_name || profile?.auth_email || ''}>
+        <div
+          className="off-avatar"
+          onClick={() => navigate('/admin/profile')}
+          title={avatarSrc ? (profile?.full_name || 'My Profile') : 'Click to set your avatar'}
+          style={{ cursor: 'pointer', position: 'relative', transition: 'opacity 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
           {avatarSrc
             ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             : <span>{initials}</span>

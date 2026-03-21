@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOfficialProfile } from '../hooks/useOfficialProfile';
 
 function resolveAvatar(url) {
@@ -9,6 +10,7 @@ function resolveAvatar(url) {
 
 function OfficialTopbar({ badge = false }) {
   const { barangay, avatarUrl, loading } = useOfficialProfile();
+  const navigate = useNavigate();
 
   const initials = barangay
     ? barangay.replace('Barangay ', '').slice(0, 2).toUpperCase()
@@ -42,7 +44,14 @@ function OfficialTopbar({ badge = false }) {
           </svg>
           {badge && <span className="off-notif-badge" />}
         </button>
-        <div className="off-avatar" title={barangay}>
+        <div
+          className="off-avatar"
+          onClick={() => navigate('/officials/profile')}
+          title={avatarSrc ? barangay : 'Click to set your avatar'}
+          style={{ cursor: 'pointer', transition: 'opacity 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
           {avatarSrc
             ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             : <span>{initials}</span>
