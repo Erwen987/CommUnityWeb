@@ -486,6 +486,30 @@
   color: #1a3a6b;
 }
 
+/* ── ANALYTICS STAT GRID ── */
+.off-analytics-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* ── REWARDS TIER GRID ── */
+.off-rewards-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* ── REWARDS TWO-COLUMN LAYOUT ── */
+.off-rewards-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
 /* ── REWARDS ── */
 .off-reward-grid {
   display: grid;
@@ -605,15 +629,24 @@ body.sidebar-open .off-sidebar-overlay { display: block; }
   .off-stats-row-5,
   .off-stats-row-4 { grid-template-columns: repeat(2, 1fr); }
 
+  /* Analytics stat grid → 2-col */
+  .off-analytics-stats-grid { grid-template-columns: repeat(2, 1fr); }
+
   /* Dashboard grid: side panel moves below */
   .off-dash-grid { grid-template-columns: 1fr; }
+  .off-dash-stats-row { grid-template-columns: 1fr 1fr; }
+
+  /* Analytics chart grid → 1-col */
+  .off-analytics-grid { grid-template-columns: 1fr; }
 
   /* Tables: horizontal scroll inside card */
   .off-card { overflow-x: auto; }
   .off-table { min-width: 480px; }
 
-  /* Reward tier grid → 1 col */
+  /* Reward tier grid → 2-col, layout → 1-col */
   .off-reward-grid { grid-template-columns: 1fr; }
+  .off-rewards-tier-grid { grid-template-columns: repeat(2, 1fr); }
+  .off-rewards-layout { grid-template-columns: 1fr; }
 }
 
 /* ── Small phones (≤ 480px) ── */
@@ -621,6 +654,9 @@ body.sidebar-open .off-sidebar-overlay { display: block; }
   .off-stats-row-5,
   .off-stats-row-4,
   .off-stats-row-2 { grid-template-columns: 1fr; }
+
+  .off-analytics-stats-grid { grid-template-columns: 1fr; }
+  .off-rewards-tier-grid { grid-template-columns: 1fr 1fr; }
 
   .off-topbar { padding: 10px 12px; gap: 8px; }
   .off-content { padding: 6px 10px 24px; }
