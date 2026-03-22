@@ -102,6 +102,11 @@ function ResidentAvatar({ url, name, size=30, index=0 }) {
   const initials = (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   return <div style={{ width:size, height:size, borderRadius:'50%', background:avatarColors[index%5], color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:size*0.38, flexShrink:0 }}>{initials}</div>;
 }
+function AccountStatusBadge({ status }) {
+  if (status === 'banned')  return <span style={{ fontSize:10, color:'#dc2626', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#ef4444', flexShrink:0 }} />Banned</span>;
+  if (status === 'deleted') return <span style={{ fontSize:10, color:'#6b7280', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#9ca3af', flexShrink:0 }} />Deleted</span>;
+  return <span style={{ fontSize:10, color:'#16a34a', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#22c55e', flexShrink:0 }} />Active</span>;
+}
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || { bg:'#f1f5f9', color:'#374151', dot:'#9ca3af', label: status };
   return <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:s.bg, color:s.color, padding:'4px 12px', borderRadius:999, fontSize:11, fontWeight:700 }}><span style={{ width:6, height:6, borderRadius:'50%', background:s.dot }} />{s.label}</span>;
@@ -181,11 +186,16 @@ function AdminReports() {
     setLoading(true);
     const [{ data: rpts = [] }, { data: users = [] }] = await Promise.all([
       supabase.from('reports').select('*').order('created_at', { ascending: false }),
-      supabase.from('users').select('auth_id, first_name, last_name, avatar_url'),
+      supabase.from('users').select('auth_id, first_name, last_name, avatar_url, is_banned'),
     ]);
     const userMap = {};
-    users.forEach(u => { userMap[u.auth_id] = { name:`${u.first_name} ${u.last_name}`.trim(), avatar_url: u.avatar_url }; });
-    setReports(rpts.map(r => ({ ...r, residentName: userMap[r.user_id]?.name || 'Unknown', residentAvatar: userMap[r.user_id]?.avatar_url || null })));
+    users.forEach(u => { userMap[u.auth_id] = { name:`${u.first_name} ${u.last_name}`.trim(), avatar_url: u.avatar_url, is_banned: u.is_banned }; });
+    setReports(rpts.map(r => ({
+      ...r,
+      residentName:   userMap[r.user_id]?.name || 'Deleted User',
+      residentAvatar: userMap[r.user_id]?.avatar_url || null,
+      accountStatus:  !userMap[r.user_id] ? 'deleted' : userMap[r.user_id].is_banned ? 'banned' : 'active',
+    })));
     setLoading(false);
   }, []);
 
@@ -322,7 +332,10 @@ function AdminReports() {
                         <td style={{ ...TD, overflow:'hidden' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:8, overflow:'hidden' }}>
                             <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={28} index={i} />
-                            <span style={{ fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>{r.residentName}</span>
+                            <div style={{ overflow:'hidden', minWidth:0 }}>
+                              <div style={{ fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>{r.residentName}</div>
+                              <AccountStatusBadge status={r.accountStatus} />
+                            </div>
                           </div>
                         </td>
                         <td style={{ ...TD, fontWeight:600, color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.problem || '—'}</td>

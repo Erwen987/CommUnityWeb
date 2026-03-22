@@ -23,6 +23,11 @@ function ResidentAvatar({ url, name, size = 30, index = 0 }) {
     </div>
   );
 }
+function AccountStatusBadge({ status }) {
+  if (status === 'banned')  return <span style={{ fontSize:10, color:'#dc2626', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#ef4444', flexShrink:0 }} />Banned</span>;
+  if (status === 'deleted') return <span style={{ fontSize:10, color:'#6b7280', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#9ca3af', flexShrink:0 }} />Deleted</span>;
+  return <span style={{ fontSize:10, color:'#16a34a', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#22c55e', flexShrink:0 }} />Active</span>;
+}
 
 const STATUS_CFG = {
   pending:          { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Pending'           },
@@ -62,13 +67,18 @@ function Requests() {
   const fetchRequests = useCallback(async () => {
     if (!barangay) return;
     setLoading(true);
-    const { data: users } = await supabase.from('users').select('auth_id, first_name, last_name, avatar_url').eq('barangay', barangay);
+    const [{ data: requestsData }, { data: usersData }] = await Promise.all([
+      supabase.from('requests').select('*').eq('barangay', barangay).order('created_at', { ascending: false }),
+      supabase.from('users').select('auth_id, first_name, last_name, avatar_url, is_banned').eq('barangay', barangay),
+    ]);
     const userMap = {};
-    (users || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name || ''} ${u.last_name || ''}`.trim(), avatar_url: u.avatar_url }; });
-    const userIds = Object.keys(userMap);
-    if (userIds.length === 0) { setRequests([]); setLoading(false); return; }
-    const { data } = await supabase.from('requests').select('*').in('user_id', userIds).order('created_at', { ascending: false });
-    setRequests((data || []).map(r => ({ ...r, residentName: userMap[r.user_id]?.name || 'Unknown', residentAvatar: userMap[r.user_id]?.avatar_url || null })));
+    (usersData || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name||''} ${u.last_name||''}`.trim(), avatar_url: u.avatar_url, is_banned: u.is_banned }; });
+    setRequests((requestsData||[]).map(r => ({
+      ...r,
+      residentName:   userMap[r.user_id]?.name || 'Deleted User',
+      residentAvatar: userMap[r.user_id]?.avatar_url || null,
+      accountStatus:  !userMap[r.user_id] ? 'deleted' : userMap[r.user_id].is_banned ? 'banned' : 'active',
+    })));
     setLoading(false);
   }, [barangay]);
 
@@ -237,7 +247,10 @@ function Requests() {
                       <td style={{ ...TD }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={30} index={i} />
-                          <span style={{ fontWeight: 600, color: '#111827', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.residentName}</span>
+                          <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, color: '#111827', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.residentName}</div>
+                            <AccountStatusBadge status={r.accountStatus} />
+                          </div>
                         </div>
                       </td>
                       <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.document_type}</td>
