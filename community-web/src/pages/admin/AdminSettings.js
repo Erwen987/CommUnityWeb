@@ -175,9 +175,21 @@ function AdminSettings() {
     if (!newEmail.trim())        return setCreateMsg({ type: 'error', text: 'Email is required.' });
     if (newPassword.length < 6)  return setCreateMsg({ type: 'error', text: 'Password must be at least 6 characters.' });
     setCreating(true);
+
+    // Save current admin session before signUp (signUp may auto-login the new user)
+    const { data: { session: adminSession } } = await supabase.auth.getSession();
+
     const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email: newEmail.trim().toLowerCase(), password: newPassword });
+
+    // Always restore the admin's session regardless of outcome
+    if (adminSession) {
+      await supabase.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
+    }
+
     if (signUpErr) { setCreating(false); return setCreateMsg({ type: 'error', text: signUpErr.message }); }
-    const { error: insertErr } = await supabase.from('admins').insert({ auth_id: signUpData.user?.id ?? null, email: newEmail.trim().toLowerCase(), full_name: newName.trim() });
+    if (!signUpData.user?.id) { setCreating(false); return setCreateMsg({ type: 'error', text: 'Failed to create auth user. The email may already be in use.' }); }
+
+    const { error: insertErr } = await supabase.from('admins').insert({ auth_id: signUpData.user.id, email: newEmail.trim().toLowerCase(), full_name: newName.trim() });
     setCreating(false);
     if (insertErr) return setCreateMsg({ type: 'error', text: insertErr.message });
     setCreateMsg({ type: 'success', text: `Admin account created for ${newEmail.trim()}.` });
