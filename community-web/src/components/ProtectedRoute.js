@@ -13,8 +13,8 @@ function ProtectedRoute({ children, role }) {
 
   useEffect(() => {
     let cancelled = false;
-    const check = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+
+    const checkRole = async (user) => {
       if (!user) { if (!cancelled) setStatus('denied'); return; }
 
       if (role === 'admin') {
@@ -35,8 +35,14 @@ function ProtectedRoute({ children, role }) {
         if (!cancelled) setStatus('ok');
       }
     };
-    check();
-    return () => { cancelled = true; };
+
+    // onAuthStateChange fires immediately with the session already in localStorage —
+    // no network call needed, so refresh no longer causes a false logout.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      checkRole(session?.user ?? null);
+    });
+
+    return () => { cancelled = true; subscription.unsubscribe(); };
   }, [role]);
 
   if (status === 'loading') {
