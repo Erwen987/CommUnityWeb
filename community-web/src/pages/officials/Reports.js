@@ -129,8 +129,10 @@ function Reports() {
   const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
 
-  // Reject modal state (mirrors Requests.js pattern)
-  const [rejectModal, setRejectModal]   = useState(null); // { id, problem, residentName }
+  // Step 1: "Are you sure?" confirmation
+  const [confirmTarget, setConfirmTarget] = useState(null); // { id, problem, residentName }
+  // Step 2: Reason entry modal
+  const [rejectModal, setRejectModal]   = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError]   = useState('');
 
@@ -166,10 +168,15 @@ function Reports() {
     fetchReports();
   };
 
-  const openRejectModal = (r) => {
+  const openConfirm = (r) => {
+    setConfirmTarget({ id: r.id, problem: r.problem, residentName: r.residentName });
+  };
+
+  const proceedToReject = () => {
     setRejectReason('');
     setRejectError('');
-    setRejectModal({ id: r.id, problem: r.problem, residentName: r.residentName });
+    setRejectModal(confirmTarget);
+    setConfirmTarget(null);
   };
 
   const confirmReject = async () => {
@@ -348,7 +355,7 @@ function Reports() {
                                   ✓ Resolve
                                 </button>
                               )}
-                              <button onClick={() => openRejectModal(r)} disabled={updatingId===r.id}
+                              <button onClick={() => openConfirm(r)} disabled={updatingId===r.id}
                                 style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#fee2e2', color:'#991b1b', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                                 ✕ Reject
                               </button>
@@ -386,7 +393,38 @@ function Reports() {
         </div>
       </div>
 
-      {/* Rejection modal — matches document request rejection style */}
+      {/* Step 1 — Confirmation dialog */}
+      {confirmTarget && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}
+          onClick={e => { if (e.target === e.currentTarget) setConfirmTarget(null); }}>
+          <div style={{ background:'#fff', borderRadius:20, width:420, maxWidth:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)', overflow:'hidden' }}>
+            <div style={{ background:'linear-gradient(135deg, #fef2f2, #fff1f1)', padding:'24px 24px 20px', borderBottom:'1px solid #fecaca', display:'flex', alignItems:'flex-start', gap:14 }}>
+              <div style={{ width:46, height:46, borderRadius:12, background:'#fee2e2', border:'1.5px solid #fecaca', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div>
+                <div style={{ fontWeight:800, fontSize:16, color:'#111827' }}>Reject this report?</div>
+                <div style={{ fontSize:12, color:'#6b7280', marginTop:4, lineHeight:1.5 }}>
+                  You are about to reject <strong style={{ color:'#374151' }}>{confirmTarget.problem}</strong> submitted by <strong style={{ color:'#374151' }}>{confirmTarget.residentName}</strong>. You will need to provide a reason.
+                </div>
+              </div>
+            </div>
+            <div style={{ padding:'16px 24px 20px', display:'flex', gap:10, justifyContent:'flex-end' }}>
+              <button onClick={() => setConfirmTarget(null)}
+                style={{ padding:'9px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={proceedToReject}
+                style={{ padding:'9px 22px', borderRadius:10, border:'none', background:'#dc2626', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Yes, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 — Rejection modal — matches document request rejection style */}
       {rejectModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}
           onClick={e => { if (e.target === e.currentTarget) setRejectModal(null); }}>
