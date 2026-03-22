@@ -171,28 +171,25 @@ function AdminSettings() {
 
   const handleCreateAdmin = async () => {
     setCreateMsg(null);
-    if (!newName.trim())         return setCreateMsg({ type: 'error', text: 'Full name is required.' });
-    if (!newEmail.trim())        return setCreateMsg({ type: 'error', text: 'Email is required.' });
-    if (newPassword.length < 6)  return setCreateMsg({ type: 'error', text: 'Password must be at least 6 characters.' });
+    if (!newName.trim())        return setCreateMsg({ type: 'error', text: 'Full name is required.' });
+    if (!newEmail.trim())       return setCreateMsg({ type: 'error', text: 'Email is required.' });
+    if (newPassword.length < 6) return setCreateMsg({ type: 'error', text: 'Password must be at least 6 characters.' });
     setCreating(true);
 
-    // Save current admin session before signUp (signUp may auto-login the new user)
-    const { data: { session: adminSession } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('https://apesvvqntqldihnzmitn.supabase.co/functions/v1/create-admin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ email: newEmail.trim().toLowerCase(), password: newPassword, full_name: newName.trim() }),
+    });
 
-    const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email: newEmail.trim().toLowerCase(), password: newPassword });
-
-    // Always restore the admin's session regardless of outcome
-    if (adminSession) {
-      await supabase.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
-    }
-
-    if (signUpErr) { setCreating(false); return setCreateMsg({ type: 'error', text: signUpErr.message }); }
-    if (!signUpData.user?.id) { setCreating(false); return setCreateMsg({ type: 'error', text: 'Failed to create auth user. The email may already be in use.' }); }
-
-    const { error: insertErr } = await supabase.from('admins').insert({ auth_id: signUpData.user.id, email: newEmail.trim().toLowerCase(), full_name: newName.trim() });
+    const json = await res.json();
     setCreating(false);
-    if (insertErr) return setCreateMsg({ type: 'error', text: insertErr.message });
-    setCreateMsg({ type: 'success', text: `Admin account created for ${newEmail.trim()}.` });
+    if (!res.ok || json.error) return setCreateMsg({ type: 'error', text: json.error || 'Failed to create admin.' });
+    setCreateMsg({ type: 'success', text: `Admin account created for ${newEmail.trim()}. They can log in immediately.` });
     setNewName(''); setNewEmail(''); setNewPassword('');
     loadAdmins();
   };
@@ -200,11 +197,23 @@ function AdminSettings() {
   const handleRemoveAdmin = async () => {
     const admin = removeTarget;
     setRemovingId(admin.id);
-    await supabase.from('admins').delete().eq('id', admin.id);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('https://apesvvqntqldihnzmitn.supabase.co/functions/v1/delete-admin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ admin_id: admin.id, auth_id: admin.auth_id }),
+    });
+
+    const json = await res.json();
     setRemovingId(null);
     setRemoveTarget(null);
+    if (!res.ok || json.error) { showToast(json.error || 'Failed to remove admin.', 'error'); return; }
     loadAdmins();
-    showToast('Admin account removed.');
+    showToast('Admin account fully removed.');
   };
 
   // ── Export / Backup ────────────────────────────────────────────────────────

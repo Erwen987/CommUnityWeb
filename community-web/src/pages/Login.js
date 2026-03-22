@@ -63,7 +63,12 @@ function Login() {
     if (adminRow) {
       const { error: authError } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
       setLoading(false);
-      if (authError) { setError('Invalid email or password.'); return; }
+      if (authError) {
+        setError(authError.message?.toLowerCase().includes('email not confirmed')
+          ? 'Email not confirmed. Please check your inbox or contact the system admin.'
+          : 'Invalid email or password.');
+        return;
+      }
       navigate('/admin/dashboard');
       return;
     }
