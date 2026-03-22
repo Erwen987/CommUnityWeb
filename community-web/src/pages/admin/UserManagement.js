@@ -242,10 +242,11 @@ function UserManagement() {
   const [offFilter, setOffFilter] = useState('all');
   const [resFilter, setResFilter] = useState('all');
 
-  const [banTarget,     setBanTarget]     = useState(null);
-  const [unbanTarget,   setUnbanTarget]   = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [toast,         setToast]         = useState(null);
+  const [banConfirmTarget, setBanConfirmTarget] = useState(null); // step 1
+  const [banTarget,        setBanTarget]        = useState(null); // step 2
+  const [unbanTarget,      setUnbanTarget]       = useState(null);
+  const [actionLoading,    setActionLoading]     = useState(false);
+  const [toast,            setToast]             = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -473,7 +474,7 @@ function UserManagement() {
                                     </button>
                                   ) : (
                                     <>
-                                      <button onClick={()=>setBanTarget({row,type:'official'})}
+                                      <button onClick={()=>setBanConfirmTarget({row,type:'official'})}
                                         style={{ background:'#fff',color:'#dc2626',border:'1.5px solid #fca5a5',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban
                                       </button>
@@ -525,7 +526,7 @@ function UserManagement() {
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unban
                                   </button>
                                 ) : (
-                                  <button onClick={()=>setBanTarget({row,type:'resident'})}
+                                  <button onClick={()=>setBanConfirmTarget({row,type:'resident'})}
                                     style={{ background:'#fff',color:'#dc2626',border:'1.5px solid #fca5a5',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban
                                   </button>
@@ -554,7 +555,42 @@ function UserManagement() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Step 1 — Ban confirmation dialog */}
+      {banConfirmTarget && (
+        <div style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(15,23,42,0.55)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(2px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setBanConfirmTarget(null); }}>
+          <div style={{ background:'#fff', borderRadius:20, width:420, maxWidth:'100%', boxShadow:'0 24px 64px rgba(0,0,0,0.18)', overflow:'hidden' }}>
+            <div style={{ background:'linear-gradient(135deg, #fef2f2, #fff1f1)', padding:'24px 24px 20px', borderBottom:'1px solid #fecaca', display:'flex', alignItems:'flex-start', gap:14 }}>
+              <div style={{ width:46, height:46, borderRadius:12, background:'#fee2e2', border:'1.5px solid #fecaca', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div>
+                <div style={{ fontWeight:800, fontSize:16, color:'#111827', fontFamily:'Poppins, sans-serif' }}>
+                  Ban this {banConfirmTarget.type === 'official' ? 'official' : 'resident'}?
+                </div>
+                <div style={{ fontSize:12, color:'#6b7280', marginTop:4, lineHeight:1.5, fontFamily:'Poppins, sans-serif' }}>
+                  You are about to ban <strong style={{ color:'#374151' }}>
+                    {banConfirmTarget.type === 'official' ? banConfirmTarget.row.barangay_name : banConfirmTarget.row.name}
+                  </strong>. This will block their access immediately. You will need to provide a reason.
+                </div>
+              </div>
+            </div>
+            <div style={{ padding:'16px 24px 20px', display:'flex', gap:10, justifyContent:'flex-end' }}>
+              <button onClick={() => setBanConfirmTarget(null)}
+                style={{ padding:'10px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Poppins, sans-serif' }}>
+                Cancel
+              </button>
+              <button onClick={() => { setBanTarget(banConfirmTarget); setBanConfirmTarget(null); }}
+                style={{ padding:'10px 22px', borderRadius:10, border:'none', background:'#dc2626', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Poppins, sans-serif', display:'flex', alignItems:'center', gap:6 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Yes, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 — Ban reason modal */}
       {banTarget && <BanModal target={banTarget.row} type={banTarget.type} onConfirm={handleBan} onCancel={()=>setBanTarget(null)} loading={actionLoading} />}
       {unbanTarget && <UnbanModal target={unbanTarget.row} type={unbanTarget.type} onConfirm={handleUnban} onCancel={()=>setUnbanTarget(null)} loading={actionLoading} />}
 
