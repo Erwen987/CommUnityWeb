@@ -79,42 +79,6 @@ function MapModal({ lat, lng, barangay, onClose }) {
   );
 }
 
-// ── Reject Modal ───────────────────────────────────────────────────────────────
-function RejectModal({ report, onConfirm, onCancel, loading }) {
-  const [reason, setReason] = useState('');
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(2px)' }}>
-      <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:440, boxShadow:'0 24px 64px rgba(0,0,0,0.18)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-          <div style={{ width:42, height:42, borderRadius:11, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-          </div>
-          <div>
-            <div style={{ fontWeight:700, fontSize:16, color:'#111827' }}>Reject Report</div>
-            <div style={{ fontSize:12, color:'#9ca3af', marginTop:2 }}>{report.problem} — {report.residentName}</div>
-          </div>
-        </div>
-        <p style={{ fontSize:13, color:'#6b7280', marginBottom:14, lineHeight:1.6 }}>
-          Provide a reason so the resident understands why their report was rejected.
-        </p>
-        <textarea
-          value={reason} onChange={e => setReason(e.target.value)}
-          placeholder="e.g. Report appears to be a duplicate, insufficient evidence, issue could not be verified…"
-          rows={4}
-          style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #e5e7eb', borderRadius:10, fontSize:13, color:'#374151', outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.5 }}
-        />
-        <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:18 }}>
-          <button onClick={onCancel} style={{ padding:'10px 20px', borderRadius:9, border:'1.5px solid #e5e7eb', background:'#fff', fontFamily:'inherit', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151' }}>Cancel</button>
-          <button onClick={() => onConfirm(reason.trim())} disabled={loading || !reason.trim()}
-            style={{ padding:'10px 20px', borderRadius:9, border:'none', background: loading || !reason.trim() ? '#fca5a5' : '#dc2626', color:'#fff', fontFamily:'inherit', fontSize:13, fontWeight:700, cursor: loading || !reason.trim() ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6 }}>
-            {loading ? <><div style={{ width:13, height:13, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />Rejecting…</> : 'Reject Report'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
   pending:     { bg:'#fef9c3', color:'#854d0e', dot:'#f59e0b', label:'Pending'     },
@@ -145,19 +109,30 @@ function StatusBadge({ status }) {
 
 const fmt = d => new Date(d).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' });
 
+const QUICK_REASONS = [
+  'Report appears to be a duplicate',
+  'Insufficient evidence provided',
+  'Issue could not be verified',
+  'Outside barangay jurisdiction',
+  'Incomplete information',
+];
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 function Reports() {
   const { barangay, loading: profileLoading } = useOfficialProfile();
-  const [reports, setReports]           = useState([]);
-  const [loading, setLoading]           = useState(false);
-  const [updatingId, setUpdatingId]     = useState(null);
-  const [search, setSearch]             = useState('');
-  const [filter, setFilter]             = useState('all');
-  const [mapReport, setMapReport]       = useState(null);
-  const [rejectTarget, setRejectTarget] = useState(null);
-  const [rejecting, setRejecting]       = useState(false);
-  const [page, setPage]                 = useState(1);
+  const [reports, setReports]         = useState([]);
+  const [loading, setLoading]         = useState(false);
+  const [updatingId, setUpdatingId]   = useState(null);
+  const [search, setSearch]           = useState('');
+  const [filter, setFilter]           = useState('all');
+  const [mapReport, setMapReport]     = useState(null);
+  const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
+
+  // Reject modal state (mirrors Requests.js pattern)
+  const [rejectModal, setRejectModal]   = useState(null); // { id, problem, residentName }
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError]   = useState('');
 
   const fetchReports = useCallback(async () => {
     if (!barangay) return;
@@ -191,21 +166,23 @@ function Reports() {
     fetchReports();
   };
 
-  const handleReject = async (reason) => {
-    if (!rejectTarget) return;
-    setRejecting(true);
-    await supabase.from('reports').update({ status: 'rejected', rejection_reason: reason }).eq('id', rejectTarget.id);
-    setRejecting(false);
-    setRejectTarget(null);
+  const openRejectModal = (r) => {
+    setRejectReason('');
+    setRejectError('');
+    setRejectModal({ id: r.id, problem: r.problem, residentName: r.residentName });
+  };
+
+  const confirmReject = async () => {
+    if (!rejectReason.trim()) { setRejectError('Please enter a reason for rejection.'); return; }
+    setUpdatingId(rejectModal.id);
+    await supabase.from('reports').update({ status: 'rejected', rejection_reason: rejectReason.trim() }).eq('id', rejectModal.id);
+    setUpdatingId(null);
+    setRejectModal(null);
     fetchReports();
   };
 
-  const isHistory = s => s === 'resolved' || s === 'rejected';
-
   const filtered = reports.filter(r => {
-    const matchFilter = filter === 'all' ? true
-      : filter === 'history' ? isHistory(r.status)
-      : r.status === filter;
+    const matchFilter = filter === 'all' || r.status === filter;
     const q = search.toLowerCase();
     const matchSearch = !q || r.problem?.toLowerCase().includes(q) || r.residentName?.toLowerCase().includes(q);
     return matchFilter && matchSearch;
@@ -216,20 +193,21 @@ function Reports() {
   const paginated  = filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
 
   const STATS = [
-    { label:'Total',       filterKey:'all',         value:reports.length,                        accent:'#1d4ed8', iconBg:'#dbeafe',
+    { label:'Total',       filterKey:'all',         value:reports.length,     accent:'#1d4ed8', iconBg:'#dbeafe',
       icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-    { label:'Pending',     filterKey:'pending',     value:count('pending'),                      accent:'#f59e0b', iconBg:'#fef3c7',
+    { label:'Pending',     filterKey:'pending',     value:count('pending'),   accent:'#f59e0b', iconBg:'#fef3c7',
       icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-    { label:'In Progress', filterKey:'in_progress', value:count('in_progress'),                  accent:'#3b82f6', iconBg:'#dbeafe',
+    { label:'In Progress', filterKey:'in_progress', value:count('in_progress'), accent:'#3b82f6', iconBg:'#dbeafe',
       icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg> },
-    { label:'History',     filterKey:'history',     value:count('resolved')+count('rejected'),   accent:'#6b7280', iconBg:'#f1f5f9',
-      icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> },
+    { label:'Resolved',    filterKey:'resolved',    value:count('resolved'),  accent:'#16a34a', iconBg:'#dcfce7',
+      icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+    { label:'Rejected',    filterKey:'rejected',    value:count('rejected'),  accent:'#ef4444', iconBg:'#fee2e2',
+      icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> },
   ];
 
   return (
     <>
-      {mapReport    && <MapModal lat={mapReport.location_lat} lng={mapReport.location_lng} barangay={barangay} onClose={() => setMapReport(null)} />}
-      {rejectTarget && <RejectModal report={rejectTarget} onConfirm={handleReject} onCancel={() => setRejectTarget(null)} loading={rejecting} />}
+      {mapReport && <MapModal lat={mapReport.location_lat} lng={mapReport.location_lng} barangay={barangay} onClose={() => setMapReport(null)} />}
 
       <div className="off-layout">
         <OfficialSidebar />
@@ -245,14 +223,14 @@ function Reports() {
             </div>
 
             {/* Stat cards */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:16, marginBottom:28 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:14, marginBottom:28 }}>
               {STATS.map(c => (
                 <div key={c.label} onClick={() => setFilter(c.filterKey)}
-                  style={{ background: filter===c.filterKey ? c.iconBg : '#fff', borderRadius:14, padding:'16px', boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', alignItems:'center', gap:12, borderLeft:`4px solid ${c.accent}`, cursor:'pointer', transition:'background 0.15s', minHeight:72, boxSizing:'border-box', borderBottom: filter===c.filterKey ? `2px solid ${c.accent}` : '2px solid transparent' }}>
-                  <div style={{ width:42, height:42, borderRadius:10, background: filter===c.filterKey ? '#fff' : c.iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'background 0.15s' }}>{c.icon}</div>
+                  style={{ background: filter===c.filterKey ? c.iconBg : '#fff', borderRadius:14, padding:'16px', boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', alignItems:'center', gap:10, borderLeft:`4px solid ${c.accent}`, cursor:'pointer', transition:'background 0.15s', minHeight:72, boxSizing:'border-box', borderBottom: filter===c.filterKey ? `2px solid ${c.accent}` : '2px solid transparent' }}>
+                  <div style={{ width:38, height:38, borderRadius:10, background: filter===c.filterKey ? '#fff' : c.iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'background 0.15s' }}>{c.icon}</div>
                   <div>
-                    <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'#6b7280', marginBottom:3 }}>{c.label}</div>
-                    <div style={{ fontSize:26, fontWeight:800, color:'#1f2937', lineHeight:1 }}>{c.value}</div>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:'#6b7280', marginBottom:3 }}>{c.label}</div>
+                    <div style={{ fontSize:24, fontWeight:800, color:'#1f2937', lineHeight:1 }}>{c.value}</div>
                   </div>
                 </div>
               ))}
@@ -278,7 +256,8 @@ function Reports() {
                     <option value="all">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="in_progress">In Progress</option>
-                    <option value="history">History</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="rejected">Rejected</option>
                   </select>
                 </div>
               </div>
@@ -353,7 +332,7 @@ function Reports() {
 
                         {/* Actions */}
                         <td style={TD}>
-                          {isHistory(r.status) ? (
+                          {r.status === 'resolved' || r.status === 'rejected' ? (
                             <span style={{ fontSize:11, color:'#9ca3af', fontStyle:'italic' }}>Closed</span>
                           ) : (
                             <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
@@ -369,7 +348,7 @@ function Reports() {
                                   ✓ Resolve
                                 </button>
                               )}
-                              <button onClick={() => setRejectTarget(r)} disabled={updatingId===r.id}
+                              <button onClick={() => openRejectModal(r)} disabled={updatingId===r.id}
                                 style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#fee2e2', color:'#991b1b', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                                 ✕ Reject
                               </button>
@@ -406,6 +385,93 @@ function Reports() {
           </div>
         </div>
       </div>
+
+      {/* Rejection modal — matches document request rejection style */}
+      {rejectModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}
+          onClick={e => { if (e.target === e.currentTarget) setRejectModal(null); }}>
+          <div style={{ background:'#fff', borderRadius:20, width:480, maxWidth:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)', overflow:'hidden' }}>
+
+            {/* Header */}
+            <div style={{ background:'linear-gradient(135deg, #fef2f2, #fff1f1)', padding:'20px 24px 16px', borderBottom:'1px solid #fecaca' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:44, height:44, borderRadius:12, background:'#fee2e2', border:'1.5px solid #fecaca', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:16, color:'#111827' }}>Reject Report</div>
+                    <div style={{ fontSize:12, color:'#6b7280', marginTop:2 }}>The resident will be notified with your reason</div>
+                  </div>
+                </div>
+                <button onClick={() => setRejectModal(null)}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#9ca3af', padding:4, borderRadius:6, lineHeight:1 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+
+              {/* Report info pill */}
+              <div style={{ marginTop:12, display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #fecaca', borderRadius:8, padding:'6px 12px' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span style={{ fontSize:12, fontWeight:700, color:'#374151' }}>{rejectModal.problem}</span>
+                <span style={{ fontSize:11, color:'#9ca3af' }}>• {rejectModal.residentName}</span>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding:'20px 24px' }}>
+
+              {/* Quick reason chips */}
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Quick Reasons</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {QUICK_REASONS.map(reason => (
+                    <button key={reason} onClick={() => { setRejectReason(reason); setRejectError(''); }}
+                      style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${rejectReason === reason ? '#dc2626' : '#e5e7eb'}`, background: rejectReason === reason ? '#fee2e2' : '#f9fafb', color: rejectReason === reason ? '#dc2626' : '#374151', fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom reason textarea */}
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+                  Or write a custom reason
+                </div>
+                <textarea
+                  rows={3}
+                  placeholder="Describe why this report is being rejected..."
+                  value={rejectReason}
+                  onChange={e => { setRejectReason(e.target.value); setRejectError(''); }}
+                  maxLength={300}
+                  style={{ width:'100%', padding:'10px 12px', border:`1.5px solid ${rejectError ? '#ef4444' : '#e5e7eb'}`, borderRadius:10, fontSize:13, color:'#374151', resize:'none', outline:'none', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.5 }}
+                />
+                <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
+                  {rejectError
+                    ? <span style={{ color:'#ef4444', fontSize:12 }}>{rejectError}</span>
+                    : <span />}
+                  <span style={{ fontSize:11, color: rejectReason.length > 260 ? '#f59e0b' : '#d1d5db' }}>{rejectReason.length}/300</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding:'12px 24px 20px', display:'flex', gap:10, justifyContent:'flex-end', borderTop:'1px solid #f1f5f9' }}>
+              <button onClick={() => setRejectModal(null)}
+                style={{ padding:'9px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={confirmReject}
+                style={{ padding:'9px 22px', borderRadius:10, border:'none', background:'#dc2626', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Reject Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
