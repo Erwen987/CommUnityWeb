@@ -8,45 +8,23 @@ import { supabase } from '../../supabaseClient';
 const GOOGLE_MAPS_KEY = 'AIzaSyDD1KBSgXW5ilJo5y_pYTGM0VD0CTehVSE';
 
 const BARANGAY_HALLS = {
-  'Mangin':           { lat: 16.0453, lng: 120.3672 },
-  'Bolosan':          { lat: 16.0441, lng: 120.3378 },
-  'Calmay':           { lat: 16.0389, lng: 120.3501 },
-  'Pantal':           { lat: 16.0312, lng: 120.3398 },
-  'Lucao':            { lat: 16.0298, lng: 120.3512 },
-  'Bonuan Binloc':    { lat: 16.0201, lng: 120.3489 },
-  'Bonuan Boquig':    { lat: 16.0178, lng: 120.3412 },
-  'Bonuan Gueset':    { lat: 16.0223, lng: 120.3601 },
-  'Malued':           { lat: 16.0501, lng: 120.3298 },
-  'Mayombo':          { lat: 16.0478, lng: 120.3512 },
-  'Perez':            { lat: 16.0432, lng: 120.3445 },
-  'Bacayao Norte':    { lat: 16.0389, lng: 120.3223 },
-  'Bacayao Sur':      { lat: 16.0356, lng: 120.3201 },
-  'Caranglaan':       { lat: 16.0512, lng: 120.3601 },
-  'Carael':           { lat: 16.0534, lng: 120.3512 },
-  'Herrero':          { lat: 16.0445, lng: 120.3489 },
-  'Lasip Chico':      { lat: 16.0567, lng: 120.3423 },
-  'Lasip Grande':     { lat: 16.0589, lng: 120.3401 },
-  'Lomboy':           { lat: 16.0312, lng: 120.3601 },
-  'Mamalingling':     { lat: 16.0601, lng: 120.3512 },
-  'Pugaro Suit':      { lat: 16.0223, lng: 120.3312 },
-  'Quezon':           { lat: 16.0434, lng: 120.3398 },
-  'Salvador':         { lat: 16.0456, lng: 120.3512 },
-  'Salapingao':       { lat: 16.0378, lng: 120.3623 },
-  'Sta. Barbara':     { lat: 16.0512, lng: 120.3489 },
-  'Sta. Maria':       { lat: 16.0489, lng: 120.3445 },
-  'Tebeng':           { lat: 16.0534, lng: 120.3378 },
-  'Pogo Chico':       { lat: 16.0267, lng: 120.3534 },
-  'Pogo Grande':      { lat: 16.0245, lng: 120.3556 },
-  'Barangay I (Poblacion)':  { lat: 16.0432, lng: 120.3335 },
-  'Barangay II (Poblacion)': { lat: 16.0445, lng: 120.3312 },
-  'Barangay III (Poblacion)':{ lat: 16.0423, lng: 120.3356 },
-  'Barangay IV (Poblacion)': { lat: 16.0412, lng: 120.3378 },
+  'Mangin':{ lat:16.0453,lng:120.3672 },'Bolosan':{ lat:16.0441,lng:120.3378 },'Calmay':{ lat:16.0389,lng:120.3501 },
+  'Pantal':{ lat:16.0312,lng:120.3398 },'Lucao':{ lat:16.0298,lng:120.3512 },'Bonuan Binloc':{ lat:16.0201,lng:120.3489 },
+  'Bonuan Boquig':{ lat:16.0178,lng:120.3412 },'Bonuan Gueset':{ lat:16.0223,lng:120.3601 },'Malued':{ lat:16.0501,lng:120.3298 },
+  'Mayombo':{ lat:16.0478,lng:120.3512 },'Perez':{ lat:16.0432,lng:120.3445 },'Bacayao Norte':{ lat:16.0389,lng:120.3223 },
+  'Bacayao Sur':{ lat:16.0356,lng:120.3201 },'Caranglaan':{ lat:16.0512,lng:120.3601 },'Carael':{ lat:16.0534,lng:120.3512 },
+  'Herrero':{ lat:16.0445,lng:120.3489 },'Lasip Chico':{ lat:16.0567,lng:120.3423 },'Lasip Grande':{ lat:16.0589,lng:120.3401 },
+  'Lomboy':{ lat:16.0312,lng:120.3601 },'Mamalingling':{ lat:16.0601,lng:120.3512 },'Pugaro Suit':{ lat:16.0223,lng:120.3312 },
+  'Quezon':{ lat:16.0434,lng:120.3398 },'Salvador':{ lat:16.0456,lng:120.3512 },'Salapingao':{ lat:16.0378,lng:120.3623 },
+  'Sta. Barbara':{ lat:16.0512,lng:120.3489 },'Sta. Maria':{ lat:16.0489,lng:120.3445 },'Tebeng':{ lat:16.0534,lng:120.3378 },
+  'Pogo Chico':{ lat:16.0267,lng:120.3534 },'Pogo Grande':{ lat:16.0245,lng:120.3556 },
+  'Barangay I (Poblacion)':{ lat:16.0432,lng:120.3335 },'Barangay II (Poblacion)':{ lat:16.0445,lng:120.3312 },
+  'Barangay III (Poblacion)':{ lat:16.0423,lng:120.3356 },'Barangay IV (Poblacion)':{ lat:16.0412,lng:120.3378 },
 };
 
-// ── Map Modal ─────────────────────────────────────────────────────────────────
+// ── Map Modal ──────────────────────────────────────────────────────────────────
 function MapModal({ lat, lng, barangay, onClose }) {
   const mapRef = useRef(null);
-
   useEffect(() => {
     const loadMap = () => {
       if (!mapRef.current || !window.google) return;
@@ -69,7 +47,7 @@ function MapModal({ lat, lng, barangay, onClose }) {
           }
         }).catch(() => { const el = document.getElementById('route-info'); if (el) el.textContent = 'Route unavailable'; });
     };
-    if (window.google) { loadMap(); }
+    if (window.google) loadMap();
     else {
       const scriptId = 'google-maps-script';
       if (!document.getElementById(scriptId)) {
@@ -101,16 +79,52 @@ function MapModal({ lat, lng, barangay, onClose }) {
   );
 }
 
-// ── Status config ─────────────────────────────────────────────────────────────
+// ── Reject Modal ───────────────────────────────────────────────────────────────
+function RejectModal({ report, onConfirm, onCancel, loading }) {
+  const [reason, setReason] = useState('');
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(2px)' }}>
+      <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:440, boxShadow:'0 24px 64px rgba(0,0,0,0.18)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+          <div style={{ width:42, height:42, borderRadius:11, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <div>
+            <div style={{ fontWeight:700, fontSize:16, color:'#111827' }}>Reject Report</div>
+            <div style={{ fontSize:12, color:'#9ca3af', marginTop:2 }}>{report.problem} — {report.residentName}</div>
+          </div>
+        </div>
+        <p style={{ fontSize:13, color:'#6b7280', marginBottom:14, lineHeight:1.6 }}>
+          Provide a reason so the resident understands why their report was rejected.
+        </p>
+        <textarea
+          value={reason} onChange={e => setReason(e.target.value)}
+          placeholder="e.g. Report appears to be a duplicate, insufficient evidence, issue could not be verified…"
+          rows={4}
+          style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #e5e7eb', borderRadius:10, fontSize:13, color:'#374151', outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.5 }}
+        />
+        <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:18 }}>
+          <button onClick={onCancel} style={{ padding:'10px 20px', borderRadius:9, border:'1.5px solid #e5e7eb', background:'#fff', fontFamily:'inherit', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151' }}>Cancel</button>
+          <button onClick={() => onConfirm(reason.trim())} disabled={loading || !reason.trim()}
+            style={{ padding:'10px 20px', borderRadius:9, border:'none', background: loading || !reason.trim() ? '#fca5a5' : '#dc2626', color:'#fff', fontFamily:'inherit', fontSize:13, fontWeight:700, cursor: loading || !reason.trim() ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6 }}>
+            {loading ? <><div style={{ width:13, height:13, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />Rejecting…</> : 'Reject Report'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  pending:     { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Pending'     },
-  in_progress: { bg: '#dbeafe', color: '#1e40af', dot: '#3b82f6', label: 'In Progress' },
-  resolved:    { bg: '#dcfce7', color: '#166534', dot: '#22c55e', label: 'Resolved'    },
+  pending:     { bg:'#fef9c3', color:'#854d0e', dot:'#f59e0b', label:'Pending'     },
+  in_progress: { bg:'#dbeafe', color:'#1e40af', dot:'#3b82f6', label:'In Progress' },
+  resolved:    { bg:'#dcfce7', color:'#166534', dot:'#22c55e', label:'Resolved'    },
+  rejected:    { bg:'#fee2e2', color:'#991b1b', dot:'#ef4444', label:'Rejected'    },
 };
 
-const TH = { padding: '10px 12px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap', textAlign: 'left' };
-const TD = { padding: '12px 12px', fontSize: 13, color: '#374151' };
-
+const TH = { padding:'10px 12px', fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', background:'#f8fafc', borderBottom:'1px solid #e5e7eb', whiteSpace:'nowrap', textAlign:'left' };
+const TD = { padding:'12px 12px', fontSize:13, color:'#374151' };
 const avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
 
 function resolveAvatar(url) {
@@ -118,39 +132,31 @@ function resolveAvatar(url) {
   if (url.startsWith('preset_')) return `/avatar_${url}.png`;
   return url;
 }
-
-function ResidentAvatar({ url, name, size = 28, index = 0 }) {
+function ResidentAvatar({ url, name, size=28, index=0 }) {
   const src = resolveAvatar(url);
-  if (src) return <img src={src} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e7eb' }} />;
-  const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-  return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: avatarColors[index % 5], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
-      {initials}
-    </div>
-  );
+  if (src) return <img src={src} alt={name} style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid #e5e7eb' }} />;
+  const initials = (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return <div style={{ width:size, height:size, borderRadius:'50%', background:avatarColors[index%5], color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:size*0.38, flexShrink:0 }}>{initials}</div>;
 }
-
 function StatusBadge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.pending;
-  return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:s.bg, color:s.color, padding:'4px 12px', borderRadius:999, fontSize:11, fontWeight:700 }}>
-      <span style={{ width:6, height:6, borderRadius:'50%', background:s.dot }} />{s.label}
-    </span>
-  );
+  return <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:s.bg, color:s.color, padding:'4px 12px', borderRadius:999, fontSize:11, fontWeight:700 }}><span style={{ width:6, height:6, borderRadius:'50%', background:s.dot }} />{s.label}</span>;
 }
 
-const fmt = d => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+const fmt = d => new Date(d).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' });
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+// ── Main ───────────────────────────────────────────────────────────────────────
 function Reports() {
   const { barangay, loading: profileLoading } = useOfficialProfile();
-  const [reports, setReports]       = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [updatingId, setUpdatingId] = useState(null);
-  const [search, setSearch]         = useState('');
-  const [filter, setFilter]         = useState('all');
-  const [mapReport, setMapReport]   = useState(null);
-  const [page,   setPage]           = useState(1);
+  const [reports, setReports]           = useState([]);
+  const [loading, setLoading]           = useState(false);
+  const [updatingId, setUpdatingId]     = useState(null);
+  const [search, setSearch]             = useState('');
+  const [filter, setFilter]             = useState('all');
+  const [mapReport, setMapReport]       = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejecting, setRejecting]       = useState(false);
+  const [page, setPage]                 = useState(1);
   const PAGE_SIZE = 10;
 
   const fetchReports = useCallback(async () => {
@@ -160,27 +166,22 @@ function Reports() {
     const userIds = (users || []).map(u => u.auth_id);
     if (userIds.length === 0) { setReports([]); setLoading(false); return; }
     const userMap = {};
-    (users || []).forEach(u => { userMap[u.auth_id] = { name: `${u.first_name || ''} ${u.last_name || ''}`.trim(), avatar_url: u.avatar_url }; });
+    (users || []).forEach(u => { userMap[u.auth_id] = { name:`${u.first_name||''} ${u.last_name||''}`.trim(), avatar_url:u.avatar_url }; });
     const { data } = await supabase.from('reports').select('*').in('user_id', userIds).order('created_at', { ascending: false });
-    setReports((data || []).map(r => ({ ...r, residentName: userMap[r.user_id]?.name || 'Unknown', residentAvatar: userMap[r.user_id]?.avatar_url || null })));
+    setReports((data||[]).map(r => ({ ...r, residentName: userMap[r.user_id]?.name||'Unknown', residentAvatar: userMap[r.user_id]?.avatar_url||null })));
     setLoading(false);
   }, [barangay]);
 
   useEffect(() => { fetchReports(); }, [fetchReports]);
 
-  // Real-time subscription — re-fetch when any report changes
   useEffect(() => {
     if (!barangay) return;
-    const channel = supabase
-      .channel(`reports-realtime-${barangay}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
-        fetchReports();
-      })
+    const channel = supabase.channel(`reports-realtime-${barangay}`)
+      .on('postgres_changes', { event:'*', schema:'public', table:'reports' }, () => fetchReports())
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [barangay, fetchReports]);
 
-  // Reset to page 1 on filter/search change
   useEffect(() => setPage(1), [filter, search]);
 
   const updateStatus = async (id, status) => {
@@ -190,194 +191,217 @@ function Reports() {
     fetchReports();
   };
 
+  const handleReject = async (reason) => {
+    if (!rejectTarget) return;
+    setRejecting(true);
+    await supabase.from('reports').update({ status: 'rejected', rejection_reason: reason }).eq('id', rejectTarget.id);
+    setRejecting(false);
+    setRejectTarget(null);
+    fetchReports();
+  };
+
+  const isHistory = s => s === 'resolved' || s === 'rejected';
+
   const filtered = reports.filter(r => {
-    const matchFilter = filter === 'all' || r.status === filter;
+    const matchFilter = filter === 'all' ? true
+      : filter === 'history' ? isHistory(r.status)
+      : r.status === filter;
     const q = search.toLowerCase();
     const matchSearch = !q || r.problem?.toLowerCase().includes(q) || r.residentName?.toLowerCase().includes(q);
     return matchFilter && matchSearch;
   });
 
-  const count = s => reports.filter(r => r.status === s).length;
+  const count  = s => reports.filter(r => r.status === s).length;
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated  = filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
 
   const STATS = [
-    { label: 'Total Reports', filterKey: 'all',         value: reports.length,       accent: '#1d4ed8', iconBg: '#dbeafe',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-    { label: 'Pending',       filterKey: 'pending',     value: count('pending'),     accent: '#f59e0b', iconBg: '#fef3c7',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-    { label: 'In Progress',   filterKey: 'in_progress', value: count('in_progress'), accent: '#3b82f6', iconBg: '#dbeafe',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg> },
-    { label: 'Resolved',      filterKey: 'resolved',    value: count('resolved'),    accent: '#16a34a', iconBg: '#dcfce7',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+    { label:'Total',       filterKey:'all',         value:reports.length,                        accent:'#1d4ed8', iconBg:'#dbeafe',
+      icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
+    { label:'Pending',     filterKey:'pending',     value:count('pending'),                      accent:'#f59e0b', iconBg:'#fef3c7',
+      icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+    { label:'In Progress', filterKey:'in_progress', value:count('in_progress'),                  accent:'#3b82f6', iconBg:'#dbeafe',
+      icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg> },
+    { label:'History',     filterKey:'history',     value:count('resolved')+count('rejected'),   accent:'#6b7280', iconBg:'#f1f5f9',
+      icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg> },
   ];
 
   return (
     <>
-      {mapReport && <MapModal lat={mapReport.location_lat} lng={mapReport.location_lng} barangay={barangay} onClose={() => setMapReport(null)} />}
+      {mapReport    && <MapModal lat={mapReport.location_lat} lng={mapReport.location_lng} barangay={barangay} onClose={() => setMapReport(null)} />}
+      {rejectTarget && <RejectModal report={rejectTarget} onConfirm={handleReject} onCancel={() => setRejectTarget(null)} loading={rejecting} />}
+
       <div className="off-layout">
         <OfficialSidebar />
         <div className="off-main">
           <OfficialTopbar badge />
           <div className="off-content">
 
-            <div style={{ marginBottom: 24 }}>
-              <h1 className="off-page-title" style={{ marginBottom: 2 }}>Reports</h1>
-              <p className="off-page-sub" style={{ margin: 0 }}>
+            <div style={{ marginBottom:24 }}>
+              <h1 className="off-page-title" style={{ marginBottom:2 }}>Reports</h1>
+              <p className="off-page-sub" style={{ margin:0 }}>
                 {!profileLoading && barangay ? `Showing reports for Barangay ${barangay}` : 'Monitor and manage community reports'}
               </p>
             </div>
 
             {/* Stat cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:16, marginBottom:28 }}>
               {STATS.map(c => (
                 <div key={c.label} onClick={() => setFilter(c.filterKey)}
-                  style={{ background: filter === c.filterKey ? c.iconBg : '#fff', borderRadius: 14, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 12, borderLeft: `4px solid ${c.accent}`, cursor: 'pointer', transition: 'background 0.15s', minHeight: 72, boxSizing: 'border-box', borderBottom: filter === c.filterKey ? `2px solid ${c.accent}` : '2px solid transparent' }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 10, background: filter === c.filterKey ? '#fff' : c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>{c.icon}</div>
+                  style={{ background: filter===c.filterKey ? c.iconBg : '#fff', borderRadius:14, padding:'16px', boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', alignItems:'center', gap:12, borderLeft:`4px solid ${c.accent}`, cursor:'pointer', transition:'background 0.15s', minHeight:72, boxSizing:'border-box', borderBottom: filter===c.filterKey ? `2px solid ${c.accent}` : '2px solid transparent' }}>
+                  <div style={{ width:42, height:42, borderRadius:10, background: filter===c.filterKey ? '#fff' : c.iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'background 0.15s' }}>{c.icon}</div>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280', marginBottom: 3 }}>{c.label}</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{c.value}</div>
+                    <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'#6b7280', marginBottom:3 }}>{c.label}</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:'#1f2937', lineHeight:1 }}>{c.value}</div>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Table panel */}
-            <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+            <div style={{ background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', overflow:'hidden' }}>
 
               {/* Panel header */}
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ padding:'16px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>Reports Overview</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>{filtered.length} of {reports.length} records · page {page} of {totalPages || 1}</div>
+                  <div style={{ fontWeight:700, fontSize:15, color:'#1f2937' }}>Reports Overview</div>
+                  <div style={{ fontSize:12, color:'#9ca3af', marginTop:1 }}>{filtered.length} of {reports.length} records · page {page} of {totalPages||1}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <div style={{ position: 'relative' }}>
-                    <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                  <div style={{ position:'relative' }}>
+                    <svg style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     <input type="text" placeholder="Search problem or resident…" value={search} onChange={e => setSearch(e.target.value)}
-                      style={{ padding: '8px 12px 8px 32px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', width: 220 }} />
+                      style={{ padding:'8px 12px 8px 32px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, color:'#374151', outline:'none', background:'#f9fafb', width:220 }} />
                   </div>
                   <select value={filter} onChange={e => setFilter(e.target.value)}
-                    style={{ padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', cursor: 'pointer' }}>
+                    style={{ padding:'8px 12px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, color:'#374151', outline:'none', background:'#f9fafb', cursor:'pointer' }}>
                     <option value="all">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
+                    <option value="history">History</option>
                   </select>
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div style={{ overflowX:'auto' }}>
+                <table style={{ width:'100%', borderCollapse:'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={{ ...TH, width: '16%' }}>Resident</th>
-                      <th style={{ ...TH, width: '17%' }}>Problem</th>
-                      <th style={{ ...TH, width: '18%' }}>Description</th>
-                      <th style={{ ...TH, width: '7%' }}>Image</th>
-                      <th style={{ ...TH, width: '9%' }}>Location</th>
-                      <th style={{ ...TH, width: '13%' }}>Status</th>
-                      <th style={{ ...TH, width: '11%' }}>Date</th>
-                      <th style={{ ...TH, width: '9%' }}>Update</th>
+                      <th style={{ ...TH, width:'15%' }}>Resident</th>
+                      <th style={{ ...TH, width:'15%' }}>Problem</th>
+                      <th style={{ ...TH, width:'18%' }}>Description</th>
+                      <th style={{ ...TH, width:'7%'  }}>Image</th>
+                      <th style={{ ...TH, width:'8%'  }}>Location</th>
+                      <th style={{ ...TH, width:'11%' }}>Status</th>
+                      <th style={{ ...TH, width:'10%' }}>Date</th>
+                      <th style={{ ...TH, width:'16%' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={8} style={{ textAlign: 'center', color: '#9ca3af', padding: '40px', fontSize: 13 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <tr><td colSpan={8} style={{ textAlign:'center', color:'#9ca3af', padding:'40px', fontSize:13 }}>
+                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg>
                           Loading reports...
                         </div>
                       </td></tr>
                     ) : filtered.length === 0 ? (
-                      <tr><td colSpan={8} style={{ padding: '48px 24px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 52, height: 52, borderRadius: 14, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <tr><td colSpan={8} style={{ padding:'48px 24px' }}>
+                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                          <div style={{ width:52, height:52, borderRadius:14, background:'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center' }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                           </div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: '#374151' }}>No reports found</div>
-                          <div style={{ fontSize: 12, color: '#9ca3af' }}>{search || filter !== 'all' ? 'Try adjusting your search or filter.' : `No reports submitted for ${barangay || 'your barangay'} yet.`}</div>
+                          <div style={{ fontWeight:700, fontSize:14, color:'#374151' }}>No reports found</div>
+                          <div style={{ fontSize:12, color:'#9ca3af' }}>{search||filter!=='all' ? 'Try adjusting your search or filter.' : `No reports submitted for ${barangay||'your barangay'} yet.`}</div>
                         </div>
                       </td></tr>
-                    ) : paginated.map((r, i) => {
-                      return (
+                    ) : paginated.map((r, i) => (
                       <tr key={r.id}
-                        style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
+                        style={{ backgroundColor: i%2===0 ? '#ffffff' : '#f0f4ff' }}
                         onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor= i % 2 === 0 ? '#ffffff' : '#f0f4ff'}>
-                        <td style={{ ...TD, overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor= i%2===0 ? '#ffffff' : '#f0f4ff'}>
+
+                        <td style={{ ...TD, overflow:'hidden' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8, overflow:'hidden' }}>
                             <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={28} index={i} />
-                            <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>{r.residentName}</span>
+                            <span style={{ fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>{r.residentName}</span>
                           </div>
                         </td>
-                        <td style={{ ...TD, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.problem}</td>
-                        <td style={{ ...TD, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>{r.description || '—'}</td>
+                        <td style={{ ...TD, fontWeight:600, color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.problem}</td>
+                        <td style={{ ...TD, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'#6b7280', fontSize:12 }}>
+                          {r.rejection_reason
+                            ? <span style={{ color:'#991b1b', fontStyle:'italic' }}>Rejected: {r.rejection_reason}</span>
+                            : r.description || '—'
+                          }
+                        </td>
                         <td style={TD}>
                           {r.image_url
-                            ? <a href={r.image_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#1E3A5F', fontSize: 12, fontWeight: 600, background: '#e0e7ef', padding: '3px 10px', borderRadius: 6, textDecoration: 'none' }}>
+                            ? <a href={r.image_url} target="_blank" rel="noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:4, color:'#1E3A5F', fontSize:12, fontWeight:600, background:'#e0e7ef', padding:'3px 10px', borderRadius:6, textDecoration:'none' }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>View
                               </a>
-                            : <span style={{ color: '#d1d5db' }}>—</span>}
+                            : <span style={{ color:'#d1d5db' }}>—</span>}
                         </td>
                         <td style={TD}>
                           {r.location_lat && r.location_lng
-                            ? <button onClick={() => setMapReport(r)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eff6ff', color: '#1E3A5F', border: '1px solid #bfdbfe', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                                📍 View Map
+                            ? <button onClick={() => setMapReport(r)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'#eff6ff', color:'#1E3A5F', border:'1px solid #bfdbfe', borderRadius:7, padding:'4px 10px', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                📍 Map
                               </button>
-                            : <span style={{ color: '#d1d5db' }}>—</span>}
+                            : <span style={{ color:'#d1d5db' }}>—</span>}
                         </td>
                         <td style={TD}><StatusBadge status={r.status} /></td>
-                        <td style={{ ...TD, color: '#9ca3af', fontSize: 12 }}>{fmt(r.created_at)}</td>
+                        <td style={{ ...TD, color:'#9ca3af', fontSize:12 }}>{fmt(r.created_at)}</td>
+
+                        {/* Actions */}
                         <td style={TD}>
-                          <select value={r.status} disabled={updatingId === r.id} onChange={e => updateStatus(r.id, e.target.value)}
-                            style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 8px', fontSize: 11, cursor: updatingId === r.id ? 'not-allowed' : 'pointer', background: '#fff', color: '#374151', fontWeight: 600, outline: 'none', opacity: updatingId === r.id ? 0.5 : 1 }}>
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                          </select>
+                          {isHistory(r.status) ? (
+                            <span style={{ fontSize:11, color:'#9ca3af', fontStyle:'italic' }}>Closed</span>
+                          ) : (
+                            <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
+                              {r.status === 'pending' && (
+                                <button onClick={() => updateStatus(r.id, 'in_progress')} disabled={updatingId===r.id}
+                                  style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#dbeafe', color:'#1e40af', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                  → In Progress
+                                </button>
+                              )}
+                              {r.status === 'in_progress' && (
+                                <button onClick={() => updateStatus(r.id, 'resolved')} disabled={updatingId===r.id}
+                                  style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#dcfce7', color:'#166534', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                  ✓ Resolve
+                                </button>
+                              )}
+                              <button onClick={() => setRejectTarget(r)} disabled={updatingId===r.id}
+                                style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#fee2e2', color:'#991b1b', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                ✕ Reject
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
-                      );
-                    })}
+                    ))}
                   </tbody>
                 </table>
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div style={{ padding: '14px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>
-                    Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
-                  </span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: page === 1 ? '#f9fafb' : '#fff', color: page === 1 ? '#d1d5db' : '#374151', fontWeight: 600, fontSize: 12, cursor: page === 1 ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-                      ← Prev
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                      .reduce((acc, p, idx, arr) => {
-                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('…');
-                        acc.push(p);
-                        return acc;
-                      }, [])
-                      .map((p, i) => p === '…'
-                        ? <span key={`ellipsis-${i}`} style={{ padding: '6px 4px', color: '#9ca3af', fontSize: 12 }}>…</span>
+                <div style={{ padding:'14px 24px', borderTop:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                  <span style={{ fontSize:12, color:'#9ca3af' }}>Showing {(page-1)*PAGE_SIZE+1}–{Math.min(page*PAGE_SIZE, filtered.length)} of {filtered.length}</span>
+                  <div style={{ display:'flex', gap:6 }}>
+                    <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
+                      style={{ padding:'6px 14px', borderRadius:8, border:'1.5px solid #e5e7eb', background:page===1?'#f9fafb':'#fff', color:page===1?'#d1d5db':'#374151', fontWeight:600, fontSize:12, cursor:page===1?'not-allowed':'pointer', fontFamily:'inherit' }}>← Prev</button>
+                    {Array.from({ length:totalPages },(_,i)=>i+1)
+                      .filter(p => p===1||p===totalPages||Math.abs(p-page)<=1)
+                      .reduce((acc,p,idx,arr) => { if(idx>0&&p-arr[idx-1]>1) acc.push('…'); acc.push(p); return acc; },[])
+                      .map((p,i) => p==='…'
+                        ? <span key={`e${i}`} style={{ padding:'6px 4px', color:'#9ca3af', fontSize:12 }}>…</span>
                         : <button key={p} onClick={() => setPage(p)}
-                            style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: page === p ? '#2563eb' : '#fff', color: page === p ? '#fff' : '#374151', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
-                            {p}
-                          </button>
-                      )
-                    }
-                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: page === totalPages ? '#f9fafb' : '#fff', color: page === totalPages ? '#d1d5db' : '#374151', fontWeight: 600, fontSize: 12, cursor: page === totalPages ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-                      Next →
-                    </button>
+                            style={{ padding:'6px 12px', borderRadius:8, border:'1.5px solid #e5e7eb', background:page===p?'#2563eb':'#fff', color:page===p?'#fff':'#374151', fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>{p}</button>
+                      )}
+                    <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
+                      style={{ padding:'6px 14px', borderRadius:8, border:'1.5px solid #e5e7eb', background:page===totalPages?'#f9fafb':'#fff', color:page===totalPages?'#d1d5db':'#374151', fontWeight:600, fontSize:12, cursor:page===totalPages?'not-allowed':'pointer', fontFamily:'inherit' }}>Next →</button>
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         </div>
