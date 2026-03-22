@@ -158,8 +158,17 @@ function AdminSettings() {
   const [createMsg,     setCreateMsg]     = useState(null);
   const [currentEmail,  setCurrentEmail]  = useState('');
   const [removeTarget,  setRemoveTarget]  = useState(null);
+  const [isSuperAdmin,  setIsSuperAdmin]  = useState(false);
 
-  useEffect(() => { supabase.auth.getUser().then(({ data: { user } }) => { if (user?.email) setCurrentEmail(user.email); }); }, []);
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user?.email) {
+        setCurrentEmail(user.email);
+        const { data } = await supabase.from('admins').select('is_super_admin').eq('auth_id', user.id).maybeSingle();
+        setIsSuperAdmin(data?.is_super_admin === true);
+      }
+    });
+  }, []);
 
   const loadAdmins = useCallback(async () => {
     setAdminsLoading(true);
@@ -362,8 +371,8 @@ function AdminSettings() {
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
             title="Admin Management" sub="Add or remove administrator accounts">
 
-            {/* Create form */}
-            <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e5e7eb', padding: '20px', marginBottom: 24 }}>
+            {/* Create form — only visible to super admin */}
+            {isSuperAdmin && <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e5e7eb', padding: '20px', marginBottom: 24 }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: '#1f2937', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Create New Admin Account
@@ -399,7 +408,7 @@ function AdminSettings() {
                 {creating ? 'Creating...' : 'Create Admin'}
               </Btn>
               {createMsg && <div style={{ marginTop: 12 }}><StatusMsg msg={createMsg} /></div>}
-            </div>
+            </div>}
 
             {/* Existing admins */}
             <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Existing Admins ({admins.length})</div>
@@ -409,6 +418,8 @@ function AdminSettings() {
                   {admins.map(a => {
                     const initials = (a.full_name || a.email).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
                     const isMe = a.email === currentEmail;
+                    const isSuperAdmin = a.is_super_admin;
+                    const canDelete = !isMe && !isSuperAdmin;
                     return (
                       <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, border: `1.5px solid ${isMe ? '#bfdbfe' : '#f1f5f9'}`, background: isMe ? '#f0f9ff' : '#fff' }}>
                         <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1E3A5F', flexShrink: 0 }}>{initials}</div>
@@ -422,7 +433,7 @@ function AdminSettings() {
                         <div style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0 }}>
                           {new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </div>
-                        {!isMe && (
+                        {canDelete && (
                           <button onClick={() => setRemoveTarget(a)} disabled={removingId === a.id} title="Remove admin"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1d5db', padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'color 0.15s, background 0.15s' }}
                             onMouseEnter={e => { e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.background = '#fef2f2'; }}
