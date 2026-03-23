@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import Swal from 'sweetalert2';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -69,6 +70,7 @@ function Login() {
           : 'Invalid email or password.');
         return;
       }
+      await Swal.fire({ icon: 'success', title: 'Login Successful!', text: 'Welcome back, Admin!', timer: 1800, showConfirmButton: false, timerProgressBar: true });
       navigate('/admin/dashboard');
       return;
     }
@@ -90,6 +92,7 @@ function Login() {
     if (official.status === 'pending')  { await supabase.auth.signOut(); setError('Your account is under review. Please wait for admin approval.'); return; }
     if (official.status === 'rejected') { await supabase.auth.signOut(); setError('Your account was not approved. Please contact the admin.'); return; }
     if (official.status === 'banned')   { await supabase.auth.signOut(); setError(`Your account has been suspended.${official.ban_reason ? ` Reason: ${official.ban_reason}` : ''}`); return; }
+    await Swal.fire({ icon: 'success', title: 'Login Successful!', text: `Welcome back!`, timer: 1800, showConfirmButton: false, timerProgressBar: true });
     navigate('/officials/dashboard');
   };
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout, HiOutlineUserGroup, HiOutlineUser } from 'react-icons/hi';
 import { supabase } from '../supabaseClient';
+import Swal from 'sweetalert2';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -26,6 +27,7 @@ function OfficialSidebar() {
     setLoggingOut(true);
     closeSidebar();
     await supabase.auth.signOut();
+    await Swal.fire({ icon: 'success', title: 'Logged Out', text: 'You have been successfully logged out.', timer: 1500, showConfirmButton: false, timerProgressBar: true });
     navigate('/login');
   };
 

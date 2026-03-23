@@ -3,6 +3,7 @@ import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import { supabase } from '../../supabaseClient';
+import Pagination from '../../components/Pagination';
 
 const STATUS_CFG = {
   pending:          { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Pending'          },
@@ -45,6 +46,19 @@ function StatusBadge({ status }) {
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: s.bg, color: s.color, padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot }} />{s.label}
     </span>
+  );
+}
+function StarDisplay({ rating }) {
+  if (!rating) return <span style={{ fontSize:10, color:'#d1d5db', fontStyle:'italic' }}>No rating</span>;
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:2 }}>
+      {[1,2,3,4,5].map(s => (
+        <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= rating ? '#f59e0b' : '#e5e7eb'} stroke={s <= rating ? '#d97706' : '#d1d5db'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ))}
+      <span style={{ fontSize:10, color:'#6b7280', marginLeft:3, fontWeight:600 }}>{rating}/5</span>
+    </div>
   );
 }
 
@@ -127,6 +141,8 @@ function AdminRequests() {
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState('all');
   const [selected, setSelected]   = useState(null);
+  const [page, setPage]           = useState(1);
+  const PAGE_SIZE = 5;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -164,6 +180,9 @@ function AdminRequests() {
     const matchFilter = filter === 'all' || r.status === filter;
     return matchSearch && matchFilter;
   });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const count = s => requests.filter(r => r.status === s).length;
 
@@ -217,10 +236,10 @@ function AdminRequests() {
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
                   <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input type="text" placeholder="Search by document, resident or barangay…" value={search} onChange={e => setSearch(e.target.value)}
+                  <input type="text" placeholder="Search by document, resident or barangay…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
                     style={{ padding: '8px 12px 8px 32px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', width: 260 }} />
                 </div>
-                <select value={filter} onChange={e => setFilter(e.target.value)}
+                <select value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}
                   style={{ padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', cursor: 'pointer' }}>
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -242,7 +261,8 @@ function AdminRequests() {
                       <th style={{ ...TH, width: '11%' }}>Barangay</th>
                       <th style={{ ...TH, width: '11%' }}>Payment</th>
                       <th style={{ ...TH, width: '14%' }}>Status</th>
-                      <th style={{ ...TH, width: '11%' }}>Date</th>
+                      <th style={{ ...TH, width: '10%' }}>Rating</th>
+                      <th style={{ ...TH, width: '10%' }}>Date</th>
                       <th style={{ ...TH, width: '6%' }}>Action</th>
                     </tr>
                   </thead>
@@ -257,7 +277,7 @@ function AdminRequests() {
                           <div style={{ fontSize: 12, color: '#9ca3af' }}>Try adjusting your search or filter</div>
                         </div>
                       </td></tr>
-                    ) : filtered.map((r, i) => (
+                    ) : paginated.map((r, i) => (
                       <tr key={r.id}
                         style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#f0f4ff' }}
                         onMouseEnter={e => e.currentTarget.style.backgroundColor = '#dbeafe'}
@@ -276,6 +296,7 @@ function AdminRequests() {
                         <td style={{ ...TD, overflow: 'hidden' }}><span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.barangay || '—'}</span></td>
                         <td style={{ ...TD, overflow: 'hidden' }}><span style={{ background: '#f1f5f9', color: '#374151', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.payment_method || '—'}</span></td>
                         <td style={TD}><StatusBadge status={r.status} /></td>
+                        <td style={TD}><StarDisplay rating={r.rating} /></td>
                         <td style={{ ...TD, color: '#9ca3af', fontSize: 12 }}>{r.dateLabel}</td>
                         <td style={TD}>
                           <button onClick={() => setSelected(r)}
@@ -290,6 +311,7 @@ function AdminRequests() {
                 </table>
               </div>
             )}
+            <Pagination page={page} totalPages={totalPages} onPage={setPage} />
           </div>
         </div>
       </div>

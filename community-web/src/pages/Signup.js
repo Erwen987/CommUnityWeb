@@ -75,8 +75,18 @@ function Navbar() {
   );
 }
 
+const strongPasswordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+
+function validatePassword(pw) {
+  if (pw.length < 8)              return 'Password must be at least 8 characters.';
+  if (!/[a-zA-Z]/.test(pw))      return 'Password must contain at least one letter.';
+  if (!/\d/.test(pw))             return 'Password must contain at least one number.';
+  if (!/[^a-zA-Z0-9]/.test(pw))  return 'Password must contain at least one special character (e.g. @, #, !).';
+  return null;
+}
+
 function Signup() {
-  const [form, setForm]           = useState({ barangay: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm]           = useState({ barangay: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [error, setError]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [step, setStep]           = useState('form');
@@ -90,8 +100,12 @@ function Signup() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
+    if (!form.phone.trim()) { setError('Phone number is required.'); return; }
+    const phoneDigits = form.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 13) { setError('Please enter a valid phone number.'); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
-    if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    const pwErr = validatePassword(form.password);
+    if (pwErr) { setError(pwErr); return; }
     setLoading(true);
 
     const { data, error: authError } = await supabase.auth.signUp({ email: form.email.trim(), password: form.password });
@@ -101,7 +115,7 @@ function Signup() {
     if (data.session) {
       const { error: dbError } = await supabase.from('officials').insert({
         auth_id: data.user.id, barangay_name: form.barangay, barangay: form.barangay,
-        email: form.email.trim().toLowerCase(), status: 'pending',
+        email: form.email.trim().toLowerCase(), phone: form.phone.trim(), status: 'pending',
       });
       if (dbError) { setError('Failed to save your details. Please contact admin.'); return; }
       await supabase.auth.signOut();
@@ -121,7 +135,7 @@ function Signup() {
     if (verifyError) { setLoading(false); setError('Invalid or expired code. Please try again.'); return; }
     const { error: dbError } = await supabase.from('officials').insert({
       auth_id: pendingUserId, barangay_name: form.barangay, barangay: form.barangay,
-      email: form.email.trim().toLowerCase(), status: 'pending',
+      email: form.email.trim().toLowerCase(), phone: form.phone.trim(), status: 'pending',
     });
     setLoading(false);
     if (dbError) { setError('Confirmed but failed to save. Error: ' + dbError.message); return; }
@@ -309,6 +323,13 @@ function Signup() {
                 value={form.email} onChange={handleChange} required
               />
 
+              {/* Phone */}
+              <label>Phone Number</label>
+              <input
+                type="tel" name="phone" placeholder="e.g. 09171234567"
+                value={form.phone} onChange={handleChange} required
+              />
+
               {/* Passwords — 2 column */}
               <div className="auth-name-row">
                 <div style={{ flex: 1 }}>
@@ -316,7 +337,7 @@ function Signup() {
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showPass ? 'text' : 'password'} name="password"
-                      placeholder="Min. 8 chars" value={form.password}
+                      placeholder="Min. 8 chars, letter+number+symbol" value={form.password}
                       onChange={handleChange} required
                       style={{ paddingRight: 40, marginBottom: 0 }}
                     />

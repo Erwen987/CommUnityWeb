@@ -4,6 +4,7 @@ import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import { supabase } from '../../supabaseClient';
+import Pagination from '../../components/Pagination';
 
 const avatarColors = ['#1E3A5F','#0f766e','#7c3aed','#c2410c','#0369a1'];
 
@@ -180,6 +181,8 @@ function Residents() {
   const [search,           setSearch]           = useState('');
   const [filter,           setFilter]           = useState('all');
   const [viewActivity,     setViewActivity]     = useState(null);
+  const [page,             setPage]             = useState(1);
+  const PAGE_SIZE = 5;
 
   const loadResidents = useCallback(async () => {
     if (!barangay) return;
@@ -214,6 +217,11 @@ function Residents() {
     return !q || name.toLowerCase().includes(q) || (r.email||'').toLowerCase().includes(q);
   });
 
+  const totalPages        = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedCurrent  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPagesDel     = Math.ceil(filteredDeleted.length / PAGE_SIZE);
+  const paginatedDeleted  = filteredDeleted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const totalCount   = residents.length;
   const activeCount  = residents.filter(r => !r.is_banned).length;
   const bannedCount  = residents.filter(r =>  r.is_banned).length;
@@ -247,16 +255,16 @@ function Residents() {
             const activeCard = tab === 'deleted' ? 'deleted' : filter;
             const cards = [
               { id:'all',     label:'Total Residents',  value:totalCount,   accent:'#2563eb', iconBg:'#eff6ff',
-                onClick:() => { setTab('current'); setFilter('all'); setSearch(''); },
+                onClick:() => { setTab('current'); setFilter('all'); setSearch(''); setPage(1); },
                 icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
               { id:'active',  label:'Active',           value:activeCount,  accent:'#059669', iconBg:'#d1fae5',
-                onClick:() => { setTab('current'); setFilter('active'); setSearch(''); },
+                onClick:() => { setTab('current'); setFilter('active'); setSearch(''); setPage(1); },
                 icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
               { id:'banned',  label:'Banned',           value:bannedCount,  accent:bannedCount>0?'#dc2626':'#9ca3af', iconBg:bannedCount>0?'#fee2e2':'#f3f4f6',
-                onClick:() => { setTab('current'); setFilter('banned'); setSearch(''); },
+                onClick:() => { setTab('current'); setFilter('banned'); setSearch(''); setPage(1); },
                 icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={bannedCount>0?'#dc2626':'#9ca3af'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
               { id:'deleted', label:'Deleted Accounts', value:deletedCount, accent:'#6b7280', iconBg:'#f3f4f6',
-                onClick:() => { setTab('deleted'); setSearch(''); },
+                onClick:() => { setTab('deleted'); setSearch(''); setPage(1); },
                 icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> },
             ];
             return (
@@ -283,7 +291,7 @@ function Residents() {
               { key:'current', label:'Current Residents', count:totalCount  },
               { key:'deleted', label:'Deleted Accounts',  count:deletedCount },
             ].map(t => (
-              <button key={t.key} onClick={() => { setTab(t.key); setSearch(''); setFilter('all'); }}
+              <button key={t.key} onClick={() => { setTab(t.key); setSearch(''); setFilter('all'); setPage(1); }}
                 style={{ flex:1, padding:'14px 20px', border:'none', fontFamily:'Poppins,sans-serif', fontSize:13, fontWeight:700, cursor:'pointer', background: tab===t.key ? '#fff' : '#f8fafc', color: tab===t.key ? (t.key==='deleted'?'#6b7280':'#2563eb') : '#9ca3af', borderBottom: tab===t.key ? `2px solid ${t.key==='deleted'?'#6b7280':'#2563eb'}` : '2px solid transparent', transition:'all 0.15s', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
                 {t.label}
                 <span style={{ padding:'1px 8px', borderRadius:999, background: tab===t.key?(t.key==='deleted'?'#f3f4f6':'#eff6ff'):'#f1f5f9', color: tab===t.key?(t.key==='deleted'?'#6b7280':'#2563eb'):'#9ca3af', fontSize:11, fontWeight:800 }}>{t.count}</span>
@@ -298,14 +306,14 @@ function Residents() {
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:'1px solid #f1f5f9', gap:12, flexWrap:'wrap' }}>
               <div style={{ position:'relative', flex:'1 1 240px', maxWidth:340 }}>
                 <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder={tab==='deleted'?'Search deleted residents…':'Search by name or email…'} value={search} onChange={e => setSearch(e.target.value)}
+                <input type="text" placeholder={tab==='deleted'?'Search deleted residents…':'Search by name or email…'} value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
                   style={{ width:'100%', padding:'9px 14px 9px 36px', border:'1.5px solid #e5e7eb', borderRadius:10, fontSize:13, color:'#374151', outline:'none', background:'#f9fafb', boxSizing:'border-box', fontFamily:'Poppins,sans-serif' }} />
               </div>
 
               {tab === 'current' && (
                 <div style={{ display:'flex', gap:6 }}>
                   {FILTERS.map(f => (
-                    <button key={f.key} onClick={() => setFilter(f.key)} style={{ padding:'7px 14px', borderRadius:8, fontSize:12, fontFamily:'Poppins,sans-serif', fontWeight:600, cursor:'pointer', border: filter===f.key?'none':'1.5px solid #e5e7eb', background: filter===f.key?(f.key==='banned'?'#dc2626':f.key==='active'?'#059669':'#2563eb'):'#fff', color: filter===f.key?'#fff':'#6b7280', transition:'all 0.15s' }}>
+                    <button key={f.key} onClick={() => { setFilter(f.key); setPage(1); }} style={{ padding:'7px 14px', borderRadius:8, fontSize:12, fontFamily:'Poppins,sans-serif', fontWeight:600, cursor:'pointer', border: filter===f.key?'none':'1.5px solid #e5e7eb', background: filter===f.key?(f.key==='banned'?'#dc2626':f.key==='active'?'#059669':'#2563eb'):'#fff', color: filter===f.key?'#fff':'#6b7280', transition:'all 0.15s' }}>
                       {f.label}
                       <span style={{ marginLeft:6, padding:'1px 7px', borderRadius:999, background: filter===f.key?'rgba(255,255,255,0.25)':'#f1f5f9', color: filter===f.key?'#fff':'#9ca3af', fontSize:11, fontWeight:800 }}>{f.count}</span>
                     </button>
@@ -341,7 +349,7 @@ function Residents() {
                         ))}</tr>
                       </thead>
                       <tbody>
-                        {filtered.map((r,i) => (
+                        {paginatedCurrent.map((r,i) => (
                           <tr key={r.id} style={{ backgroundColor:i%2===0?'#fff':'#f9fafb', transition:'background 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.backgroundColor='#eff6ff'}
                             onMouseLeave={e => e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
@@ -379,8 +387,9 @@ function Residents() {
                   </div>
                   <div style={{ padding:'12px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <span style={{ fontSize:12, color:'#9ca3af' }}>{filtered.length} of {totalCount} resident{totalCount!==1?'s':''}</span>
-                    {search && <button onClick={() => setSearch('')} style={{ fontSize:12, color:'#2563eb', background:'none', border:'none', cursor:'pointer', fontWeight:600, fontFamily:'Poppins,sans-serif' }}>Clear search</button>}
+                    {search && <button onClick={() => { setSearch(''); setPage(1); }} style={{ fontSize:12, color:'#2563eb', background:'none', border:'none', cursor:'pointer', fontWeight:600, fontFamily:'Poppins,sans-serif' }}>Clear search</button>}
                   </div>
+                  <Pagination page={page} totalPages={totalPages} onPage={setPage} />
                 </>
               )
 
@@ -404,7 +413,7 @@ function Residents() {
                         ))}</tr>
                       </thead>
                       <tbody>
-                        {filteredDeleted.map((r,i) => {
+                        {paginatedDeleted.map((r,i) => {
                           const name = `${r.first_name||''} ${r.last_name||''}`.trim();
                           return (
                             <tr key={r.id||r.auth_id} style={{ backgroundColor:i%2===0?'#fff':'#f9fafb', transition:'background 0.15s' }}
@@ -442,6 +451,7 @@ function Residents() {
                   <div style={{ padding:'12px 24px', borderTop:'1px solid #f1f5f9' }}>
                     <span style={{ fontSize:12, color:'#9ca3af' }}>{filteredDeleted.length} deleted account{filteredDeleted.length!==1?'s':''}</span>
                   </div>
+                  <Pagination page={page} totalPages={totalPagesDel} onPage={setPage} />
                 </>
               )
             )}

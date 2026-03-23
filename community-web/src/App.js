@@ -1,30 +1,85 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import './App.css';
-
 import ProtectedRoute    from './components/ProtectedRoute';
+import useSessionTimeout from './hooks/useSessionTimeout';
 import Login             from './pages/Login';
 import Signup            from './pages/Signup';
 import ForgotPassword    from './pages/ForgotPassword';
 import ResetPassword     from './pages/ResetPassword';
+import Dashboard         from './pages/officials/Dashboard';
+import Reports           from './pages/officials/Reports';
+import Requests          from './pages/officials/Requests';
+import Analytics         from './pages/officials/Analytics';
+import Rewards           from './pages/officials/Rewards';
+import Residents         from './pages/officials/Residents';
+import OfficialProfile   from './pages/officials/Profile';
+import AdminDashboard    from './pages/admin/AdminDashboard';
+import UserManagement    from './pages/admin/UserManagement';
+import AdminReports      from './pages/admin/AdminReports';
+import AdminRequests     from './pages/admin/AdminRequests';
+import AdminAnalytics    from './pages/admin/AdminAnalytics';
+import AdminRewards      from './pages/admin/AdminRewards';
+import AdminSettings     from './pages/admin/AdminSettings';
+import AdminPortal       from './pages/admin/AdminPortal';
+import AdminProfile      from './pages/admin/AdminProfile';
 
-import Dashboard   from './pages/officials/Dashboard';
-import Reports     from './pages/officials/Reports';
-import Requests    from './pages/officials/Requests';
-import Analytics   from './pages/officials/Analytics';
-import Rewards     from './pages/officials/Rewards';
-import Residents   from './pages/officials/Residents';
-import OfficialProfile from './pages/officials/Profile';
+// ── EmailJS contact form ──────────────────────────────────────────────────────
+const EMAILJS_SERVICE_ID  = 'service_0pp2139';
+const EMAILJS_CONTACT_TPL = 'template_contact';   // create this template in EmailJS
+const EMAILJS_PUBLIC_KEY  = 'MYsqjprp39Rb43jVR';
 
-import AdminDashboard from './pages/admin/AdminDashboard';
-import UserManagement from './pages/admin/UserManagement';
-import AdminReports   from './pages/admin/AdminReports';
-import AdminRequests  from './pages/admin/AdminRequests';
-import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminRewards   from './pages/admin/AdminRewards';
-import AdminSettings  from './pages/admin/AdminSettings';
-import AdminPortal    from './pages/admin/AdminPortal';
-import AdminProfile   from './pages/admin/AdminProfile';
+// ── Session Timeout Warning Modal ─────────────────────────────────────────────
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/admin-portal'];
+
+function SessionGuard() {
+  const location = useLocation();
+  const isProtected = !PUBLIC_PATHS.includes(location.pathname);
+  const { showWarning, secondsLeft, resetTimer } = useSessionTimeout(isProtected);
+
+  if (!showWarning) return null;
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:99999, background:'rgba(15,23,42,0.6)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+      <div style={{ background:'#fff', borderRadius:20, width:420, maxWidth:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.25)', overflow:'hidden' }}>
+
+        {/* Header */}
+        <div style={{ padding:'28px 28px 20px', textAlign:'center' }}>
+          <div style={{ width:64, height:64, borderRadius:'50%', background:'#fef3c7', border:'2px solid #fde68a', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div style={{ fontWeight:800, fontSize:18, color:'#111827', marginBottom:8, fontFamily:'Poppins,sans-serif' }}>Session Expiring Soon</div>
+          <p style={{ fontSize:13, color:'#6b7280', lineHeight:1.6, fontFamily:'Poppins,sans-serif' }}>
+            You have been inactive for a while. Your session will expire in
+          </p>
+          <div style={{ fontSize:40, fontWeight:900, color: secondsLeft <= 10 ? '#dc2626' : '#d97706', margin:'10px 0', fontFamily:'Poppins,sans-serif', transition:'color 0.3s' }}>
+            {secondsLeft}s
+          </div>
+          <p style={{ fontSize:13, color:'#9ca3af', fontFamily:'Poppins,sans-serif' }}>Click "Stay Logged In" to continue your session.</p>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height:1, background:'#f1f5f9', margin:'0 28px' }} />
+
+        {/* Buttons */}
+        <div style={{ padding:'20px 28px', display:'flex', gap:10 }}>
+          <button
+            onClick={resetTimer}
+            style={{ flex:1, padding:'12px', borderRadius:10, border:'none', background:'#2563eb', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Poppins,sans-serif' }}>
+            Stay Logged In
+          </button>
+          <button
+            onClick={async () => { await Swal.fire({ icon:'info', title:'Logging out…', timer:800, showConfirmButton:false }); window.location.href='/login'; }}
+            style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Poppins,sans-serif' }}>
+            Log Out Now
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
@@ -32,6 +87,45 @@ function Landing() {
   const [navScrolled,   setNavScrolled]   = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [menuOpen,      setMenuOpen]      = useState(false);
+  const [contact, setContact]             = useState({ barangay: '', email: '', message: '' });
+  const [contactLoading, setContactLoading] = useState(false);
+
+  const handleContactChange = e => setContact({ ...contact, [e.target.id]: e.target.value });
+
+  const handleContactSubmit = async e => {
+    e.preventDefault();
+    if (!contact.barangay.trim() || !contact.email.trim() || !contact.message.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Incomplete Form', text: 'Please fill in all fields before sending.', confirmButtonColor: '#2563eb' });
+      return;
+    }
+    setContactLoading(true);
+    try {
+      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: EMAILJS_SERVICE_ID,
+          template_id: EMAILJS_CONTACT_TPL,
+          user_id: EMAILJS_PUBLIC_KEY,
+          template_params: {
+            barangay: contact.barangay,
+            from_email: contact.email,
+            message: contact.message,
+          },
+        }),
+      });
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Message Sent!', text: 'Thank you for reaching out. We will get back to you shortly.', confirmButtonColor: '#2563eb' });
+        setContact({ barangay: '', email: '', message: '' });
+      } else {
+        throw new Error('send failed');
+      }
+    } catch {
+      Swal.fire({ icon: 'error', title: 'Failed to Send', text: 'Something went wrong. Please try again later.', confirmButtonColor: '#2563eb' });
+    } finally {
+      setContactLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -240,14 +334,16 @@ function Landing() {
             <img src={`${IMG}/features/contactus.png`} alt="Contact Us" />
           </div>
           <div className="contact-form">
-            <form>
+            <form onSubmit={handleContactSubmit}>
               <label htmlFor="barangay">Barangay Name</label>
-              <input type="text" id="barangay" placeholder="Enter your barangay name" required />
+              <input type="text" id="barangay" placeholder="Enter your barangay name" value={contact.barangay} onChange={handleContactChange} required />
               <label htmlFor="email">Email Address</label>
-              <input type="email" id="email" placeholder="Enter your email" required />
+              <input type="email" id="email" placeholder="Enter your email" value={contact.email} onChange={handleContactChange} required />
               <label htmlFor="message">Message</label>
-              <textarea id="message" rows="5" placeholder="Write your message here..." required></textarea>
-              <button type="submit">Send Message</button>
+              <textarea id="message" rows="5" placeholder="Write your message here..." value={contact.message} onChange={handleContactChange} required />
+              <button type="submit" disabled={contactLoading} style={{ opacity: contactLoading ? 0.7 : 1, cursor: contactLoading ? 'not-allowed' : 'pointer' }}>
+                {contactLoading ? 'Sending…' : 'Send Message'}
+              </button>
             </form>
           </div>
         </div>
@@ -275,6 +371,7 @@ function Landing() {
 function App() {
   return (
     <BrowserRouter>
+      <SessionGuard />
       <Routes>
         <Route path="/"                element={<Landing />} />
         <Route path="/login"           element={<Login />} />

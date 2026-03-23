@@ -3,6 +3,7 @@ import '../../officials.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import { supabase } from '../../supabaseClient';
+import Pagination from '../../components/Pagination';
 
 // ── EmailJS ───────────────────────────────────────────────────────────────────
 const EMAILJS_SERVICE_ID            = 'service_0pp2139';
@@ -360,6 +361,8 @@ function UserManagement() {
   const [search,    setSearch]    = useState('');
   const [offFilter, setOffFilter] = useState('all');
   const [resFilter, setResFilter] = useState('all');
+  const [page,      setPage]      = useState(1);
+  const PAGE_SIZE = 5;
 
   const [deletedAccounts,  setDeletedAccounts]  = useState([]);
   const [viewActivity,     setViewActivity]      = useState(null);
@@ -458,6 +461,10 @@ function UserManagement() {
     return !q || name.toLowerCase().includes(q) || (r.email||'').toLowerCase().includes(q) || (r.barangay||'').toLowerCase().includes(q);
   });
 
+  const activeList   = tab === 'pending'   ? fPending   : tab === 'officials' ? fOfficials : tab === 'deleted' ? fDeleted : fResidents;
+  const totalPagesUM = Math.ceil(activeList.length / PAGE_SIZE);
+  const paginatedUM  = activeList.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const TABS = [
     { key: 'pending',   label: 'Pending',          count: pending.length,          activeColor: '#d97706', activeBg: '#fef3c7' },
     { key: 'officials', label: 'Officials',         count: officials.length,        activeColor: '#16a34a', activeBg: '#dcfce7' },
@@ -488,19 +495,19 @@ function UserManagement() {
                 resFilter === 'banned' ? 'banned'  : 'residents';
               return [
                 { id: 'pending',   label: 'Pending Approvals',    value: pending.length,                 accent: '#f59e0b', iconBg: '#fef3c7', vc: pending.length > 0 ? '#d97706' : '#1f2937',
-                  onClick: () => { setTab('pending');   setSearch(''); },
+                  onClick: () => { setTab('pending');   setSearch(''); setPage(1); },
                   icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
                 { id: 'officials', label: 'Active Officials',      value: approvedCount,                  accent: '#16a34a', iconBg: '#dcfce7', vc: '#1f2937',
-                  onClick: () => { setTab('officials'); setOffFilter('all'); setSearch(''); },
+                  onClick: () => { setTab('officials'); setOffFilter('all'); setSearch(''); setPage(1); },
                   icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg> },
                 { id: 'residents', label: 'Registered Residents',  value: residents.length,               accent: '#2563eb', iconBg: '#eff6ff', vc: '#1f2937',
-                  onClick: () => { setTab('residents'); setResFilter('all'); setSearch(''); },
+                  onClick: () => { setTab('residents'); setResFilter('all'); setSearch(''); setPage(1); },
                   icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
                 { id: 'banned',    label: 'Banned Accounts',       value: bannedOffCount + bannedResCount, accent: '#dc2626', iconBg: '#fee2e2', vc: bannedOffCount + bannedResCount > 0 ? '#dc2626' : '#1f2937',
-                  onClick: () => { setTab('residents'); setResFilter('banned'); setSearch(''); },
+                  onClick: () => { setTab('residents'); setResFilter('banned'); setSearch(''); setPage(1); },
                   icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
                 { id: 'deleted',   label: 'Deleted Accounts',      value: deletedAccounts.length,         accent: '#6b7280', iconBg: '#f3f4f6', vc: '#6b7280',
-                  onClick: () => { setTab('deleted');   setSearch(''); },
+                  onClick: () => { setTab('deleted');   setSearch(''); setPage(1); },
                   icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> },
               ].map(c => {
                 const isActive = activeCard === c.id;
@@ -525,7 +532,7 @@ function UserManagement() {
               {TABS.map(t => {
                 const active = tab === t.key;
                 return (
-                  <button key={t.key} onClick={() => { setTab(t.key); setSearch(''); }}
+                  <button key={t.key} onClick={() => { setTab(t.key); setSearch(''); setPage(1); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'Poppins, sans-serif', fontWeight: active ? 700 : 500, color: active ? t.activeColor : '#6b7280', borderBottom: active ? `2.5px solid ${t.activeColor}` : '2.5px solid transparent', marginBottom: -1, transition: 'color 0.15s' }}>
                     {t.label}
                     <span style={{ background: active ? t.activeBg : '#f1f5f9', color: active ? t.activeColor : '#9ca3af', borderRadius: 999, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>{t.count}</span>
@@ -542,12 +549,12 @@ function UserManagement() {
                   <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   <input type="text"
                     placeholder={tab === 'residents' ? 'Search name, email, barangay…' : tab === 'deleted' ? 'Search name, email, barangay…' : 'Search barangay or email…'}
-                    value={search} onChange={e => setSearch(e.target.value)}
+                    value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
                     style={{ width: '100%', padding: '9px 14px 9px 36px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', fontFamily: 'Poppins, sans-serif', boxSizing: 'border-box' }}
                   />
                 </div>
-                {tab === 'officials' && <FilterPills value={offFilter} onChange={setOffFilter} bannedCount={bannedOffCount} />}
-                {tab === 'residents' && <FilterPills value={resFilter} onChange={setResFilter} bannedCount={bannedResCount} />}
+                {tab === 'officials' && <FilterPills value={offFilter} onChange={v => { setOffFilter(v); setPage(1); }} bannedCount={bannedOffCount} />}
+                {tab === 'residents' && <FilterPills value={resFilter} onChange={v => { setResFilter(v); setPage(1); }} bannedCount={bannedResCount} />}
               </div>
 
               {/* ── PENDING ── */}
@@ -560,7 +567,7 @@ function UserManagement() {
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead><tr><th style={TH}>Official</th><th style={TH}>Barangay</th><th style={TH}>Email</th><th style={TH}>Submitted</th><th style={TH}>Actions</th></tr></thead>
                         <tbody>
-                          {fPending.map((row, i) => (
+                          {paginatedUM.map((row, i) => (
                             <tr key={row.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
                               onMouseEnter={e=>e.currentTarget.style.backgroundColor='#eff6ff'}
                               onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
@@ -597,7 +604,7 @@ function UserManagement() {
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead><tr><th style={TH}>Official</th><th style={TH}>Barangay</th><th style={TH}>Email</th><th style={TH}>Status</th><th style={TH}>Since</th><th style={TH}>Actions</th></tr></thead>
                         <tbody>
-                          {fOfficials.map((row, i) => (
+                          {paginatedUM.map((row, i) => (
                             <tr key={row.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
                               onMouseEnter={e=>e.currentTarget.style.backgroundColor='#eff6ff'}
                               onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
@@ -651,7 +658,7 @@ function UserManagement() {
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead><tr><th style={TH}>Resident</th><th style={TH}>Email</th><th style={TH}>Barangay</th><th style={TH}>Status</th><th style={TH}>Joined</th><th style={TH}>Action</th></tr></thead>
                         <tbody>
-                          {fResidents.map((row, i) => (
+                          {paginatedUM.map((row, i) => (
                             <tr key={row.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
                               onMouseEnter={e=>e.currentTarget.style.backgroundColor='#eff6ff'}
                               onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
@@ -697,7 +704,7 @@ function UserManagement() {
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead><tr><th style={TH}>Resident</th><th style={TH}>Email</th><th style={TH}>Barangay</th><th style={TH}>Reason</th><th style={TH}>Deleted On</th><th style={TH}>Activity</th></tr></thead>
                         <tbody>
-                          {fDeleted.map((row, i) => {
+                          {paginatedUM.map((row, i) => {
                             const name = `${row.first_name||''} ${row.last_name||''}`.trim();
                             return (
                               <tr key={row.id||row.auth_id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
@@ -735,15 +742,17 @@ function UserManagement() {
                     </div>
               )}
 
+              <Pagination page={page} totalPages={totalPagesUM} onPage={setPage} />
+
               {/* Footer */}
-              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ paddingTop: 8, paddingLeft: 20, paddingRight: 20, paddingBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 12, color: '#9ca3af' }}>
                   {tab==='pending'   && `${fPending.length} of ${pending.length} request${pending.length!==1?'s':''}`}
                   {tab==='officials' && `${fOfficials.length} of ${officials.length} official${officials.length!==1?'s':''}`}
                   {tab==='residents' && `${fResidents.length} of ${residents.length} resident${residents.length!==1?'s':''}`}
                   {tab==='deleted'   && `${fDeleted.length} of ${deletedAccounts.length} deleted account${deletedAccounts.length!==1?'s':''}`}
                 </span>
-                {search && <button onClick={()=>setSearch('')} style={{ fontSize:12,color:'#2563eb',background:'none',border:'none',cursor:'pointer',fontWeight:600,fontFamily:'Poppins,sans-serif' }}>Clear search</button>}
+                {search && <button onClick={()=>{ setSearch(''); setPage(1); }} style={{ fontSize:12,color:'#2563eb',background:'none',border:'none',cursor:'pointer',fontWeight:600,fontFamily:'Poppins,sans-serif' }}>Clear search</button>}
               </div>
 
             </div>

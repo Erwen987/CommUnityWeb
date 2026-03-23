@@ -28,6 +28,19 @@ function AccountStatusBadge({ status }) {
   if (status === 'deleted') return <span style={{ fontSize:10, color:'#6b7280', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#9ca3af', flexShrink:0 }} />Deleted</span>;
   return <span style={{ fontSize:10, color:'#16a34a', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}><span style={{ width:5, height:5, borderRadius:'50%', background:'#22c55e', flexShrink:0 }} />Active</span>;
 }
+function StarDisplay({ rating }) {
+  if (!rating) return <span style={{ fontSize:10, color:'#d1d5db', fontStyle:'italic' }}>No rating</span>;
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:2 }}>
+      {[1,2,3,4,5].map(s => (
+        <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= rating ? '#f59e0b' : '#e5e7eb'} stroke={s <= rating ? '#d97706' : '#d1d5db'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ))}
+      <span style={{ fontSize:10, color:'#6b7280', marginLeft:3, fontWeight:600 }}>{rating}/5</span>
+    </div>
+  );
+}
 
 const STATUS_CFG = {
   pending:          { bg: '#fef9c3', color: '#854d0e', dot: '#f59e0b', label: 'Pending'           },
@@ -58,7 +71,7 @@ function Requests() {
   const [search, setSearch]             = useState('');
   const [filter, setFilter]             = useState('all');
   const [page,   setPage]               = useState(1);
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 5;
   const [confirmTarget, setConfirmTarget] = useState(null); // { id, docType, refNo }
   const [rejectModal, setRejectModal]     = useState(null);
   const [rejectReason, setRejectReason]   = useState('');
@@ -216,8 +229,9 @@ function Requests() {
                     <th style={{ ...TH, width: '10%' }}>Payment</th>
                     <th style={{ ...TH, width: '7%' }}>Proof</th>
                     <th style={{ ...TH, width: '12%' }}>Status</th>
-                    <th style={{ ...TH, width: '9%' }}>Date</th>
-                    <th style={{ ...TH, width: '9%' }}>Update</th>
+                    <th style={{ ...TH, width: '10%' }}>Rating</th>
+                    <th style={{ ...TH, width: '9%'  }}>Date</th>
+                    <th style={{ ...TH, width: '9%'  }}>Update</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -268,6 +282,7 @@ function Requests() {
                           : <span style={{ color: '#d1d5db' }}>—</span>}
                       </td>
                       <td style={TD}><StatusBadge status={r.status} /></td>
+                      <td style={TD}><StarDisplay rating={r.rating} /></td>
                       <td style={{ ...TD, color: '#9ca3af', fontSize: 12 }}>{fmt(r.created_at)}</td>
                       <td style={TD}>
                         <select value={r.status} disabled={updatingId===r.id} onChange={e => handleStatusChange(r.id, e.target.value)}
