@@ -171,6 +171,12 @@ function AdminSettings() {
     });
   }, []);
 
+  const resolveAvatar = url => {
+    if (!url) return null;
+    if (url.startsWith('preset_')) return `/avatar_${url}.png`;
+    return url;
+  };
+
   const loadAdmins = useCallback(async () => {
     setAdminsLoading(true);
     const { data } = await supabase.from('admins').select('*').order('created_at', { ascending: true });
@@ -382,14 +388,14 @@ function AdminSettings() {
                 {[['Full Name','text',newName,e=>setNewName(e.target.value),'e.g. Juan Dela Cruz'],['Email','email',newEmail,e=>setNewEmail(e.target.value),'e.g. admin@barangay.gov.ph']].map(([label,type,val,onChange,ph]) => (
                   <div key={label}>
                     <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label} <span style={{ color: '#dc2626' }}>*</span></label>
-                    <input type={type} value={val} onChange={onChange} placeholder={ph} style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#fff', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                    <input type={type} value={val} onChange={onChange} placeholder={ph} autoComplete="off" style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#fff', boxSizing: 'border-box', fontFamily: 'inherit' }} />
                   </div>
                 ))}
               </div>
               <div style={{ marginBottom: 14, maxWidth: 320 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Temporary Password <span style={{ color: '#dc2626' }}>*</span></label>
                 <div style={{ position: 'relative' }}>
-                  <input type={showNewPw ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 6 characters"
+                  <input type={showNewPw ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 6 characters" autoComplete="new-password"
                     style={{ width: '100%', padding: '10px 40px 10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', boxSizing: 'border-box', fontFamily: 'inherit' }} />
                   <button type="button" onClick={() => setShowNewPw(v => !v)}
                     style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', padding: 4 }}>
@@ -423,7 +429,12 @@ function AdminSettings() {
                     const canDelete = !isMe && !isSuperAdmin;
                     return (
                       <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, border: `1.5px solid ${isMe ? '#bfdbfe' : '#f1f5f9'}`, background: isMe ? '#f0f9ff' : '#fff' }}>
-                        <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1E3A5F', flexShrink: 0 }}>{initials}</div>
+                        <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1E3A5F', flexShrink: 0, overflow: 'hidden' }}>
+                          {resolveAvatar(a.avatar_url)
+                            ? <img src={resolveAvatar(a.avatar_url)} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : initials
+                          }
+                        </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 600, fontSize: 13, color: '#111827' }}>
                             {a.full_name || '—'}
