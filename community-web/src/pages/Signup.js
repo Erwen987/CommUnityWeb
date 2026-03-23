@@ -86,7 +86,7 @@ function validatePassword(pw) {
 }
 
 function Signup() {
-  const [form, setForm]           = useState({ barangay: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [form, setForm]           = useState({ barangay: '', email: '', password: '', confirmPassword: '' });
   const [error, setError]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [step, setStep]           = useState('form');
@@ -100,9 +100,6 @@ function Signup() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    if (!form.phone.trim()) { setError('Phone number is required.'); return; }
-    const phoneDigits = form.phone.replace(/\D/g, '');
-    if (phoneDigits.length < 10 || phoneDigits.length > 13) { setError('Please enter a valid phone number.'); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
     const pwErr = validatePassword(form.password);
     if (pwErr) { setError(pwErr); return; }
@@ -115,7 +112,7 @@ function Signup() {
     if (data.session) {
       const { error: dbError } = await supabase.from('officials').insert({
         auth_id: data.user.id, barangay_name: form.barangay, barangay: form.barangay,
-        email: form.email.trim().toLowerCase(), phone: form.phone.trim(), status: 'pending',
+        email: form.email.trim().toLowerCase(), status: 'pending',
       });
       if (dbError) { setError('Failed to save your details. Please contact admin.'); return; }
       await supabase.auth.signOut();
@@ -321,13 +318,6 @@ function Signup() {
               <input
                 type="email" name="email" placeholder="Enter your email"
                 value={form.email} onChange={handleChange} required
-              />
-
-              {/* Phone */}
-              <label>Phone Number</label>
-              <input
-                type="tel" name="phone" placeholder="e.g. 09171234567"
-                value={form.phone} onChange={handleChange} required
               />
 
               {/* Passwords — 2 column */}

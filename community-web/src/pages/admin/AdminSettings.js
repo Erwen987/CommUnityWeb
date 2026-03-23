@@ -159,6 +159,7 @@ function AdminSettings() {
   const [currentEmail,  setCurrentEmail]  = useState('');
   const [removeTarget,  setRemoveTarget]  = useState(null);
   const [isSuperAdmin,  setIsSuperAdmin]  = useState(false);
+  const amSuperAdmin = isSuperAdmin; // alias to avoid shadowing inside admins.map()
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -428,7 +429,10 @@ function AdminSettings() {
                             {a.full_name || '—'}
                             {isMe && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: '#0369a1', background: '#e0f2fe', padding: '2px 8px', borderRadius: 999 }}>You</span>}
                           </div>
-                          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{a.email}</div>
+                          {amSuperAdmin
+                            ? <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{a.email}</div>
+                            : <div style={{ fontSize: 12, color: '#d1d5db', marginTop: 2, fontStyle: 'italic' }}>••••••••••</div>
+                          }
                         </div>
                         <div style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0 }}>
                           {new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
