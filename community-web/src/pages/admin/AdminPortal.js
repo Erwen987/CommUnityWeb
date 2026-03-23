@@ -69,7 +69,7 @@ function AdminPortal() {
 
           {/* LEFT PANEL */}
           <div className="ap-panel">
-            <div className="ap-panel-icon">👋</div>
+            <div className="ap-panel-icon">🔐</div>
             <h2>Welcome, Admin!</h2>
             <p>This portal is restricted to authorized administrators of the CommUnity system.</p>
             <ul className="ap-checklist">
