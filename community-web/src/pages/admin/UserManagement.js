@@ -231,6 +231,125 @@ function Toast({ msg, type }) {
   );
 }
 
+// ── Activity Modal (for deleted accounts) ────────────────────────────────────
+const ACTIVITY_STATUS_CFG = {
+  pending:          { bg:'#fef9c3', color:'#854d0e', dot:'#f59e0b', label:'Pending'          },
+  in_progress:      { bg:'#dbeafe', color:'#1e40af', dot:'#3b82f6', label:'In Progress'      },
+  resolved:         { bg:'#dcfce7', color:'#166534', dot:'#22c55e', label:'Resolved'         },
+  rejected:         { bg:'#fee2e2', color:'#991b1b', dot:'#ef4444', label:'Rejected'         },
+  ready_for_pickup: { bg:'#ede9fe', color:'#6d28d9', dot:'#8b5cf6', label:'Ready for Pickup' },
+  claimed:          { bg:'#dcfce7', color:'#166534', dot:'#22c55e', label:'Claimed'          },
+};
+function ActStatusBadge({ status }) {
+  const s = ACTIVITY_STATUS_CFG[status] || ACTIVITY_STATUS_CFG.pending;
+  return <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:s.bg, color:s.color, padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700 }}><span style={{ width:5, height:5, borderRadius:'50%', background:s.dot }} />{s.label}</span>;
+}
+function ActivityModal({ resident, onClose }) {
+  const [actTab,   setActTab]   = useState('reports');
+  const [reports,  setReports]  = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const fmtD = d => new Date(d).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' });
+
+  useEffect(() => {
+    if (!resident?.auth_id) return;
+    setLoading(true);
+    Promise.all([
+      supabase.from('reports').select('*').eq('user_id', resident.auth_id).order('created_at', { ascending: false }),
+      supabase.from('requests').select('*').eq('user_id', resident.auth_id).order('created_at', { ascending: false }),
+    ]).then(([{ data: rpts }, { data: reqs }]) => {
+      setReports(rpts || []);
+      setRequests(reqs || []);
+      setLoading(false);
+    });
+  }, [resident]);
+
+  const name = `${resident.first_name||''} ${resident.last_name||''}`.trim();
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:3000, padding:16 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:'#fff', borderRadius:20, width:640, maxWidth:'100%', maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.25)', overflow:'hidden' }}>
+        <div style={{ background:'linear-gradient(135deg,#f3f4f6,#fafafa)', padding:'20px 24px 16px', borderBottom:'1px solid #e5e7eb' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ width:44, height:44, borderRadius:'50%', background:'#e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:16, color:'#6b7280', flexShrink:0 }}>
+                {name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?'}
+              </div>
+              <div>
+                <div style={{ fontWeight:800, fontSize:15, color:'#111827' }}>{name}</div>
+                <div style={{ fontSize:12, color:'#6b7280', marginTop:2 }}>{resident.email} · {resident.barangay}</div>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#9ca3af', padding:4 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div style={{ marginTop:14, display:'flex', gap:10, flexWrap:'wrap' }}>
+            <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:8, padding:'8px 12px', fontSize:12 }}>
+              <span style={{ color:'#9ca3af', fontWeight:600 }}>Deleted on </span>
+              <span style={{ color:'#374151', fontWeight:700 }}>{fmtD(resident.deleted_at)}</span>
+            </div>
+            {resident.reason && (
+              <div style={{ background:'#fef9c3', border:'1px solid #fde047', borderRadius:8, padding:'8px 12px', fontSize:12, flex:1, minWidth:0 }}>
+                <span style={{ color:'#92400e', fontWeight:600 }}>Reason: </span>
+                <span style={{ color:'#78350f' }}>{resident.reason}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ display:'flex', borderBottom:'1px solid #e5e7eb', background:'#f8fafc' }}>
+          {[{ key:'reports', label:`Reports (${reports.length})` }, { key:'requests', label:`Requests (${requests.length})` }].map(t => (
+            <button key={t.key} onClick={() => setActTab(t.key)}
+              style={{ flex:1, padding:'12px', border:'none', background:'none', fontFamily:'Poppins,sans-serif', fontSize:13, fontWeight:700, cursor:'pointer', color: actTab===t.key?'#2563eb':'#9ca3af', borderBottom: actTab===t.key?'2px solid #2563eb':'2px solid transparent', transition:'all 0.15s' }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ overflowY:'auto', flex:1 }}>
+          {loading ? (
+            <div style={{ padding:'40px', textAlign:'center' }}>
+              <div style={{ width:32, height:32, border:'3px solid #e5e7eb', borderTopColor:'#2563eb', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 10px' }} />
+              <p style={{ color:'#9ca3af', fontSize:13 }}>Loading activity...</p>
+            </div>
+          ) : actTab === 'reports' ? (
+            reports.length === 0 ? <div style={{ padding:'40px', textAlign:'center', color:'#9ca3af', fontSize:13 }}>No reports submitted.</div> : (
+              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                <thead><tr>{['Problem','Description','Status','Date'].map(h => <th key={h} style={{ padding:'10px 16px', fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', background:'#f8fafc', borderBottom:'1px solid #e5e7eb', textAlign:'left' }}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {reports.map((r,i) => (
+                    <tr key={r.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}>
+                      <td style={{ padding:'12px 16px', fontSize:13, fontWeight:600, color:'#111827' }}>{r.problem}</td>
+                      <td style={{ padding:'12px 16px', fontSize:12, color:'#6b7280', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.description||'—'}</td>
+                      <td style={{ padding:'12px 16px' }}><ActStatusBadge status={r.status} /></td>
+                      <td style={{ padding:'12px 16px', fontSize:12, color:'#9ca3af' }}>{fmtD(r.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          ) : (
+            requests.length === 0 ? <div style={{ padding:'40px', textAlign:'center', color:'#9ca3af', fontSize:13 }}>No document requests submitted.</div> : (
+              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                <thead><tr>{['Document','Purpose','Status','Date'].map(h => <th key={h} style={{ padding:'10px 16px', fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', background:'#f8fafc', borderBottom:'1px solid #e5e7eb', textAlign:'left' }}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {requests.map((r,i) => (
+                    <tr key={r.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}>
+                      <td style={{ padding:'12px 16px', fontSize:13, fontWeight:600, color:'#111827' }}>{r.document_type}</td>
+                      <td style={{ padding:'12px 16px', fontSize:12, color:'#6b7280', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.purpose||'—'}</td>
+                      <td style={{ padding:'12px 16px' }}><ActStatusBadge status={r.status} /></td>
+                      <td style={{ padding:'12px 16px', fontSize:12, color:'#9ca3af' }}>{fmtD(r.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 function UserManagement() {
   const [tab,       setTab]       = useState('pending');
@@ -241,6 +360,9 @@ function UserManagement() {
   const [search,    setSearch]    = useState('');
   const [offFilter, setOffFilter] = useState('all');
   const [resFilter, setResFilter] = useState('all');
+
+  const [deletedAccounts,  setDeletedAccounts]  = useState([]);
+  const [viewActivity,     setViewActivity]      = useState(null);
 
   const [banConfirmTarget, setBanConfirmTarget] = useState(null); // step 1
   const [banTarget,        setBanTarget]        = useState(null); // step 2
@@ -254,14 +376,16 @@ function UserManagement() {
   };
 
   const fetchAll = useCallback(async () => {
-    const [{ data: p }, { data: o }, { data: r }] = await Promise.all([
+    const [{ data: p }, { data: o }, { data: r }, { data: d }] = await Promise.all([
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at').eq('status','pending').order('created_at',{ascending:true}),
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,status,ban_reason').in('status',['approved','banned']).order('created_at',{ascending:true}),
       supabase.from('users').select('id,first_name,last_name,email,barangay,created_at,avatar_url,is_banned,ban_reason').eq('role','resident').order('created_at',{ascending:false}),
+      supabase.from('deleted_accounts').select('*').order('deleted_at',{ascending:false}),
     ]);
     setPending(p  || []);
     setOfficials(o || []);
     setResidents((r || []).map((row, i) => ({ ...row, name: `${row.first_name||''} ${row.last_name||''}`.trim(), index: i })));
+    setDeletedAccounts(d || []);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -328,10 +452,17 @@ function UserManagement() {
   const bannedOffCount = officials.filter(o => o.status === 'banned').length;
   const bannedResCount = residents.filter(r => r.is_banned).length;
 
+  const fDeleted = deletedAccounts.filter(r => {
+    const q = search.toLowerCase();
+    const name = `${r.first_name||''} ${r.last_name||''}`.trim();
+    return !q || name.toLowerCase().includes(q) || (r.email||'').toLowerCase().includes(q) || (r.barangay||'').toLowerCase().includes(q);
+  });
+
   const TABS = [
-    { key: 'pending',   label: 'Pending',    count: pending.length,   activeColor: '#d97706', activeBg: '#fef3c7' },
-    { key: 'officials', label: 'Officials',   count: officials.length, activeColor: '#16a34a', activeBg: '#dcfce7' },
-    { key: 'residents', label: 'Residents',   count: residents.length, activeColor: '#2563eb', activeBg: '#eff6ff' },
+    { key: 'pending',   label: 'Pending',          count: pending.length,          activeColor: '#d97706', activeBg: '#fef3c7' },
+    { key: 'officials', label: 'Officials',         count: officials.length,        activeColor: '#16a34a', activeBg: '#dcfce7' },
+    { key: 'residents', label: 'Residents',         count: residents.length,        activeColor: '#2563eb', activeBg: '#eff6ff' },
+    { key: 'deleted',   label: 'Deleted Accounts',  count: deletedAccounts.length,  activeColor: '#6b7280', activeBg: '#f3f4f6' },
   ];
 
   return (
@@ -348,25 +479,42 @@ function UserManagement() {
           </div>
 
           {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
-            {[
-              { label: 'Pending Approvals',  value: pending.length,            accent: '#f59e0b', iconBg: '#fef3c7', vc: pending.length > 0 ? '#d97706' : '#1f2937',
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-              { label: 'Active Officials',   value: approvedCount,             accent: '#16a34a', iconBg: '#dcfce7', vc: '#1f2937',
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg> },
-              { label: 'Registered Residents', value: residents.length,        accent: '#2563eb', iconBg: '#eff6ff', vc: '#1f2937',
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
-              { label: 'Banned Accounts',    value: bannedOffCount + bannedResCount, accent: '#dc2626', iconBg: '#fee2e2', vc: bannedOffCount + bannedResCount > 0 ? '#dc2626' : '#1f2937',
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
-            ].map(c => (
-              <div key={c.label} style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 16, borderLeft: `4px solid ${c.accent}` }}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{c.label}</div>
-                  <div style={{ fontSize: 30, fontWeight: 800, color: c.vc, lineHeight: 1 }}>{c.value}</div>
-                </div>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 28 }}>
+            {(() => {
+              const activeCard =
+                tab === 'pending'   ? 'pending'   :
+                tab === 'officials' ? 'officials'  :
+                tab === 'deleted'   ? 'deleted'    :
+                resFilter === 'banned' ? 'banned'  : 'residents';
+              return [
+                { id: 'pending',   label: 'Pending Approvals',    value: pending.length,                 accent: '#f59e0b', iconBg: '#fef3c7', vc: pending.length > 0 ? '#d97706' : '#1f2937',
+                  onClick: () => { setTab('pending');   setSearch(''); },
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+                { id: 'officials', label: 'Active Officials',      value: approvedCount,                  accent: '#16a34a', iconBg: '#dcfce7', vc: '#1f2937',
+                  onClick: () => { setTab('officials'); setOffFilter('all'); setSearch(''); },
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg> },
+                { id: 'residents', label: 'Registered Residents',  value: residents.length,               accent: '#2563eb', iconBg: '#eff6ff', vc: '#1f2937',
+                  onClick: () => { setTab('residents'); setResFilter('all'); setSearch(''); },
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+                { id: 'banned',    label: 'Banned Accounts',       value: bannedOffCount + bannedResCount, accent: '#dc2626', iconBg: '#fee2e2', vc: bannedOffCount + bannedResCount > 0 ? '#dc2626' : '#1f2937',
+                  onClick: () => { setTab('residents'); setResFilter('banned'); setSearch(''); },
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
+                { id: 'deleted',   label: 'Deleted Accounts',      value: deletedAccounts.length,         accent: '#6b7280', iconBg: '#f3f4f6', vc: '#6b7280',
+                  onClick: () => { setTab('deleted');   setSearch(''); },
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> },
+              ].map(c => {
+                const isActive = activeCard === c.id;
+                return (
+                  <div key={c.id} onClick={c.onClick} style={{ background: isActive ? c.iconBg : '#fff', borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: 16, borderBottom: isActive ? `2px solid ${c.accent}` : '2px solid transparent', cursor: 'pointer', transition: 'background 0.15s, border-bottom 0.15s' }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 12, background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{c.icon}</div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{c.label}</div>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: c.vc, lineHeight: 1 }}>{c.value}</div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           {/* Main panel */}
@@ -393,7 +541,7 @@ function UserManagement() {
                 <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 360 }}>
                   <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   <input type="text"
-                    placeholder={tab === 'residents' ? 'Search name, email, barangay…' : 'Search barangay or email…'}
+                    placeholder={tab === 'residents' ? 'Search name, email, barangay…' : tab === 'deleted' ? 'Search name, email, barangay…' : 'Search barangay or email…'}
                     value={search} onChange={e => setSearch(e.target.value)}
                     style={{ width: '100%', padding: '9px 14px 9px 36px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', fontFamily: 'Poppins, sans-serif', boxSizing: 'border-box' }}
                   />
@@ -539,12 +687,61 @@ function UserManagement() {
                     </div>
               )}
 
+              {/* ── DELETED ACCOUNTS ── */}
+              {tab === 'deleted' && (
+                fDeleted.length === 0
+                  ? <EmptyState
+                      icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>}
+                      title="No deleted accounts" sub="No residents have deleted their accounts yet." />
+                  : <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead><tr><th style={TH}>Resident</th><th style={TH}>Email</th><th style={TH}>Barangay</th><th style={TH}>Reason</th><th style={TH}>Deleted On</th><th style={TH}>Activity</th></tr></thead>
+                        <tbody>
+                          {fDeleted.map((row, i) => {
+                            const name = `${row.first_name||''} ${row.last_name||''}`.trim();
+                            return (
+                              <tr key={row.id||row.auth_id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
+                                onMouseEnter={e=>e.currentTarget.style.backgroundColor='#f3f4f6'}
+                                onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
+                                <td style={TD}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                                    <div style={{ width:38, height:38, borderRadius:'50%', background:'#e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:14, color:'#9ca3af', flexShrink:0 }}>
+                                      {name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?'}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontWeight:600, color:'#374151', fontSize:13 }}>{name}</div>
+                                      <span style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:10, color:'#6b7280', fontWeight:600 }}>
+                                        <span style={{ width:5, height:5, borderRadius:'50%', background:'#9ca3af' }} />Deleted
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td style={{ ...TD, color:'#6b7280' }}>{row.email||'—'}</td>
+                                <td style={TD}>{row.barangay ? <span style={{ background:'#f1f5f9', color:'#374151', padding:'3px 10px', borderRadius:6, fontSize:12, fontWeight:600 }}>{row.barangay}</span> : <span style={{ color:'#d1d5db' }}>—</span>}</td>
+                                <td style={{ ...TD, color:'#6b7280', fontSize:12, maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={row.reason}>{row.reason||'—'}</td>
+                                <td style={{ ...TD, color:'#9ca3af', fontSize:12 }}>{row.deleted_at ? fmt(row.deleted_at) : '—'}</td>
+                                <td style={TD}>
+                                  <button onClick={() => setViewActivity(row)}
+                                    style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #e5e7eb', background:'#f9fafb', color:'#374151', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Poppins,sans-serif', display:'inline-flex', alignItems:'center', gap:5 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View Activity
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+              )}
+
               {/* Footer */}
               <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 12, color: '#9ca3af' }}>
                   {tab==='pending'   && `${fPending.length} of ${pending.length} request${pending.length!==1?'s':''}`}
                   {tab==='officials' && `${fOfficials.length} of ${officials.length} official${officials.length!==1?'s':''}`}
                   {tab==='residents' && `${fResidents.length} of ${residents.length} resident${residents.length!==1?'s':''}`}
+                  {tab==='deleted'   && `${fDeleted.length} of ${deletedAccounts.length} deleted account${deletedAccounts.length!==1?'s':''}`}
                 </span>
                 {search && <button onClick={()=>setSearch('')} style={{ fontSize:12,color:'#2563eb',background:'none',border:'none',cursor:'pointer',fontWeight:600,fontFamily:'Poppins,sans-serif' }}>Clear search</button>}
               </div>
@@ -593,6 +790,9 @@ function UserManagement() {
       {/* Step 2 — Ban reason modal */}
       {banTarget && <BanModal target={banTarget.row} type={banTarget.type} onConfirm={handleBan} onCancel={()=>setBanTarget(null)} loading={actionLoading} />}
       {unbanTarget && <UnbanModal target={unbanTarget.row} type={unbanTarget.type} onConfirm={handleUnban} onCancel={()=>setUnbanTarget(null)} loading={actionLoading} />}
+
+      {/* Activity modal for deleted accounts */}
+      {viewActivity && <ActivityModal resident={viewActivity} onClose={() => setViewActivity(null)} />}
 
       {/* Toast */}
       {toast && <Toast msg={toast.msg} type={toast.type} />}
