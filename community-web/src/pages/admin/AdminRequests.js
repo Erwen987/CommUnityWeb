@@ -177,7 +177,7 @@ function AdminRequests() {
 
       const rows = (reqs || []).map(r => ({
         ...r,
-        residentName:   userMap[r.user_id]?.name || 'Deleted User',
+        residentName:   userMap[r.user_id]?.name || r.resident_name || 'Deleted Account',
         residentAvatar: userMap[r.user_id]?.avatar_url || null,
         accountStatus:  !userMap[r.user_id] ? 'deleted' : userMap[r.user_id].is_banned ? 'banned' : 'active',
         shortId: `REQ-${r.id.slice(0, 6).toUpperCase()}`,

@@ -243,7 +243,7 @@ function Reports() {
     (usersData || []).forEach(u => { userMap[u.auth_id] = { name:`${u.first_name||''} ${u.last_name||''}`.trim(), avatar_url:u.avatar_url, is_banned:u.is_banned }; });
     setReports((reportsData||[]).map(r => ({
       ...r,
-      residentName:   userMap[r.user_id]?.name || 'Deleted User',
+      residentName:   userMap[r.user_id]?.name || r.resident_name || 'Deleted Account',
       residentAvatar: userMap[r.user_id]?.avatar_url || null,
       accountStatus:  !userMap[r.user_id] ? 'deleted' : userMap[r.user_id].is_banned ? 'banned' : 'active',
     })));
