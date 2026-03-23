@@ -63,6 +63,86 @@ function StatusBadge({ status }) {
 
 const fmt = d => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
+// ── CSV Export ─────────────────────────────────────────────────────────────────
+function exportCSV(rows, filename) {
+  const cols = [
+    { h: 'Ref No.',        v: r => r.reference_number || '' },
+    { h: 'Resident',       v: r => r.residentName },
+    { h: 'Document Type',  v: r => r.document_type || '' },
+    { h: 'Purpose',        v: r => r.purpose || '' },
+    { h: 'Payment Method', v: r => r.payment_method || '' },
+    { h: 'Status',         v: r => r.status },
+    { h: 'Rating',         v: r => r.rating ?? '' },
+    { h: 'Date',           v: r => r.created_at ? new Date(r.created_at).toLocaleDateString('en-PH') : '' },
+  ];
+  const csv = [cols.map(c => c.h).join(','), ...rows.map(r => cols.map(c => `"${String(c.v(r)).replace(/"/g, '""')}"`).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
+}
+
+// ── Detail Drawer ──────────────────────────────────────────────────────────────
+function RequestDrawer({ req, onClose }) {
+  if (!req) return null;
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.25)', zIndex:900 }} />
+      <div style={{ position:'fixed', top:0, right:0, height:'100vh', width:400, maxWidth:'95vw', background:'#fff', zIndex:901, boxShadow:'-4px 0 32px rgba(0,0,0,0.12)', display:'flex', flexDirection:'column', overflowY:'auto' }}>
+        <div style={{ padding:'20px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+          <div>
+            <div style={{ fontWeight:800, fontSize:16, color:'#1f2937' }}>Request Details</div>
+            <div style={{ fontSize:11, color:'#9ca3af', marginTop:2, fontFamily:'monospace' }}>{req.reference_number || '—'}</div>
+          </div>
+          <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12, background:'#f8fafc', borderRadius:12, padding:'12px 14px' }}>
+            <ResidentAvatar url={req.residentAvatar} name={req.residentName} size={44} />
+            <div>
+              <div style={{ fontWeight:700, fontSize:14, color:'#111827' }}>{req.residentName}</div>
+              <AccountStatusBadge status={req.accountStatus} />
+            </div>
+          </div>
+          <StatusBadge status={req.status} />
+          {[
+            { label:'Document Type',  value: req.document_type },
+            { label:'Purpose',        value: req.purpose },
+            { label:'Barangay',       value: req.barangay },
+            { label:'Payment Method', value: req.payment_method?.replace(/_/g,' ') },
+            { label:'Date Submitted', value: req.created_at ? fmt(req.created_at) : '—' },
+          ].filter(f => f.value).map(({ label, value }) => (
+            <div key={label} style={{ background:'#f8fafc', borderRadius:10, padding:'10px 14px' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{label}</div>
+              <div style={{ fontSize:13, color:'#111827', lineHeight:1.5 }}>{value}</div>
+            </div>
+          ))}
+          {req.status === 'rejected' && req.rejection_reason && (
+            <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'10px 14px' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#ef4444', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Rejection Reason</div>
+              <div style={{ fontSize:13, color:'#991b1b', lineHeight:1.5 }}>{req.rejection_reason}</div>
+            </div>
+          )}
+          {req.rating ? (
+            <div style={{ background:'#f8fafc', borderRadius:10, padding:'10px 14px' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Rating</div>
+              <StarDisplay rating={req.rating} />
+            </div>
+          ) : null}
+          {req.proof_url && (
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Proof of Payment</div>
+              <img src={req.proof_url} alt="Proof" style={{ width:'100%', borderRadius:10, border:'1px solid #e5e7eb', maxHeight:220, objectFit:'cover' }} />
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function Requests() {
   const { barangay, loading: profileLoading } = useOfficialProfile();
   const [requests, setRequests]         = useState([]);
@@ -76,6 +156,7 @@ function Requests() {
   const [rejectModal, setRejectModal]     = useState(null);
   const [rejectReason, setRejectReason]   = useState('');
   const [rejectError, setRejectError]     = useState('');
+  const [drawerRequest, setDrawerRequest] = useState(null);
 
   const fetchRequests = useCallback(async () => {
     if (!barangay) return;
@@ -215,6 +296,11 @@ function Requests() {
                   <option value="claimed">Claimed</option>
                   <option value="rejected">Rejected</option>
                 </select>
+                <button onClick={() => exportCSV(filtered, `requests_${barangay || 'all'}_${new Date().toISOString().slice(0,10)}.csv`)}
+                  style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'8px 14px', border:'1.5px solid #e5e7eb', borderRadius:9, background:'#fff', color:'#374151', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export CSV
+                </button>
               </div>
             </div>
 
@@ -231,7 +317,7 @@ function Requests() {
                     <th style={{ ...TH, width: '12%' }}>Status</th>
                     <th style={{ ...TH, width: '10%' }}>Rating</th>
                     <th style={{ ...TH, width: '9%'  }}>Date</th>
-                    <th style={{ ...TH, width: '9%'  }}>Update</th>
+                    <th style={{ ...TH, width: '13%' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -285,13 +371,41 @@ function Requests() {
                       <td style={TD}><StarDisplay rating={r.rating} /></td>
                       <td style={{ ...TD, color: '#9ca3af', fontSize: 12 }}>{fmt(r.created_at)}</td>
                       <td style={TD}>
-                        <select value={r.status} disabled={updatingId===r.id} onChange={e => handleStatusChange(r.id, e.target.value)}
-                          style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer', background: '#fff', color: '#374151', opacity: updatingId===r.id ? 0.5 : 1, outline: 'none' }}>
-                          <option value="pending">Pending</option>
-                          <option value="ready_for_pickup">Ready for Pickup</option>
-                          <option value="claimed">Claimed</option>
-                          <option value="rejected">Rejected</option>
-                        </select>
+                        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                          <button onClick={() => setDrawerRequest(r)}
+                            style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:6, border:'1px solid #bfdbfe', background:'#eff6ff', color:'#1E3A5F', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Details
+                          </button>
+                          {r.status === 'claimed' || r.status === 'rejected' ? (
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'4px 10px', borderRadius:6 }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                              Closed
+                            </span>
+                          ) : (
+                            <>
+                              {r.status === 'pending' && (
+                                <button onClick={() => handleStatusChange(r.id, 'ready_for_pickup')} disabled={updatingId===r.id}
+                                  style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #ddd6fe', background:'#f5f3ff', color:'#6d28d9', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                  Ready for Pickup
+                                </button>
+                              )}
+                              {r.status === 'ready_for_pickup' && (
+                                <button onClick={() => handleStatusChange(r.id, 'claimed')} disabled={updatingId===r.id}
+                                  style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #bbf7d0', background:'#f0fdf4', color:'#15803d', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                  Mark Claimed
+                                </button>
+                              )}
+                              <button onClick={() => handleStatusChange(r.id, 'rejected')} disabled={updatingId===r.id}
+                                style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #fecaca', background:'#fff5f5', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -464,6 +578,7 @@ function Requests() {
           </div>
         </div>
       )}
+      <RequestDrawer req={drawerRequest} onClose={() => setDrawerRequest(null)} />
     </>
   );
 }

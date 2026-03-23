@@ -382,7 +382,7 @@ function UserManagement() {
     const [{ data: p }, { data: o }, { data: r }, { data: d }] = await Promise.all([
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at').eq('status','pending').order('created_at',{ascending:true}),
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,status,ban_reason').in('status',['approved','banned']).order('created_at',{ascending:true}),
-      supabase.from('users').select('id,first_name,last_name,email,barangay,created_at,avatar_url,is_banned,ban_reason').eq('role','resident').order('created_at',{ascending:false}),
+      supabase.from('users').select('id,first_name,last_name,email,phone,barangay,created_at,avatar_url,is_banned,ban_reason').eq('role','resident').order('created_at',{ascending:false}),
       supabase.from('deleted_accounts').select('*').order('deleted_at',{ascending:false}),
     ]);
     setPending(p  || []);
@@ -656,7 +656,7 @@ function UserManagement() {
                       title="No residents found" sub={search ? 'Try a different search term.' : 'No residents have registered yet.'} />
                   : <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead><tr><th style={TH}>Resident</th><th style={TH}>Email</th><th style={TH}>Barangay</th><th style={TH}>Status</th><th style={TH}>Joined</th><th style={TH}>Action</th></tr></thead>
+                        <thead><tr><th style={TH}>Resident</th><th style={TH}>Email</th><th style={TH}>Phone</th><th style={TH}>Barangay</th><th style={TH}>Status</th><th style={TH}>Joined</th><th style={TH}>Action</th></tr></thead>
                         <tbody>
                           {paginatedUM.map((row, i) => (
                             <tr key={row.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
@@ -664,6 +664,7 @@ function UserManagement() {
                               onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
                               <td style={TD}><div style={{ display:'flex',alignItems:'center',gap:12 }}><ResidentAvatar url={row.avatar_url} name={row.name} size={38} index={row.index} /><div><div style={{ fontWeight:600,color:'#111827',fontSize:13 }}>{row.name}</div><div style={{ fontSize:11,color:'#9ca3af' }}>Resident</div></div></div></td>
                               <td style={{ ...TD,color:'#6b7280' }}>{row.email}</td>
+                              <td style={{ ...TD,color:'#6b7280' }}>{row.phone || <span style={{ color:'#d1d5db' }}>—</span>}</td>
                               <td style={TD}>{row.barangay ? <span style={{ background:'#f1f5f9',color:'#374151',padding:'3px 10px',borderRadius:6,fontSize:12,fontWeight:600 }}>{row.barangay}</span> : <span style={{ color:'#d1d5db' }}>—</span>}</td>
                               <td style={TD}>
                                 <div>

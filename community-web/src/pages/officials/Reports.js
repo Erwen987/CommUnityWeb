@@ -135,6 +135,83 @@ const QUICK_REASONS = [
   'Incomplete information',
 ];
 
+// ── CSV Export ─────────────────────────────────────────────────────────────────
+function exportCSV(rows, filename) {
+  const cols = [
+    { h: 'Resident',    v: r => r.residentName },
+    { h: 'Problem',     v: r => r.problem || '' },
+    { h: 'Barangay',    v: r => r.barangay || '' },
+    { h: 'Description', v: r => r.description || '' },
+    { h: 'Status',      v: r => r.status },
+    { h: 'Rating',      v: r => r.rating ?? '' },
+    { h: 'Date',        v: r => r.created_at ? new Date(r.created_at).toLocaleDateString('en-PH') : '' },
+  ];
+  const csv = [cols.map(c => c.h).join(','), ...rows.map(r => cols.map(c => `"${String(c.v(r)).replace(/"/g, '""')}"`).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
+}
+
+// ── Detail Drawer ──────────────────────────────────────────────────────────────
+function ReportDrawer({ report, onClose }) {
+  if (!report) return null;
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.25)', zIndex:900 }} />
+      <div style={{ position:'fixed', top:0, right:0, height:'100vh', width:400, maxWidth:'95vw', background:'#fff', zIndex:901, boxShadow:'-4px 0 32px rgba(0,0,0,0.12)', display:'flex', flexDirection:'column', overflowY:'auto' }}>
+        <div style={{ padding:'20px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+          <div>
+            <div style={{ fontWeight:800, fontSize:16, color:'#1f2937' }}>Report Details</div>
+            <div style={{ fontSize:11, color:'#9ca3af', marginTop:2 }}>{fmt(report.created_at)}</div>
+          </div>
+          <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12, background:'#f8fafc', borderRadius:12, padding:'12px 14px' }}>
+            <ResidentAvatar url={report.residentAvatar} name={report.residentName} size={44} />
+            <div>
+              <div style={{ fontWeight:700, fontSize:14, color:'#111827' }}>{report.residentName}</div>
+              <AccountStatusBadge status={report.accountStatus} />
+            </div>
+          </div>
+          <StatusBadge status={report.status} />
+          {[
+            { label:'Problem',     value: report.problem },
+            { label:'Barangay',    value: report.barangay },
+            { label:'Description', value: report.description },
+          ].filter(f => f.value).map(({ label, value }) => (
+            <div key={label} style={{ background:'#f8fafc', borderRadius:10, padding:'10px 14px' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{label}</div>
+              <div style={{ fontSize:13, color:'#111827', lineHeight:1.5 }}>{value}</div>
+            </div>
+          ))}
+          {report.status === 'rejected' && report.rejection_reason && (
+            <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'10px 14px' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#ef4444', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Rejection Reason</div>
+              <div style={{ fontSize:13, color:'#991b1b', lineHeight:1.5 }}>{report.rejection_reason}</div>
+            </div>
+          )}
+          {report.rating ? (
+            <div style={{ background:'#f8fafc', borderRadius:10, padding:'10px 14px' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Rating</div>
+              <StarDisplay rating={report.rating} />
+            </div>
+          ) : null}
+          {report.image_url && (
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Photo</div>
+              <img src={report.image_url} alt="report" style={{ width:'100%', borderRadius:10, border:'1px solid #e5e7eb', maxHeight:220, objectFit:'cover' }} />
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 function Reports() {
   const { barangay, loading: profileLoading } = useOfficialProfile();
@@ -153,6 +230,7 @@ function Reports() {
   const [rejectModal, setRejectModal]   = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError]   = useState('');
+  const [drawerReport, setDrawerReport] = useState(null);
 
   const fetchReports = useCallback(async () => {
     if (!barangay) return;
@@ -289,6 +367,11 @@ function Reports() {
                     <option value="resolved">Resolved</option>
                     <option value="rejected">Rejected</option>
                   </select>
+                  <button onClick={() => exportCSV(filtered, `reports_${barangay || 'all'}_${new Date().toISOString().slice(0,10)}.csv`)}
+                    style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'8px 14px', border:'1.5px solid #e5e7eb', borderRadius:9, background:'#fff', color:'#374151', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export CSV
+                  </button>
                 </div>
               </div>
 
@@ -367,28 +450,41 @@ function Reports() {
 
                         {/* Actions */}
                         <td style={TD}>
-                          {r.status === 'resolved' || r.status === 'rejected' ? (
-                            <span style={{ fontSize:11, color:'#9ca3af', fontStyle:'italic' }}>Closed</span>
-                          ) : (
-                            <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-                              {r.status === 'pending' && (
-                                <button onClick={() => updateStatus(r.id, 'in_progress')} disabled={updatingId===r.id}
-                                  style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#dbeafe', color:'#1e40af', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                  → In Progress
+                          <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                            <button onClick={() => setDrawerReport(r)}
+                              style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:6, border:'1px solid #bfdbfe', background:'#eff6ff', color:'#1E3A5F', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                              Details
+                            </button>
+                            {r.status === 'resolved' || r.status === 'rejected' ? (
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'4px 10px', borderRadius:6 }}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                Closed
+                              </span>
+                            ) : (
+                              <>
+                                {r.status === 'pending' && (
+                                  <button onClick={() => updateStatus(r.id, 'in_progress')} disabled={updatingId===r.id}
+                                    style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #bfdbfe', background:'#eff6ff', color:'#1d4ed8', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg>
+                                    In Progress
+                                  </button>
+                                )}
+                                {r.status === 'in_progress' && (
+                                  <button onClick={() => updateStatus(r.id, 'resolved')} disabled={updatingId===r.id}
+                                    style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #bbf7d0', background:'#f0fdf4', color:'#15803d', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Resolve
+                                  </button>
+                                )}
+                                <button onClick={() => openConfirm(r)} disabled={updatingId===r.id}
+                                  style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #fecaca', background:'#fff5f5', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                  Reject
                                 </button>
-                              )}
-                              {r.status === 'in_progress' && (
-                                <button onClick={() => updateStatus(r.id, 'resolved')} disabled={updatingId===r.id}
-                                  style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#dcfce7', color:'#166534', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                  ✓ Resolve
-                                </button>
-                              )}
-                              <button onClick={() => openConfirm(r)} disabled={updatingId===r.id}
-                                style={{ padding:'4px 10px', borderRadius:7, border:'none', background:'#fee2e2', color:'#991b1b', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                ✕ Reject
-                              </button>
-                            </div>
-                          )}
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -538,6 +634,7 @@ function Reports() {
           </div>
         </div>
       )}
+      <ReportDrawer report={drawerReport} onClose={() => setDrawerReport(null)} />
     </>
   );
 }

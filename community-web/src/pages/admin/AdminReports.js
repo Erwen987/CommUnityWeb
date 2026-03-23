@@ -184,6 +184,24 @@ function ReportModal({ report, onClose }) {
   );
 }
 
+// ── CSV Export ─────────────────────────────────────────────────────────────────
+function exportCSV(rows, filename) {
+  const cols = [
+    { h: 'Resident',    v: r => r.residentName },
+    { h: 'Problem',     v: r => r.problem || '' },
+    { h: 'Barangay',    v: r => r.barangay || '' },
+    { h: 'Description', v: r => r.description || '' },
+    { h: 'Status',      v: r => r.status },
+    { h: 'Rating',      v: r => r.rating ?? '' },
+    { h: 'Date',        v: r => r.created_at ? fmtDate(r.created_at) : '' },
+  ];
+  const csv = [cols.map(c => c.h).join(','), ...rows.map(r => cols.map(c => `"${String(c.v(r)).replace(/"/g, '""')}"`).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 function AdminReports() {
   const [reports,   setReports]   = useState([]);
@@ -300,6 +318,11 @@ function AdminReports() {
                     <option value="resolved">Resolved</option>
                     <option value="rejected">Rejected</option>
                   </select>
+                  <button onClick={() => exportCSV(filtered, `reports_all_${new Date().toISOString().slice(0,10)}.csv`)}
+                    style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'8px 14px', border:'1.5px solid #e5e7eb', borderRadius:9, background:'#fff', color:'#374151', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export CSV
+                  </button>
                 </div>
               </div>
 
