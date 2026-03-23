@@ -23,7 +23,6 @@ function Login() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [role, setRole]         = useState('official');
   const navigate                = useNavigate();
   const location                = useLocation();
   const successMsg              = location.state?.message || '';
@@ -36,42 +35,21 @@ function Login() {
     const email = form.email.trim().toLowerCase();
     setLoading(true);
 
+    // Block if maintenance mode is on
     const { data: maintSetting } = await supabase
       .from('system_settings').select('value').eq('key', 'maintenance_mode').maybeSingle();
-    const { data: adminRow } = await supabase
-      .from('admins').select('id').eq('email', email).maybeSingle();
-
-    if (!adminRow && maintSetting?.value === 'true') {
+    if (maintSetting?.value === 'true') {
       setLoading(false);
       setError('The system is currently under maintenance. Please try again later.');
       return;
     }
 
-    // Enforce role selection — admin email must use System Admin role
-    if (adminRow && role === 'official') {
-      setLoading(false);
-      setError('This account belongs to a System Admin. Please select the "System Admin" role.');
-      return;
-    }
-
-    // Enforce role selection — official email must use Barangay Official role
-    if (!adminRow && role === 'admin') {
-      setLoading(false);
-      setError('No admin account found with this email. Please select the "Barangay Official" role.');
-      return;
-    }
-
+    // Block admin accounts — they must use the Admin Portal
+    const { data: adminRow } = await supabase
+      .from('admins').select('id').eq('email', email).maybeSingle();
     if (adminRow) {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
       setLoading(false);
-      if (authError) {
-        setError(authError.message?.toLowerCase().includes('email not confirmed')
-          ? 'Email not confirmed. Please check your inbox or contact the system admin.'
-          : 'Invalid email or password.');
-        return;
-      }
-      await Swal.fire({ icon: 'success', title: 'Login Successful!', text: 'Welcome back, Admin!', timer: 1800, showConfirmButton: false, timerProgressBar: true });
-      navigate('/admin/dashboard');
+      setError('Admin accounts must log in through the Admin Portal.');
       return;
     }
 
@@ -88,11 +66,11 @@ function Login() {
       .from('officials').select('status, barangay, ban_reason').eq('auth_id', data.user.id).single();
     setLoading(false);
 
-    if (dbError || !official) { await supabase.auth.signOut(); setError('Access denied. This portal is for officials only.'); return; }
+    if (dbError || !official) { await supabase.auth.signOut(); setError('Access denied. This portal is for barangay officials only.'); return; }
     if (official.status === 'pending')  { await supabase.auth.signOut(); setError('Your account is under review. Please wait for admin approval.'); return; }
     if (official.status === 'rejected') { await supabase.auth.signOut(); setError('Your account was not approved. Please contact the admin.'); return; }
     if (official.status === 'banned')   { await supabase.auth.signOut(); setError(`Your account has been suspended.${official.ban_reason ? ` Reason: ${official.ban_reason}` : ''}`); return; }
-    await Swal.fire({ icon: 'success', title: 'Login Successful!', text: `Welcome back!`, timer: 1800, showConfirmButton: false, timerProgressBar: true });
+    await Swal.fire({ icon: 'success', title: 'Login Successful!', text: 'Welcome back!', timer: 1800, showConfirmButton: false, timerProgressBar: true });
     navigate('/officials/dashboard');
   };
 
@@ -157,30 +135,7 @@ function Login() {
             </div>
 
             <h2 style={{ marginBottom: 4 }}>Sign In</h2>
-            <p className="auth-sub">Select your role and enter your credentials</p>
-
-            {/* Role cards */}
-            <div className="auth-role-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginBottom: 18 }}>
-              {[
-                { key: 'official', icon: '🏛️', label: 'Barangay Official', sub: 'Portal access' },
-                { key: 'admin',    icon: '🛡️', label: 'System Admin',      sub: 'Full access'   },
-              ].map(r => (
-                <button key={r.key} type="button" onClick={() => { setRole(r.key); setError(''); }}
-                  style={{
-                    padding: '12px 10px',
-                    border: role === r.key ? '2px solid #7AB1F1' : '1.5px solid rgba(255,255,255,0.15)',
-                    borderRadius: 12,
-                    background: role === r.key ? 'rgba(37,99,235,0.25)' : 'rgba(255,255,255,0.06)',
-                    cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                    transition: 'all 0.18s',
-                    boxShadow: role === r.key ? '0 0 0 3px rgba(122,177,241,0.15)' : 'none',
-                  }}>
-                  <div style={{ fontSize: 20, marginBottom: 5 }}>{r.icon}</div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: role === r.key ? '#a7d4ff' : 'rgba(255,255,255,0.8)' }}>{r.label}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{r.sub}</div>
-                </button>
-              ))}
-            </div>
+            <p className="auth-sub">Barangay Official Portal — enter your credentials</p>
 
             <form onSubmit={handleSubmit}>
               {/* Success alert */}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
+import Swal from 'sweetalert2';
 import './AdminPortal.css';
 
 const IMG = process.env.PUBLIC_URL + '/images';
@@ -46,6 +47,7 @@ function AdminPortal() {
       return;
     }
 
+    await Swal.fire({ icon: 'success', title: 'Login Successful!', text: 'Welcome back, Admin!', timer: 1800, showConfirmButton: false, timerProgressBar: true });
     navigate('/admin/dashboard');
   };
 
