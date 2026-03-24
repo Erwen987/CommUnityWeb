@@ -380,7 +380,7 @@ function UserManagement() {
 
   const fetchAll = useCallback(async () => {
     const [{ data: p }, { data: o }, { data: r }, { data: d }] = await Promise.all([
-      supabase.from('officials').select('id,barangay_name,barangay,email,created_at').eq('status','pending').order('created_at',{ascending:true}),
+      supabase.from('officials').select('id,barangay_name,barangay,email,created_at,full_name,position,id_image_url').eq('status','pending').order('created_at',{ascending:true}),
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,status,ban_reason').in('status',['approved','banned']).order('created_at',{ascending:true}),
       supabase.from('users').select('id,first_name,last_name,email,phone,barangay,created_at,avatar_url,is_banned,ban_reason').eq('role','resident').order('created_at',{ascending:false}),
       supabase.from('deleted_accounts').select('*').order('deleted_at',{ascending:false}),
@@ -565,15 +565,25 @@ function UserManagement() {
                       title="No pending approvals" sub="All official requests have been reviewed." />
                   : <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead><tr><th style={TH}>Official</th><th style={TH}>Barangay</th><th style={TH}>Email</th><th style={TH}>Submitted</th><th style={TH}>Actions</th></tr></thead>
+                        <thead><tr><th style={TH}>Name</th><th style={TH}>Barangay</th><th style={TH}>Position</th><th style={TH}>Email</th><th style={TH}>Gov't ID</th><th style={TH}>Submitted</th><th style={TH}>Actions</th></tr></thead>
                         <tbody>
                           {paginatedUM.map((row, i) => (
                             <tr key={row.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
                               onMouseEnter={e=>e.currentTarget.style.backgroundColor='#eff6ff'}
                               onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
-                              <td style={TD}><div style={{ display:'flex',alignItems:'center',gap:12 }}><OfficialAvatar name={row.barangay_name} color="#1E3A5F" /><div><div style={{ fontWeight:600,color:'#111827',fontSize:13 }}>{row.barangay_name}</div><div style={{ fontSize:11,color:'#9ca3af' }}>Official account</div></div></div></td>
+                              <td style={TD}><div style={{ display:'flex',alignItems:'center',gap:12 }}><OfficialAvatar name={row.full_name || row.barangay_name} color="#1E3A5F" /><div><div style={{ fontWeight:600,color:'#111827',fontSize:13 }}>{row.full_name || '—'}</div><div style={{ fontSize:11,color:'#9ca3af' }}>{row.email}</div></div></div></td>
                               <td style={TD}><span style={{ background:'#f1f5f9',color:'#374151',padding:'3px 10px',borderRadius:6,fontSize:12,fontWeight:600 }}>{row.barangay}</span></td>
-                              <td style={{ ...TD,color:'#6b7280' }}>{row.email}</td>
+                              <td style={{ ...TD,color:'#6b7280',fontSize:12 }}>{row.position || '—'}</td>
+                              <td style={{ ...TD,color:'#6b7280',fontSize:12 }}>{row.email}</td>
+                              <td style={TD}>
+                                {row.id_image_url
+                                  ? <a href={row.id_image_url} target="_blank" rel="noopener noreferrer"
+                                      style={{ display:'inline-flex',alignItems:'center',gap:5,background:'#eff6ff',color:'#2563eb',border:'1px solid #bfdbfe',padding:'5px 12px',borderRadius:7,fontSize:12,fontWeight:600,textDecoration:'none' }}>
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View ID
+                                    </a>
+                                  : <span style={{ fontSize:11,color:'#9ca3af' }}>Not uploaded</span>
+                                }
+                              </td>
                               <td style={{ ...TD,color:'#9ca3af',fontSize:12 }}>{fmt(row.created_at)}</td>
                               <td style={TD}>
                                 <div style={{ display:'flex',gap:8 }}>
