@@ -383,6 +383,8 @@ function UserManagement() {
   const [deletedAccounts,  setDeletedAccounts]  = useState([]);
   const [viewActivity,     setViewActivity]      = useState(null);
   const [flags,            setFlags]            = useState([]);
+  const [appeals,          setAppeals]          = useState([]);
+  const [appealAction,     setAppealAction]      = useState(null); // { appeal, action: 'approve'|'reject' }
 
   const [banConfirmTarget, setBanConfirmTarget] = useState(null); // step 1
   const [banTarget,        setBanTarget]        = useState(null); // step 2
@@ -397,18 +399,20 @@ function UserManagement() {
   };
 
   const fetchAll = useCallback(async () => {
-    const [{ data: p }, { data: o }, { data: r }, { data: d }, { data: f }] = await Promise.all([
+    const [{ data: p }, { data: o }, { data: r }, { data: d }, { data: f }, { data: a }] = await Promise.all([
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,full_name,position,id_image_url').eq('status','pending').order('created_at',{ascending:true}),
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,status,ban_reason').in('status',['approved','banned']).order('created_at',{ascending:true}),
       supabase.from('users').select('id,auth_id,first_name,last_name,email,phone,barangay,created_at,avatar_url,is_banned,ban_reason,offense_count,suspended_until').eq('role','resident').order('created_at',{ascending:false}),
       supabase.from('deleted_accounts').select('*').order('deleted_at',{ascending:false}),
       supabase.from('abuse_flags').select('*').eq('status','pending').order('created_at',{ascending:false}),
+      supabase.from('appeals').select('*').order('created_at',{ascending:false}),
     ]);
     setPending(p  || []);
     setOfficials(o || []);
     setResidents((r || []).map((row, i) => ({ ...row, name: `${row.first_name||''} ${row.last_name||''}`.trim(), index: i })));
     setDeletedAccounts(d || []);
     setFlags(f || []);
+    setAppeals(a || []);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -450,7 +454,7 @@ function UserManagement() {
       const { error } = await supabase.from('officials').update({ status: 'approved', ban_reason: null }).eq('id', row.id);
       err = error;
     } else {
-      const { error } = await supabase.from('users').update({ is_banned: false, ban_reason: null, banned_at: null }).eq('id', row.id);
+      const { error } = await supabase.from('users').update({ is_banned: false, ban_reason: null, banned_at: null, suspended_until: null, offense_count: 0 }).eq('id', row.id);
       err = error;
     }
     setActionLoading(false);
@@ -463,26 +467,44 @@ function UserManagement() {
   // ── Flag actions ──────────────────────────────────────────────────────────────
 
   const handleWarnFlag = async (flag) => {
-    // Find the resident to get their email + current offense count
     const resident = residents.find(r => r.auth_id === flag.flagged_user_id);
     if (!resident) return;
     setActionLoading(true);
-    const newOffenseCount = (resident.offense_count || 0) + 1;
-    const suspendUntil = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(); // +3 weeks
+    const currentOffense = resident.offense_count || 0;
+    const newOffenseCount = currentOffense + 1;
+
+    if (newOffenseCount >= 3) {
+      // 3rd offense → permanent ban
+      await supabase.from('users')
+        .update({ is_banned: true, ban_reason: flag.reason, banned_at: new Date().toISOString(), offense_count: newOffenseCount, suspended_until: null })
+        .eq('auth_id', flag.flagged_user_id);
+      await supabase.from('abuse_flags')
+        .update({ status: 'resolved', resolved_at: new Date().toISOString(), admin_note: 'permanent_ban_3rd_offense' })
+        .eq('id', flag.id);
+      await sendAbuseEmail(EMAILJS_PERMBAN_TEMPLATE_ID, resident.email, resident.name, flag.reason, null);
+      setActionLoading(false);
+      setFlagActionTarget(null);
+      showToast(`${resident.name} permanently banned — 3rd offense.`);
+      fetchAll();
+      return;
+    }
+
+    // 1st offense = 1 day, 2nd offense = 3 days
+    const suspendDays = newOffenseCount === 1 ? 1 : 3;
+    const suspendUntil = new Date(Date.now() + suspendDays * 24 * 60 * 60 * 1000).toISOString();
     await supabase.from('users')
       .update({ suspended_until: suspendUntil, offense_count: newOffenseCount })
       .eq('auth_id', flag.flagged_user_id);
     await supabase.from('abuse_flags')
-      .update({ status: 'resolved', resolved_at: new Date().toISOString(), admin_note: 'warning_issued' })
+      .update({ status: 'resolved', resolved_at: new Date().toISOString(), admin_note: `warning_${newOffenseCount}` })
       .eq('id', flag.id);
     await sendAbuseEmail(
-      EMAILJS_WARNING_TEMPLATE_ID, resident.email,
-      resident.name, flag.reason,
+      EMAILJS_WARNING_TEMPLATE_ID, resident.email, resident.name, flag.reason,
       new Date(suspendUntil).toLocaleDateString('en-PH', { month:'long', day:'numeric', year:'numeric' })
     );
     setActionLoading(false);
     setFlagActionTarget(null);
-    showToast(`Warning issued — ${resident.name} suspended for 3 weeks.`);
+    showToast(`Warning #${newOffenseCount} — ${resident.name} suspended for ${suspendDays} day${suspendDays > 1 ? 's' : ''}.`);
     fetchAll();
   };
 
@@ -500,6 +522,32 @@ function UserManagement() {
     setActionLoading(false);
     setFlagActionTarget(null);
     showToast(`${resident.name} has been permanently banned.`);
+    fetchAll();
+  };
+
+  const handleApproveAppeal = async (appeal) => {
+    setActionLoading(true);
+    // Unban the user
+    await supabase.from('users')
+      .update({ is_banned: false, ban_reason: null, banned_at: null, suspended_until: null, offense_count: 0 })
+      .eq('email', appeal.email);
+    await supabase.from('appeals')
+      .update({ status: 'approved', resolved_at: new Date().toISOString() })
+      .eq('id', appeal.id);
+    setActionLoading(false);
+    setAppealAction(null);
+    showToast(`Appeal approved — ${appeal.email} has been unbanned.`);
+    fetchAll();
+  };
+
+  const handleRejectAppeal = async (appeal) => {
+    setActionLoading(true);
+    await supabase.from('appeals')
+      .update({ status: 'rejected', resolved_at: new Date().toISOString() })
+      .eq('id', appeal.id);
+    setActionLoading(false);
+    setAppealAction(null);
+    showToast(`Appeal rejected — ban remains.`);
     fetchAll();
   };
 
@@ -540,7 +588,13 @@ function UserManagement() {
     return !q || (f.reason||'').toLowerCase().includes(q) || (f.barangay||'').toLowerCase().includes(q);
   });
 
-  const activeList   = tab === 'pending'   ? fPending   : tab === 'officials' ? fOfficials : tab === 'deleted' ? fDeleted : tab === 'flagged' ? fFlags : fResidents;
+  const pendingAppeals = appeals.filter(a => a.status === 'pending');
+  const fAppeals = appeals.filter(a => {
+    const q = search.toLowerCase();
+    return !q || (a.email||'').toLowerCase().includes(q) || (a.reason||'').toLowerCase().includes(q);
+  });
+
+  const activeList   = tab === 'pending'   ? fPending   : tab === 'officials' ? fOfficials : tab === 'deleted' ? fDeleted : tab === 'flagged' ? fFlags : tab === 'appeals' ? fAppeals : fResidents;
   const totalPagesUM = Math.ceil(activeList.length / PAGE_SIZE);
   const paginatedUM  = activeList.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -550,6 +604,7 @@ function UserManagement() {
     { key: 'residents', label: 'Residents',         count: residents.length,        activeColor: '#2563eb', activeBg: '#eff6ff' },
     { key: 'deleted',   label: 'Deleted Accounts',  count: deletedAccounts.length,  activeColor: '#6b7280', activeBg: '#f3f4f6' },
     { key: 'flagged',   label: 'Flagged Residents', count: flags.length,            activeColor: '#d97706', activeBg: '#fef9c3' },
+    { key: 'appeals',   label: 'Appeals',            count: pendingAppeals.length,   activeColor: '#7c3aed', activeBg: '#ede9fe' },
   ];
 
   return (
@@ -566,13 +621,14 @@ function UserManagement() {
           </div>
 
           {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 28 }}>
             {(() => {
               const activeCard =
                 tab === 'pending'   ? 'pending'   :
                 tab === 'officials' ? 'officials'  :
                 tab === 'deleted'   ? 'deleted'    :
                 tab === 'flagged'   ? 'flagged'    :
+                tab === 'appeals'   ? 'appeals'    :
                 resFilter === 'banned' ? 'banned'  : 'residents';
               return [
                 { id: 'pending',   label: 'Pending Approvals',    value: pending.length,                 accent: '#f59e0b', iconBg: '#fef3c7', vc: pending.length > 0 ? '#d97706' : '#1f2937',
@@ -593,6 +649,9 @@ function UserManagement() {
                 { id: 'flagged',   label: 'Flagged Residents',     value: flags.length,                   accent: '#d97706', iconBg: '#fef3c7', vc: flags.length > 0 ? '#d97706' : '#1f2937',
                   onClick: () => { setTab('flagged');   setSearch(''); setPage(1); },
                   icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
+                { id: 'appeals',   label: 'Pending Appeals',        value: pendingAppeals.length,           accent: '#7c3aed', iconBg: '#ede9fe', vc: pendingAppeals.length > 0 ? '#7c3aed' : '#1f2937',
+                  onClick: () => { setTab('appeals');   setSearch(''); setPage(1); },
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
               ].map(c => {
                 const isActive = activeCard === c.id;
                 return (
@@ -906,6 +965,70 @@ function UserManagement() {
                     </div>
               )}
 
+              {/* ── APPEALS ── */}
+              {tab === 'appeals' && (
+                fAppeals.length === 0
+                  ? <EmptyState
+                      icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+                      title="No appeals" sub="No residents have submitted an appeal yet." />
+                  : <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead><tr>
+                          <th style={TH}>Resident Email</th>
+                          <th style={TH}>Appeal Reason</th>
+                          <th style={TH}>Status</th>
+                          <th style={TH}>Submitted</th>
+                          <th style={TH}>Actions</th>
+                        </tr></thead>
+                        <tbody>
+                          {paginatedUM.map((appeal, i) => {
+                            const statusCfg = {
+                              pending:  { bg:'#fef9c3', color:'#854d0e', label:'Pending' },
+                              approved: { bg:'#dcfce7', color:'#166534', label:'Approved' },
+                              rejected: { bg:'#fee2e2', color:'#991b1b', label:'Rejected' },
+                            }[appeal.status] || { bg:'#f1f5f9', color:'#6b7280', label:appeal.status };
+                            return (
+                              <tr key={appeal.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
+                                onMouseEnter={e=>e.currentTarget.style.backgroundColor='#f5f3ff'}
+                                onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
+                                <td style={TD}>
+                                  <div style={{ fontWeight:600, fontSize:13, color:'#111827' }}>{appeal.email}</div>
+                                </td>
+                                <td style={{ ...TD, maxWidth:260, fontSize:12, color:'#374151' }}>
+                                  <div style={{ display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }} title={appeal.reason}>{appeal.reason}</div>
+                                </td>
+                                <td style={TD}>
+                                  <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:statusCfg.bg, color:statusCfg.color, padding:'4px 12px', borderRadius:999, fontSize:11, fontWeight:700 }}>
+                                    {statusCfg.label}
+                                  </span>
+                                </td>
+                                <td style={{ ...TD, color:'#9ca3af', fontSize:12 }}>{fmt(appeal.created_at)}</td>
+                                <td style={TD}>
+                                  {appeal.status === 'pending' ? (
+                                    <div style={{ display:'flex', gap:6 }}>
+                                      <button onClick={() => setAppealAction({ appeal, action: 'approve' })}
+                                        style={{ background:'#dcfce7', color:'#166534', border:'1.5px solid #86efac', padding:'7px 12px', borderRadius:8, cursor:'pointer', fontWeight:600, fontSize:12, fontFamily:'Poppins,sans-serif', display:'inline-flex', alignItems:'center', gap:5 }}>
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        Approve (Unban)
+                                      </button>
+                                      <button onClick={() => setAppealAction({ appeal, action: 'reject' })}
+                                        style={{ background:'#fee2e2', color:'#dc2626', border:'1.5px solid #fca5a5', padding:'7px 12px', borderRadius:8, cursor:'pointer', fontWeight:600, fontSize:12, fontFamily:'Poppins,sans-serif', display:'inline-flex', alignItems:'center', gap:5 }}>
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                        Reject
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize:12, color:'#9ca3af', fontStyle:'italic' }}>Resolved</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+              )}
+
               <Pagination page={page} totalPages={totalPagesUM} onPage={setPage} />
 
               {/* Footer */}
@@ -916,6 +1039,7 @@ function UserManagement() {
                   {tab==='residents' && `${fResidents.length} of ${residents.length} resident${residents.length!==1?'s':''}`}
                   {tab==='deleted'   && `${fDeleted.length} of ${deletedAccounts.length} deleted account${deletedAccounts.length!==1?'s':''}`}
                   {tab==='flagged'   && `${fFlags.length} of ${flags.length} flag${flags.length!==1?'s':''}`}
+                  {tab==='appeals'   && `${fAppeals.length} of ${appeals.length} appeal${appeals.length!==1?'s':''}`}
                 </span>
                 {search && <button onClick={()=>{ setSearch(''); setPage(1); }} style={{ fontSize:12,color:'#2563eb',background:'none',border:'none',cursor:'pointer',fontWeight:600,fontFamily:'Poppins,sans-serif' }}>Clear search</button>}
               </div>
@@ -988,7 +1112,13 @@ function UserManagement() {
                     {isWarn ? 'Issue Warning & Suspend' : isBan ? 'Permanently Ban Resident' : 'Dismiss Flag'}
                   </div>
                   <div style={{ fontSize:12, color:'#6b7280', marginTop:4, lineHeight:1.5, fontFamily:'Poppins,sans-serif' }}>
-                    {isWarn && <>Suspend <strong style={{ color:'#374151' }}>{residentName}</strong> for 3 weeks. They will be notified by email.</>}
+                    {isWarn && (() => {
+                    const offense = (resident?.offense_count || 0) + 1;
+                    const days = offense === 1 ? '1 day' : offense === 2 ? '3 days' : null;
+                    return days
+                      ? <>Suspend <strong style={{ color:'#374151' }}>{residentName}</strong> for <strong>{days}</strong> (offense #{offense}). They will be notified by email.</>
+                      : <>This is offense #{offense} — <strong style={{ color:'#dc2626' }}>Permanent ban</strong> will be issued instead.</>;
+                  })()}
                     {isBan  && <>Permanently ban <strong style={{ color:'#374151' }}>{residentName}</strong>. This cannot be undone without manual admin action.</>}
                     {isDismiss && <>Dismiss this flag against <strong style={{ color:'#374151' }}>{residentName}</strong>. No action will be taken.</>}
                   </div>
@@ -1012,6 +1142,46 @@ function UserManagement() {
           </div>
         );
       })()}
+
+      {/* Appeal action confirmation */}
+      {appealAction && (
+        <div style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(15,23,42,0.55)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(2px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setAppealAction(null); }}>
+          <div style={{ background:'#fff', borderRadius:20, width:460, maxWidth:'100%', boxShadow:'0 24px 64px rgba(0,0,0,0.18)', overflow:'hidden' }}>
+            <div style={{ background: appealAction.action === 'approve' ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fef2f2,#fff1f1)', padding:'24px 24px 20px', borderBottom:`1px solid ${appealAction.action==='approve'?'#86efac':'#fecaca'}`, display:'flex', alignItems:'flex-start', gap:14 }}>
+              <div style={{ width:46, height:46, borderRadius:12, background:appealAction.action==='approve'?'#dcfce7':'#fee2e2', border:`1.5px solid ${appealAction.action==='approve'?'#86efac':'#fecaca'}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                {appealAction.action === 'approve'
+                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                }
+              </div>
+              <div>
+                <div style={{ fontWeight:800, fontSize:16, color:'#111827', fontFamily:'Poppins,sans-serif' }}>
+                  {appealAction.action === 'approve' ? 'Approve Appeal & Unban' : 'Reject Appeal'}
+                </div>
+                <div style={{ fontSize:12, color:'#6b7280', marginTop:4, lineHeight:1.5, fontFamily:'Poppins,sans-serif' }}>
+                  {appealAction.action === 'approve'
+                    ? <><strong style={{ color:'#374151' }}>{appealAction.appeal.email}</strong> will be unbanned and their offense count reset.</>
+                    : <>The ban on <strong style={{ color:'#374151' }}>{appealAction.appeal.email}</strong> will remain permanent.</>}
+                </div>
+              </div>
+            </div>
+            <div style={{ padding:'14px 24px', background:'#f9fafb', borderBottom:'1px solid #e5e7eb', fontSize:12, color:'#374151' }}>
+              <span style={{ color:'#6b7280', fontWeight:600 }}>Appeal reason: </span>{appealAction.appeal.reason}
+            </div>
+            <div style={{ padding:'16px 24px 20px', display:'flex', gap:10, justifyContent:'flex-end' }}>
+              <button onClick={() => setAppealAction(null)} style={{ padding:'10px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Poppins,sans-serif' }}>
+                Cancel
+              </button>
+              <button onClick={() => appealAction.action === 'approve' ? handleApproveAppeal(appealAction.appeal) : handleRejectAppeal(appealAction.appeal)}
+                disabled={actionLoading}
+                style={{ padding:'10px 22px', borderRadius:10, border:'none', background:appealAction.action==='approve'?'#059669':'#dc2626', color:'#fff', fontSize:13, fontWeight:700, cursor:actionLoading?'not-allowed':'pointer', fontFamily:'Poppins,sans-serif', opacity:actionLoading?0.7:1, display:'inline-flex', alignItems:'center', gap:6 }}>
+                {actionLoading ? <><div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />Processing...</> : appealAction.action === 'approve' ? 'Approve & Unban' : 'Reject Appeal'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Activity modal for deleted accounts */}
       {viewActivity && <ActivityModal resident={viewActivity} onClose={() => setViewActivity(null)} />}

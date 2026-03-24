@@ -452,15 +452,13 @@ function Reports() {
                 <table style={{ width:'100%', borderCollapse:'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={{ ...TH, width:'15%' }}>Resident</th>
-                      <th style={{ ...TH, width:'15%' }}>Problem</th>
-                      <th style={{ ...TH, width:'18%' }}>Description</th>
-                      <th style={{ ...TH, width:'7%'  }}>Image</th>
-                      <th style={{ ...TH, width:'8%'  }}>Location</th>
-                      <th style={{ ...TH, width:'11%' }}>Status</th>
+                      <th style={{ ...TH, width:'18%' }}>Resident</th>
+                      <th style={{ ...TH, width:'22%' }}>Problem</th>
+                      <th style={{ ...TH, width:'10%' }}>Media</th>
+                      <th style={{ ...TH, width:'12%' }}>Status</th>
                       <th style={{ ...TH, width:'10%' }}>Rating</th>
-                      <th style={{ ...TH, width:'9%'  }}>Date</th>
-                      <th style={{ ...TH, width:'13%' }}>Actions</th>
+                      <th style={{ ...TH, width:'10%' }}>Date</th>
+                      <th style={{ ...TH, width:'18%' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -487,83 +485,87 @@ function Reports() {
                         onMouseEnter={e => e.currentTarget.style.backgroundColor='#dbeafe'}
                         onMouseLeave={e => e.currentTarget.style.backgroundColor= i%2===0 ? '#ffffff' : '#f0f4ff'}>
 
+                        {/* Resident */}
                         <td style={{ ...TD, overflow:'hidden' }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:8, overflow:'hidden' }}>
-                            <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={28} index={i} />
-                            <div style={{ overflow:'hidden', minWidth:0 }}>
-                              <div style={{ fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>{r.residentName}</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <ResidentAvatar url={r.residentAvatar} name={r.residentName} size={32} index={i} />
+                            <div style={{ minWidth:0 }}>
+                              <div style={{ fontWeight:600, fontSize:12, color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.residentName}</div>
                               <AccountStatusBadge status={r.accountStatus} />
                             </div>
                           </div>
                         </td>
-                        <td style={{ ...TD, fontWeight:600, color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.problem}</td>
-                        <td style={{ ...TD, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'#6b7280', fontSize:12 }}>
-                          {r.rejection_reason
-                            ? <span style={{ color:'#991b1b', fontStyle:'italic' }}>Rejected: {r.rejection_reason}</span>
-                            : r.description || '—'
-                          }
-                        </td>
-                        <td style={TD}>
-                          {r.image_url
-                            ? <a href={r.image_url} target="_blank" rel="noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:4, color:'#1E3A5F', fontSize:12, fontWeight:600, background:'#e0e7ef', padding:'3px 10px', borderRadius:6, textDecoration:'none' }}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>View
-                              </a>
-                            : <span style={{ color:'#d1d5db' }}>—</span>}
-                        </td>
-                        <td style={TD}>
-                          {r.location_lat && r.location_lng
-                            ? <button onClick={() => setMapReport(r)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'#eff6ff', color:'#1E3A5F', border:'1px solid #bfdbfe', borderRadius:7, padding:'4px 10px', fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                                📍 Map
-                              </button>
-                            : <span style={{ color:'#d1d5db' }}>—</span>}
-                        </td>
-                        <td style={TD}><StatusBadge status={r.status} /></td>
-                        <td style={TD}><StarDisplay rating={r.rating} /></td>
-                        <td style={{ ...TD, color:'#9ca3af', fontSize:12 }}>{fmt(r.created_at)}</td>
 
-                        {/* Actions */}
+                        {/* Problem + Description */}
+                        <td style={TD}>
+                          <div style={{ fontWeight:700, fontSize:13, color:'#111827', marginBottom:2 }}>{r.problem}</div>
+                          <div style={{ fontSize:11, color:'#6b7280', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:180 }}>
+                            {r.rejection_reason
+                              ? <span style={{ color:'#991b1b', fontStyle:'italic' }}>↳ {r.rejection_reason}</span>
+                              : r.description || <span style={{ color:'#d1d5db' }}>No description</span>
+                            }
+                          </div>
+                        </td>
+
+                        {/* Media (image + location) */}
                         <td style={TD}>
                           <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                            {r.image_url
+                              ? <a href={r.image_url} target="_blank" rel="noreferrer"
+                                  style={{ display:'inline-flex', alignItems:'center', gap:4, color:'#1E3A5F', fontSize:11, fontWeight:600, background:'#e0e7ef', padding:'4px 9px', borderRadius:6, textDecoration:'none' }}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Photo
+                                </a>
+                              : null}
+                            {r.location_lat && r.location_lng
+                              ? <button onClick={() => setMapReport(r)}
+                                  style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#eff6ff', color:'#1E3A5F', border:'1px solid #bfdbfe', borderRadius:6, padding:'4px 9px', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Map
+                                </button>
+                              : null}
+                            {!r.image_url && !(r.location_lat && r.location_lng) && <span style={{ color:'#d1d5db', fontSize:12 }}>—</span>}
+                          </div>
+                        </td>
+
+                        <td style={TD}><StatusBadge status={r.status} /></td>
+                        <td style={TD}><StarDisplay rating={r.rating} /></td>
+                        <td style={{ ...TD, color:'#9ca3af', fontSize:12, whiteSpace:'nowrap' }}>{fmt(r.created_at)}</td>
+
+                        {/* Actions — horizontal chips */}
+                        <td style={TD}>
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:5, alignItems:'center' }}>
                             <button onClick={() => setDrawerReport(r)}
-                              style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:6, border:'1px solid #bfdbfe', background:'#eff6ff', color:'#1E3A5F', fontSize:11, fontWeight:600, cursor:'pointer' }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                              Details
+                              style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:7, border:'1.5px solid #bfdbfe', background:'#eff6ff', color:'#1E3A5F', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                              View
                             </button>
-                            {r.status === 'resolved' || r.status === 'rejected' ? (
-                              <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'4px 10px', borderRadius:6 }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Closed
-                              </span>
-                            ) : isCapitan ? (
+                            {r.status === 'resolved' || r.status === 'rejected' ? null : isCapitan ? (
                               <>
                                 {r.status === 'pending' && (
                                   <button onClick={() => updateStatus(r.id, 'in_progress')} disabled={updatingId===r.id}
-                                    style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #bfdbfe', background:'#eff6ff', color:'#1d4ed8', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                    style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:7, border:'1.5px solid #bfdbfe', background:'#dbeafe', color:'#1d4ed8', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', opacity:updatingId===r.id?0.5:1 }}>
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg>
-                                    In Progress
+                                    Progress
                                   </button>
                                 )}
                                 {r.status === 'in_progress' && (
                                   <button onClick={() => updateStatus(r.id, 'resolved')} disabled={updatingId===r.id}
-                                    style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #bbf7d0', background:'#f0fdf4', color:'#15803d', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                    style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:7, border:'1.5px solid #86efac', background:'#dcfce7', color:'#15803d', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', opacity:updatingId===r.id?0.5:1 }}>
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                     Resolve
                                   </button>
                                 )}
                                 <button onClick={() => openConfirm(r)} disabled={updatingId===r.id}
-                                  style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:7, border:'1.5px solid #fecaca', background:'#fff5f5', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                                  style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:7, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', opacity:updatingId===r.id?0.5:1 }}>
                                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                   Reject
                                 </button>
                               </>
                             ) : (
-                              <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'4px 10px', borderRadius:6 }}>
-                                View Only
-                              </span>
+                              <span style={{ fontSize:10, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'4px 8px', borderRadius:5 }}>View Only</span>
                             )}
                             {r.accountStatus !== 'deleted' && r.user_id && (
                               <button onClick={() => { setFlagModal({ userId: r.user_id, residentName: r.residentName, reportId: r.id }); setFlagReason(''); }}
-                                style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:6, border:'1px solid #fde68a', background:'#fef9c3', color:'#92400e', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                                style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:7, border:'1.5px solid #fde68a', background:'#fef9c3', color:'#92400e', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                                 Flag
                               </button>
