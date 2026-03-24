@@ -339,16 +339,19 @@ function ActivityModal({ resident, onClose }) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
+const SUPER_ADMIN_EMAIL = 'pandahuntergamer09@gmail.com';
+
 function UserManagement() {
-  const [tab,       setTab]       = useState('pending');
-  const [pending,   setPending]   = useState([]);
-  const [officials, setOfficials] = useState([]);
-  const [residents, setResidents] = useState([]);
-  const [statusId,  setStatusId]  = useState(null);
-  const [search,    setSearch]    = useState('');
-  const [offFilter, setOffFilter] = useState('all');
-  const [resFilter, setResFilter] = useState('all');
-  const [page,      setPage]      = useState(1);
+  const [tab,          setTab]          = useState('pending');
+  const [pending,      setPending]      = useState([]);
+  const [officials,    setOfficials]    = useState([]);
+  const [residents,    setResidents]    = useState([]);
+  const [statusId,     setStatusId]     = useState(null);
+  const [search,       setSearch]       = useState('');
+  const [offFilter,    setOffFilter]    = useState('all');
+  const [resFilter,    setResFilter]    = useState('all');
+  const [page,         setPage]         = useState(1);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const PAGE_SIZE = 5;
 
   const [deletedAccounts,  setDeletedAccounts]  = useState([]);
@@ -387,6 +390,12 @@ function UserManagement() {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setIsSuperAdmin(data.user?.email?.toLowerCase() === SUPER_ADMIN_EMAIL);
+    });
+  }, []);
 
   const updateStatus = async (id, status) => {
     setStatusId(id);
@@ -601,7 +610,7 @@ function UserManagement() {
           </div>
 
           {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
             {(() => {
               const activeCard =
                 tab === 'pending'   ? 'pending'   :
@@ -755,22 +764,29 @@ function UserManagement() {
                               <td style={{ ...TD,color:'#9ca3af',fontSize:12 }}>{fmt(row.created_at)}</td>
                               <td style={TD}>
                                 <div style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
-                                  {row.status==='banned' ? (
-                                    <button onClick={()=>setUnbanTarget({row,type:'official'})}
-                                      style={{ background:'#059669',color:'#fff',border:'none',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unban
-                                    </button>
+                                  {isSuperAdmin ? (
+                                    row.status==='banned' ? (
+                                      <button onClick={()=>setUnbanTarget({row,type:'official'})}
+                                        style={{ background:'#059669',color:'#fff',border:'none',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unban
+                                      </button>
+                                    ) : (
+                                      <>
+                                        <button onClick={()=>setBanConfirmTarget({row,type:'official'})}
+                                          style={{ background:'#fff',color:'#dc2626',border:'1.5px solid #fca5a5',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban
+                                        </button>
+                                        <button onClick={()=>updateStatus(row.id,'rejected')} disabled={statusId===row.id}
+                                          style={{ background:'#fff',color:'#6b7280',border:'1.5px solid #e2e8f0',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,opacity:statusId===row.id?0.6:1 }}>
+                                          Revoke
+                                        </button>
+                                      </>
+                                    )
                                   ) : (
-                                    <>
-                                      <button onClick={()=>setBanConfirmTarget({row,type:'official'})}
-                                        style={{ background:'#fff',color:'#dc2626',border:'1.5px solid #fca5a5',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban
-                                      </button>
-                                      <button onClick={()=>updateStatus(row.id,'rejected')} disabled={statusId===row.id}
-                                        style={{ background:'#fff',color:'#6b7280',border:'1.5px solid #e2e8f0',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,opacity:statusId===row.id?0.6:1 }}>
-                                        Revoke
-                                      </button>
-                                    </>
+                                    <button onClick={()=>updateStatus(row.id,'rejected')} disabled={statusId===row.id}
+                                      style={{ background:'#fff',color:'#6b7280',border:'1.5px solid #e2e8f0',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,opacity:statusId===row.id?0.6:1 }}>
+                                      Revoke
+                                    </button>
                                   )}
                                 </div>
                               </td>
@@ -809,16 +825,22 @@ function UserManagement() {
                               </td>
                               <td style={{ ...TD,color:'#9ca3af',fontSize:12 }}>{fmt(row.created_at)}</td>
                               <td style={TD}>
-                                {row.is_banned ? (
-                                  <button onClick={()=>setUnbanTarget({row,type:'resident'})}
-                                    style={{ background:'#059669',color:'#fff',border:'none',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unban
-                                  </button>
+                                {isSuperAdmin ? (
+                                  row.is_banned ? (
+                                    <button onClick={()=>setUnbanTarget({row,type:'resident'})}
+                                      style={{ background:'#059669',color:'#fff',border:'none',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unban
+                                    </button>
+                                  ) : (
+                                    <button onClick={()=>setBanConfirmTarget({row,type:'resident'})}
+                                      style={{ background:'#fff',color:'#dc2626',border:'1.5px solid #fca5a5',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban
+                                    </button>
+                                  )
                                 ) : (
-                                  <button onClick={()=>setBanConfirmTarget({row,type:'resident'})}
-                                    style={{ background:'#fff',color:'#dc2626',border:'1.5px solid #fca5a5',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban
-                                  </button>
+                                  <span style={{ fontSize:11, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'6px 14px', borderRadius:8, display:'inline-block' }}>
+                                    {row.is_banned ? 'Banned' : 'View Only'}
+                                  </span>
                                 )}
                               </td>
                             </tr>
