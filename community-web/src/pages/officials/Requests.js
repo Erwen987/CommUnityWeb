@@ -144,7 +144,7 @@ function RequestDrawer({ req, onClose }) {
 }
 
 function Requests() {
-  const { barangay, loading: profileLoading } = useOfficialProfile();
+  const { barangay, isCapitan, loading: profileLoading } = useOfficialProfile();
   const [requests, setRequests]         = useState([]);
   const [loading, setLoading]           = useState(false);
   const [updatingId, setUpdatingId]     = useState(null);
@@ -382,7 +382,7 @@ function Requests() {
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                               Closed
                             </span>
-                          ) : (
+                          ) : isCapitan ? (
                             <>
                               {r.status === 'pending' && (
                                 <button onClick={() => handleStatusChange(r.id, 'ready_for_pickup')} disabled={updatingId===r.id}
@@ -404,6 +404,10 @@ function Requests() {
                                 Reject
                               </button>
                             </>
+                          ) : (
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'4px 10px', borderRadius:6 }}>
+                              View Only
+                            </span>
                           )}
                         </div>
                       </td>

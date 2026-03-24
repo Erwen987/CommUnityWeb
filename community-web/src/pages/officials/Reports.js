@@ -212,9 +212,56 @@ function ReportDrawer({ report, onClose }) {
   );
 }
 
+// ── Flag Modal ──────────────────────────────────────────────────────────────────
+function FlagModal({ target, reason, onChangeReason, onSubmit, onClose, loading }) {
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2000, padding:16 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:460, boxShadow:'0 24px 64px rgba(0,0,0,0.18)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:16 }}>
+          <div style={{ width:44, height:44, borderRadius:'50%', background:'#fef3c7', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <h3 style={{ fontSize:16, fontWeight:700, color:'#111827', margin:0 }}>Flag Resident for Abuse</h3>
+            <p style={{ fontSize:12, color:'#9ca3af', margin:0 }}>Admin will review and take action</p>
+          </div>
+        </div>
+        <div style={{ background:'#fef9c3', border:'1px solid #fde047', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#78350f' }}>
+          <strong>{target?.residentName}</strong> — Their reports will be reviewed by admin
+        </div>
+        <div style={{ marginBottom:12 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Quick Reasons</div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {['Submitting fake reports for points','Repeated false reports','Abusing the reward system','Reports could not be verified','Duplicate/spam reports'].map(r => (
+              <button key={r} onClick={() => onChangeReason(r)}
+                style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${reason===r?'#d97706':'#e5e7eb'}`, background:reason===r?'#fef3c7':'#f9fafb', color:reason===r?'#92400e':'#374151', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+        <textarea rows={3} placeholder="Describe the abusive behavior in detail..."
+          value={reason} onChange={e => onChangeReason(e.target.value)} maxLength={300}
+          style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1.5px solid #e5e7eb', fontFamily:'inherit', fontSize:13, resize:'none', outline:'none', boxSizing:'border-box', color:'#374151' }}
+          onFocus={e => e.target.style.borderColor='#d97706'} onBlur={e => e.target.style.borderColor='#e5e7eb'} />
+        <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+          <button onClick={onClose} style={{ padding:'10px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151', fontFamily:'inherit' }}>
+            Cancel
+          </button>
+          <button onClick={onSubmit} disabled={!reason.trim() || loading}
+            style={{ padding:'10px 22px', borderRadius:10, border:'none', background:!reason.trim()||loading?'#fde68a':'#d97706', fontSize:13, fontWeight:600, cursor:!reason.trim()||loading?'not-allowed':'pointer', color:'#fff', fontFamily:'inherit', display:'inline-flex', alignItems:'center', gap:7 }}>
+            {loading ? <><div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />Submitting...</> : <>Submit Flag</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 function Reports() {
-  const { barangay, loading: profileLoading } = useOfficialProfile();
+  const { barangay, isCapitan, loading: profileLoading } = useOfficialProfile();
   const [reports, setReports]         = useState([]);
   const [loading, setLoading]         = useState(false);
   const [updatingId, setUpdatingId]   = useState(null);
@@ -231,6 +278,16 @@ function Reports() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError]   = useState('');
   const [drawerReport, setDrawerReport] = useState(null);
+
+  // Flag state
+  const [flagModal,   setFlagModal]   = useState(null); // { userId, residentName, reportId }
+  const [flagReason,  setFlagReason]  = useState('');
+  const [flagLoading, setFlagLoading] = useState(false);
+  const [officialId,  setOfficialId]  = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setOfficialId(data.user?.id || null));
+  }, []);
 
   const fetchReports = useCallback(async () => {
     if (!barangay) return;
@@ -287,6 +344,22 @@ function Reports() {
     setUpdatingId(null);
     setRejectModal(null);
     fetchReports();
+  };
+
+  const submitFlag = async () => {
+    if (!flagReason.trim() || !flagModal) return;
+    setFlagLoading(true);
+    await supabase.from('abuse_flags').insert({
+      flagged_user_id:        flagModal.userId,
+      flagged_by_official_id: officialId,
+      barangay,
+      reason:     flagReason.trim(),
+      report_ids: flagModal.reportId ? [flagModal.reportId] : [],
+      status:     'pending',
+    });
+    setFlagLoading(false);
+    setFlagModal(null);
+    setFlagReason('');
   };
 
   const filtered = reports.filter(r => {
@@ -461,7 +534,7 @@ function Reports() {
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                 Closed
                               </span>
-                            ) : (
+                            ) : isCapitan ? (
                               <>
                                 {r.status === 'pending' && (
                                   <button onClick={() => updateStatus(r.id, 'in_progress')} disabled={updatingId===r.id}
@@ -483,6 +556,17 @@ function Reports() {
                                   Reject
                                 </button>
                               </>
+                            ) : (
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, color:'#9ca3af', fontWeight:600, background:'#f1f5f9', padding:'4px 10px', borderRadius:6 }}>
+                                View Only
+                              </span>
+                            )}
+                            {r.accountStatus !== 'deleted' && r.user_id && (
+                              <button onClick={() => { setFlagModal({ userId: r.user_id, residentName: r.residentName, reportId: r.id }); setFlagReason(''); }}
+                                style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:6, border:'1px solid #fde68a', background:'#fef9c3', color:'#92400e', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                Flag
+                              </button>
                             )}
                           </div>
                         </td>
@@ -635,6 +719,16 @@ function Reports() {
         </div>
       )}
       <ReportDrawer report={drawerReport} onClose={() => setDrawerReport(null)} />
+      {flagModal && (
+        <FlagModal
+          target={flagModal}
+          reason={flagReason}
+          onChangeReason={setFlagReason}
+          onSubmit={submitFlag}
+          onClose={() => { setFlagModal(null); setFlagReason(''); }}
+          loading={flagLoading}
+        />
+      )}
     </>
   );
 }

@@ -15,7 +15,7 @@ export function useOfficialProfile() {
 
       const { data } = await supabase
         .from('officials')
-        .select('barangay, barangay_name, avatar_url')
+        .select('barangay, barangay_name, avatar_url, position')
         .eq('auth_id', user.id)
         .single();
 
@@ -41,6 +41,8 @@ export function useOfficialProfile() {
     barangay:     profile?.barangay      || '',
     barangayName: profile?.barangay_name || '',
     avatarUrl:    profile?.avatar_url    || null,
+    position:     profile?.position      || '',
+    isCapitan:    profile?.position === 'Barangay Captain',
     loading,
   };
 }

@@ -100,6 +100,7 @@ function Signup() {
   });
   const [idFile,       setIdFile]       = useState(null);
   const [idPreview,    setIdPreview]    = useState(null);
+  const [takenRoles,   setTakenRoles]   = useState([]);
   const [error,        setError]        = useState('');
   const [loading,      setLoading]      = useState(false);
   const [step,         setStep]         = useState('form');
@@ -107,6 +108,20 @@ function Signup() {
   const [pendingUserId, setPendingUserId] = useState(null);
   const [showPass,     setShowPass]     = useState(false);
   const [showConfirm,  setShowConfirm]  = useState(false);
+
+  // Fetch already-taken roles whenever barangay changes
+  React.useEffect(() => {
+    if (!form.barangay) { setTakenRoles([]); return; }
+    supabase.from('officials')
+      .select('position')
+      .eq('barangay', form.barangay)
+      .in('status', ['pending', 'approved'])
+      .then(({ data }) => {
+        const taken = (data || []).map(r => r.position).filter(Boolean);
+        setTakenRoles(taken);
+        if (taken.includes(form.position)) setForm(f => ({ ...f, position: '' }));
+      });
+  }, [form.barangay]);
 
   const handleChange = e => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); };
 
@@ -356,8 +371,9 @@ function Signup() {
                 <div style={{ flex: 1 }}>
                   <label>Position / Role</label>
                   <select name="position" value={form.position} onChange={handleChange} required>
-                    <option value="" disabled>Select position</option>
-                    {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                    <option value="" disabled>{form.barangay ? 'Select position' : 'Select barangay first'}</option>
+                    {POSITIONS.filter(p => !takenRoles.includes(p)).map(p => <option key={p} value={p}>{p}</option>)}
+                    {takenRoles.filter(p => POSITIONS.includes(p)).map(p => <option key={p} value={p} disabled>({p} — already taken)</option>)}
                   </select>
                 </div>
               </div>
