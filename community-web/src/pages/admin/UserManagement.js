@@ -913,6 +913,7 @@ function UserManagement() {
                           <th style={TH}>Resident</th>
                           <th style={TH}>Barangay</th>
                           <th style={TH}>Reason</th>
+                          <th style={TH}>Proof</th>
                           <th style={TH}>Offense #</th>
                           <th style={TH}>Flagged On</th>
                           <th style={TH}>Actions</th>
@@ -936,8 +937,18 @@ function UserManagement() {
                                   </div>
                                 </td>
                                 <td style={TD}>{flag.barangay ? <span style={{ background:'#f1f5f9', color:'#374151', padding:'3px 10px', borderRadius:6, fontSize:12, fontWeight:600 }}>{flag.barangay}</span> : '—'}</td>
-                                <td style={{ ...TD, maxWidth:220, fontSize:12, color:'#374151' }}>
+                                <td style={{ ...TD, maxWidth:200, fontSize:12, color:'#374151' }}>
                                   <div style={{ maxHeight:48, overflow:'hidden', textOverflow:'ellipsis', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }} title={flag.reason}>{flag.reason}</div>
+                                </td>
+                                <td style={TD}>
+                                  {flag.proof_image_url ? (
+                                    <a href={flag.proof_image_url} target="_blank" rel="noreferrer">
+                                      <img src={flag.proof_image_url} alt="proof"
+                                        style={{ width:64, height:48, objectFit:'cover', borderRadius:6, border:'1.5px solid #fde68a', display:'block', cursor:'pointer' }} />
+                                    </a>
+                                  ) : (
+                                    <span style={{ fontSize:11, color:'#d1d5db' }}>—</span>
+                                  )}
                                 </td>
                                 <td style={{ ...TD, textAlign:'center' }}>
                                   <span style={{ fontWeight:700, fontSize:14, color: offenseCount >= 2 ? '#dc2626' : '#d97706' }}>{resident?.offense_count || 0}</span>

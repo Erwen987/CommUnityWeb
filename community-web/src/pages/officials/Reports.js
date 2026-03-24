@@ -227,11 +227,11 @@ function ReportModal({ report, onClose }) {
 }
 
 // ── Flag Modal ──────────────────────────────────────────────────────────────────
-function FlagModal({ target, reason, onChangeReason, onSubmit, onClose, loading }) {
+function FlagModal({ target, reason, onChangeReason, proofPreview, onChangeProof, onSubmit, onClose, loading }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2000, padding:16 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:460, boxShadow:'0 24px 64px rgba(0,0,0,0.18)' }}>
+      <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:480, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.18)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:16 }}>
           <div style={{ width:44, height:44, borderRadius:'50%', background:'#fef3c7', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -259,12 +259,37 @@ function FlagModal({ target, reason, onChangeReason, onSubmit, onClose, loading 
           value={reason} onChange={e => onChangeReason(e.target.value)} maxLength={300}
           style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1.5px solid #e5e7eb', fontFamily:'inherit', fontSize:13, resize:'none', outline:'none', boxSizing:'border-box', color:'#374151' }}
           onFocus={e => e.target.style.borderColor='#d97706'} onBlur={e => e.target.style.borderColor='#e5e7eb'} />
+
+        {/* Proof image upload */}
+        <div style={{ marginTop:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+            Proof / Evidence <span style={{ fontSize:10, color:'#dc2626', fontWeight:600, textTransform:'none', letterSpacing:0 }}>* required</span>
+          </div>
+          {proofPreview ? (
+            <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'1.5px solid #fde68a' }}>
+              <img src={proofPreview} alt="proof" style={{ width:'100%', maxHeight:160, objectFit:'cover', display:'block' }} />
+              <button onClick={() => onChangeProof(null)}
+                style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,0.55)', border:'none', borderRadius:'50%', width:26, height:26, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          ) : (
+            <label style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:'18px 14px', borderRadius:10, border:'1.5px dashed #fde68a', background:'#fffbeb', cursor:'pointer' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span style={{ fontSize:12, color:'#92400e', fontWeight:600 }}>Click to attach a screenshot or photo</span>
+              <span style={{ fontSize:11, color:'#9ca3af' }}>PNG, JPG up to 5MB</span>
+              <input type="file" accept="image/*" style={{ display:'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) onChangeProof(f); }} />
+            </label>
+          )}
+        </div>
+
         <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
           <button onClick={onClose} style={{ padding:'10px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151', fontFamily:'inherit' }}>
             Cancel
           </button>
-          <button onClick={onSubmit} disabled={!reason.trim() || loading}
-            style={{ padding:'10px 22px', borderRadius:10, border:'none', background:!reason.trim()||loading?'#fde68a':'#d97706', fontSize:13, fontWeight:600, cursor:!reason.trim()||loading?'not-allowed':'pointer', color:'#fff', fontFamily:'inherit', display:'inline-flex', alignItems:'center', gap:7 }}>
+          <button onClick={onSubmit} disabled={!reason.trim() || !proofPreview || loading}
+            style={{ padding:'10px 22px', borderRadius:10, border:'none', background:!reason.trim()||!proofPreview||loading?'#fde68a':'#d97706', fontSize:13, fontWeight:600, cursor:!reason.trim()||!proofPreview||loading?'not-allowed':'pointer', color:'#fff', fontFamily:'inherit', display:'inline-flex', alignItems:'center', gap:7 }}>
             {loading ? <><div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />Submitting...</> : <>Submit Flag</>}
           </button>
         </div>
@@ -297,6 +322,8 @@ function Reports() {
   // Flag state
   const [flagModal,        setFlagModal]        = useState(null); // { userId, residentName, reportId }
   const [flagReason,       setFlagReason]        = useState('');
+  const [flagProofFile,    setFlagProofFile]     = useState(null);
+  const [flagProofPreview, setFlagProofPreview]  = useState(null);
   const [flagLoading,      setFlagLoading]       = useState(false);
   const [officialId,       setOfficialId]        = useState(null);
   const [flaggedReportIds, setFlaggedReportIds]  = useState(new Set());
@@ -397,19 +424,36 @@ function Reports() {
   };
 
   const submitFlag = async () => {
-    if (!flagReason.trim() || !flagModal) return;
+    if (!flagReason.trim() || !flagModal || !flagProofFile) return;
     setFlagLoading(true);
+
+    let proofImageUrl = null;
+    if (flagProofFile) {
+      const ext = flagProofFile.name.split('.').pop();
+      const path = `proof-images/${officialId}_${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from('proof-images')
+        .upload(path, flagProofFile, { upsert: true });
+      if (!uploadErr) {
+        const { data: urlData } = supabase.storage.from('proof-images').getPublicUrl(path);
+        proofImageUrl = urlData?.publicUrl || null;
+      }
+    }
+
     await supabase.from('abuse_flags').insert({
       flagged_user_id:        flagModal.userId,
       flagged_by_official_id: officialId,
       barangay,
-      reason:     flagReason.trim(),
-      report_ids: flagModal.reportId ? [flagModal.reportId] : [],
-      status:     'pending',
+      reason:          flagReason.trim(),
+      report_ids:      flagModal.reportId ? [flagModal.reportId] : [],
+      status:          'pending',
+      proof_image_url: proofImageUrl,
     });
     setFlagLoading(false);
     setFlagModal(null);
     setFlagReason('');
+    setFlagProofFile(null);
+    setFlagProofPreview(null);
     fetchFlaggedReports();
   };
 
@@ -860,8 +904,13 @@ function Reports() {
           target={flagModal}
           reason={flagReason}
           onChangeReason={setFlagReason}
+          proofPreview={flagProofPreview}
+          onChangeProof={file => {
+            setFlagProofFile(file);
+            setFlagProofPreview(file ? URL.createObjectURL(file) : null);
+          }}
           onSubmit={submitFlag}
-          onClose={() => { setFlagModal(null); setFlagReason(''); }}
+          onClose={() => { setFlagModal(null); setFlagReason(''); setFlagProofFile(null); setFlagProofPreview(null); }}
           loading={flagLoading}
         />
       )}
