@@ -5,39 +5,10 @@ import AdminTopbar from '../../components/AdminTopbar';
 import { supabase } from '../../supabaseClient';
 import Pagination from '../../components/Pagination';
 
-// ── EmailJS ───────────────────────────────────────────────────────────────────
-const EMAILJS_SERVICE_ID            = 'service_0pp2139';
-const EMAILJS_APPROVAL_TEMPLATE_ID  = 'template_2r9u3vk';
-const EMAILJS_REJECTION_TEMPLATE_ID = 'template_xpisoa5';
-const EMAILJS_WARNING_TEMPLATE_ID   = 'template_warning1';
-const EMAILJS_PERMBAN_TEMPLATE_ID   = 'template_permban1';
-const EMAILJS_PUBLIC_KEY            = 'MYsqjprp39Rb43jVR';
-
-const sendEmail = async (templateId, toEmail, barangay) => {
+// ── Email (Resend via Supabase Edge Function) ─────────────────────────────────
+const sendNotificationEmail = async (payload) => {
   try {
-    await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID, template_id: templateId,
-        user_id: EMAILJS_PUBLIC_KEY,
-        template_params: { to_email: toEmail, barangay },
-      }),
-    });
-  } catch (_) {}
-};
-
-const sendAbuseEmail = async (templateId, toEmail, residentName, reason, suspendedUntil) => {
-  try {
-    await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID, template_id: templateId,
-        user_id: EMAILJS_PUBLIC_KEY,
-        template_params: { to_email: toEmail, resident_name: residentName, reason, suspended_until: suspendedUntil || '' },
-      }),
-    });
+    await supabase.functions.invoke('send-email', { body: payload });
   } catch (_) {}
 };
 
@@ -421,8 +392,8 @@ function UserManagement() {
     setStatusId(id);
     const { data: updated } = await supabase.from('officials').update({ status }).eq('id', id).select('email,barangay').single();
     if (updated) {
-      if (status === 'approved') await sendEmail(EMAILJS_APPROVAL_TEMPLATE_ID,  updated.email, updated.barangay);
-      if (status === 'rejected') await sendEmail(EMAILJS_REJECTION_TEMPLATE_ID, updated.email, updated.barangay);
+      if (status === 'approved') await sendNotificationEmail({ type: 'approval',  toEmail: updated.email, barangay: updated.barangay });
+      if (status === 'rejected') await sendNotificationEmail({ type: 'rejection', toEmail: updated.email, barangay: updated.barangay });
     }
     setStatusId(null);
     fetchAll();
@@ -460,6 +431,9 @@ function UserManagement() {
     setActionLoading(false);
     setUnbanTarget(null);
     if (err) { showToast('Failed to unban account. Please try again.', 'error'); return; }
+    if (type !== 'official') {
+      await sendNotificationEmail({ type: 'unban', toEmail: row.email, residentName: row.name });
+    }
     showToast(`${type === 'official' ? row.barangay_name : row.name} has been unbanned.`);
     fetchAll();
   };
@@ -481,7 +455,7 @@ function UserManagement() {
       await supabase.from('abuse_flags')
         .update({ status: 'resolved', resolved_at: new Date().toISOString(), admin_note: 'permanent_ban_3rd_offense' })
         .eq('id', flag.id);
-      await sendAbuseEmail(EMAILJS_PERMBAN_TEMPLATE_ID, resident.email, resident.name, flag.reason, null);
+      await sendNotificationEmail({ type: 'permban', toEmail: resident.email, residentName: resident.name, reason: flag.reason });
       setActionLoading(false);
       setFlagActionTarget(null);
       showToast(`${resident.name} permanently banned — 3rd offense.`);
@@ -498,10 +472,11 @@ function UserManagement() {
     await supabase.from('abuse_flags')
       .update({ status: 'resolved', resolved_at: new Date().toISOString(), admin_note: `warning_${newOffenseCount}` })
       .eq('id', flag.id);
-    await sendAbuseEmail(
-      EMAILJS_WARNING_TEMPLATE_ID, resident.email, resident.name, flag.reason,
-      new Date(suspendUntil).toLocaleDateString('en-PH', { month:'long', day:'numeric', year:'numeric' })
-    );
+    await sendNotificationEmail({
+      type: 'suspended', toEmail: resident.email, residentName: resident.name, reason: flag.reason,
+      suspendedUntil: new Date(suspendUntil).toLocaleDateString('en-PH', { month:'long', day:'numeric', year:'numeric' }),
+      offenseNumber: newOffenseCount, suspendDays,
+    });
     setActionLoading(false);
     setFlagActionTarget(null);
     showToast(`Warning #${newOffenseCount} — ${resident.name} suspended for ${suspendDays} day${suspendDays > 1 ? 's' : ''}.`);
@@ -518,7 +493,7 @@ function UserManagement() {
     await supabase.from('abuse_flags')
       .update({ status: 'resolved', resolved_at: new Date().toISOString(), admin_note: 'permanent_ban' })
       .eq('id', flag.id);
-    await sendAbuseEmail(EMAILJS_PERMBAN_TEMPLATE_ID, resident.email, resident.name, flag.reason, null);
+    await sendNotificationEmail({ type: 'permban', toEmail: resident.email, residentName: resident.name, reason: flag.reason });
     setActionLoading(false);
     setFlagActionTarget(null);
     showToast(`${resident.name} has been permanently banned.`);
@@ -534,6 +509,9 @@ function UserManagement() {
     await supabase.from('appeals')
       .update({ status: 'approved', resolved_at: new Date().toISOString() })
       .eq('id', appeal.id);
+    // Find resident name for email
+    const residentRecord = residents.find(r => r.email === appeal.email);
+    await sendNotificationEmail({ type: 'unban', toEmail: appeal.email, residentName: residentRecord?.name || appeal.email });
     setActionLoading(false);
     setAppealAction(null);
     showToast(`Appeal approved — ${appeal.email} has been unbanned.`);
@@ -545,6 +523,8 @@ function UserManagement() {
     await supabase.from('appeals')
       .update({ status: 'rejected', resolved_at: new Date().toISOString() })
       .eq('id', appeal.id);
+    const residentRecord = residents.find(r => r.email === appeal.email);
+    await sendNotificationEmail({ type: 'appeal_rejected', toEmail: appeal.email, residentName: residentRecord?.name || appeal.email });
     setActionLoading(false);
     setAppealAction(null);
     showToast(`Appeal rejected — ban remains.`);
@@ -940,11 +920,19 @@ function UserManagement() {
                                 </td>
                                 <td style={{ ...TD, color:'#9ca3af', fontSize:12 }}>{fmt(flag.created_at)}</td>
                                 <td style={TD}>
+                                  {(() => {
+                                    const currentOffense = resident?.offense_count || 0;
+                                    const nextOffense = currentOffense + 1;
+                                    const warnLabel = nextOffense >= 3 ? 'Warn → Perm Ban' : nextOffense === 2 ? 'Warn #2 (3 days)' : 'Warn #1 (1 day)';
+                                    const warnBg    = nextOffense >= 3 ? '#fee2e2' : '#fef3c7';
+                                    const warnColor = nextOffense >= 3 ? '#dc2626' : '#92400e';
+                                    const warnBorder= nextOffense >= 3 ? '#fca5a5' : '#fde68a';
+                                    return (
                                   <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                                     <button onClick={() => setFlagActionTarget({ flag, action: 'warn' })}
-                                      style={{ background:'#fef3c7', color:'#92400e', border:'1.5px solid #fde68a', padding:'7px 12px', borderRadius:8, cursor:'pointer', fontWeight:600, fontSize:12, fontFamily:'Poppins,sans-serif', display:'inline-flex', alignItems:'center', gap:5 }}>
+                                      style={{ background:warnBg, color:warnColor, border:`1.5px solid ${warnBorder}`, padding:'7px 12px', borderRadius:8, cursor:'pointer', fontWeight:600, fontSize:12, fontFamily:'Poppins,sans-serif', display:'inline-flex', alignItems:'center', gap:5 }}>
                                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                      Warn (3 wks)
+                                      {warnLabel}
                                     </button>
                                     <button onClick={() => setFlagActionTarget({ flag, action: 'ban' })}
                                       style={{ background:'#fee2e2', color:'#dc2626', border:'1.5px solid #fca5a5', padding:'7px 12px', borderRadius:8, cursor:'pointer', fontWeight:600, fontSize:12, fontFamily:'Poppins,sans-serif', display:'inline-flex', alignItems:'center', gap:5 }}>
@@ -956,6 +944,8 @@ function UserManagement() {
                                       Dismiss
                                     </button>
                                   </div>
+                                    );
+                                  })()}
                                 </td>
                               </tr>
                             );
