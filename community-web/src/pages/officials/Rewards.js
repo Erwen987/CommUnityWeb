@@ -57,8 +57,42 @@ function TierBadge({ points }) {
   );
 }
 
+const categoryColors = { food:'#FF7043', school_supplies:'#1565C0', hygiene:'#2E7D32', household:'#6A1B9A' };
+
+const REDEMPTION_STATUS = {
+  pending:   { bg:'#fef9c3', color:'#92400e',  dot:'#f59e0b', label:'Pending'   },
+  claimed:   { bg:'#dcfce7', color:'#166534',  dot:'#22c55e', label:'Claimed'   },
+  cancelled: { bg:'#f1f5f9', color:'#6b7280',  dot:'#9ca3af', label:'Cancelled' },
+};
+
+function RedemptionBadge({ status }) {
+  const s = REDEMPTION_STATUS[status] || REDEMPTION_STATUS.pending;
+  return (
+    <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:s.bg, color:s.color }}>
+      <span style={{ width:6, height:6, borderRadius:'50%', background:s.dot, flexShrink:0 }} />
+      {s.label}
+    </span>
+  );
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+const TH = { padding:'10px 16px', textAlign:'left', fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.05em', background:'#f8fafc', borderBottom:'1px solid #e5e7eb', whiteSpace:'nowrap' };
+const TD = { padding:'10px 16px', fontSize:13, color:'#374151', borderBottom:'1px solid #f1f5f9', verticalAlign:'middle' };
+
 function Rewards() {
   const { barangay, loading } = useOfficialProfile();
+  const [activeTab, setActiveTab] = useState('leaderboard');
+  const [officialId, setOfficialId] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setOfficialId(data.user?.id || null));
+  }, []);
+
+  // ── Leaderboard ──────────────────────────────────────────────────────────────
   const [contributors, setContributors] = useState([]);
   const [fetching, setFetching]         = useState(false);
   const [search, setSearch]             = useState('');
@@ -78,6 +112,51 @@ function Rewards() {
     })));
     setFetching(false);
   }, [barangay]);
+
+  // ── Redemptions ──────────────────────────────────────────────────────────────
+  const [redemptions,        setRedemptions]        = useState([]);
+  const [redemptionsLoading, setRedemptionsLoading] = useState(false);
+  const [processingId,       setProcessingId]       = useState(null);
+  const [redemptionFilter,   setRedemptionFilter]   = useState('pending');
+
+  const loadRedemptions = useCallback(async () => {
+    if (!barangay) return;
+    setRedemptionsLoading(true);
+    const { data: uData } = await supabase.from('users').select('auth_id, first_name, last_name, avatar_url').eq('barangay', barangay);
+    const authIds = (uData || []).map(u => u.auth_id);
+    if (authIds.length === 0) { setRedemptions([]); setRedemptionsLoading(false); return; }
+
+    const [{ data: rData }, { data: iData }] = await Promise.all([
+      supabase.from('redemptions').select('*').in('user_id', authIds).order('created_at', { ascending: false }),
+      supabase.from('reward_items').select('id, name, category'),
+    ]);
+    const itemMap = {}; (iData || []).forEach(i => { itemMap[i.id] = i; });
+    const userMap = {}; (uData || []).forEach(u => { userMap[u.auth_id] = u; });
+    setRedemptions((rData || []).map(r => ({
+      ...r,
+      itemName:     itemMap[r.reward_item_id]?.name     || 'Unknown Item',
+      itemCategory: itemMap[r.reward_item_id]?.category || '',
+      residentName: userMap[r.user_id] ? `${userMap[r.user_id].first_name||''} ${userMap[r.user_id].last_name||''}`.trim() : 'Unknown',
+      avatarUrl:    userMap[r.user_id]?.avatar_url || null,
+    })));
+    setRedemptionsLoading(false);
+  }, [barangay]);
+
+  const confirmPickup = async (r) => {
+    setProcessingId(r.id);
+    await supabase.from('redemptions').update({
+      status:                 'claimed',
+      claimed_at:             new Date().toISOString(),
+      claimed_by_official_id: officialId,
+    }).eq('id', r.id);
+    setProcessingId(null);
+    loadRedemptions();
+  };
+
+  useEffect(() => {
+    if (activeTab === 'leaderboard') load();
+    if (activeTab === 'redemptions') loadRedemptions();
+  }, [activeTab, load, loadRedemptions]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -105,6 +184,120 @@ function Rewards() {
               {!loading && barangay ? `Monitor reward contributions for Barangay ${barangay}` : 'Monitor barangay reward contributions'}
             </p>
           </div>
+
+          {/* Tab bar */}
+          <div style={{ display:'flex', gap:4, marginBottom:24, borderBottom:'2px solid #e5e7eb' }}>
+            {[
+              { key:'leaderboard', label:'🏆 Leaderboard' },
+              { key:'redemptions', label: redemptions.filter(r=>r.status==='pending').length > 0
+                  ? `🎁 Redemptions (${redemptions.filter(r=>r.status==='pending').length})`
+                  : '🎁 Redemptions' },
+            ].map(t => (
+              <button key={t.key} onClick={() => setActiveTab(t.key)}
+                style={{ padding:'10px 20px', border:'none', background:'none', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit',
+                  color: activeTab===t.key ? '#1E3A5F' : '#6b7280',
+                  borderBottom: activeTab===t.key ? '3px solid #1E3A5F' : '3px solid transparent',
+                  marginBottom:-2, transition:'all 0.15s' }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ══ REDEMPTIONS TAB ══ */}
+          {activeTab === 'redemptions' && (
+            <div style={{ background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', overflow:'hidden' }}>
+              <div style={{ padding:'18px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:15, color:'#1f2937' }}>Redemption Requests</div>
+                  <div style={{ fontSize:12, color:'#9ca3af', marginTop:2 }}>Confirm in-person pickups at the barangay hall</div>
+                </div>
+                <div style={{ display:'flex', gap:6 }}>
+                  {[
+                    { key:'pending', label:`Pending (${redemptions.filter(r=>r.status==='pending').length})` },
+                    { key:'claimed', label:`Claimed (${redemptions.filter(r=>r.status==='claimed').length})` },
+                    { key:'all',     label:'All' },
+                  ].map(f => (
+                    <button key={f.key} onClick={() => setRedemptionFilter(f.key)}
+                      style={{ padding:'5px 14px', borderRadius:20, border:`1.5px solid ${redemptionFilter===f.key?'#1E3A5F':'#e5e7eb'}`, background:redemptionFilter===f.key?'#1E3A5F':'#f9fafb', color:redemptionFilter===f.key?'#fff':'#374151', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {redemptionsLoading ? (
+                <div style={{ padding:'52px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                  <div style={{ width:32, height:32, border:'3px solid #e0e7ef', borderTopColor:'#1E3A5F', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+                  <span style={{ fontSize:13, color:'#9ca3af' }}>Loading redemptions...</span>
+                </div>
+              ) : redemptions.filter(r => redemptionFilter==='all' || r.status===redemptionFilter).length === 0 ? (
+                <div style={{ padding:'52px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+                  <div style={{ width:52, height:52, borderRadius:14, background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  </div>
+                  <div style={{ fontWeight:700, fontSize:15, color:'#374151' }}>No {redemptionFilter !== 'all' ? redemptionFilter : ''} redemptions</div>
+                  <div style={{ fontSize:13, color:'#9ca3af' }}>When residents request rewards, they'll appear here for in-person pickup confirmation.</div>
+                </div>
+              ) : (
+                <div style={{ overflowX:'auto' }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={TH}>Resident</th>
+                        <th style={TH}>Reward Item</th>
+                        <th style={TH}>Pts Spent</th>
+                        <th style={TH}>Requested</th>
+                        <th style={TH}>Status</th>
+                        <th style={TH}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {redemptions.filter(r => redemptionFilter==='all' || r.status===redemptionFilter).map((r, i) => (
+                        <tr key={r.id}
+                          style={{ backgroundColor: i%2===0?'#fff':'#f8fafc' }}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor='#f0f7ff'}
+                          onMouseLeave={e => e.currentTarget.style.backgroundColor= i%2===0?'#fff':'#f8fafc'}>
+                          <td style={TD}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                              <ResidentAvatar url={r.avatarUrl} name={r.residentName} size={32} index={i} />
+                              <span style={{ fontWeight:600, fontSize:13 }}>{r.residentName}</span>
+                            </div>
+                          </td>
+                          <td style={TD}>
+                            <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                              <span style={{ width:8, height:8, borderRadius:'50%', background:categoryColors[r.itemCategory]||'#9ca3af', flexShrink:0 }} />
+                              <span style={{ fontWeight:600 }}>{r.itemName}</span>
+                            </div>
+                          </td>
+                          <td style={TD}>
+                            <span style={{ fontWeight:700, color:'#d97706' }}>🪙 {r.points_spent?.toLocaleString()} pts</span>
+                          </td>
+                          <td style={{ ...TD, color:'#9ca3af', fontSize:12, whiteSpace:'nowrap' }}>{fmtDate(r.created_at)}</td>
+                          <td style={TD}><RedemptionBadge status={r.status} /></td>
+                          <td style={TD}>
+                            {r.status === 'pending' ? (
+                              <button onClick={() => confirmPickup(r)} disabled={processingId===r.id}
+                                style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'6px 14px', borderRadius:8, border:'1.5px solid #86efac', background:'#dcfce7', color:'#15803d', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', opacity:processingId===r.id?0.5:1 }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                {processingId===r.id ? 'Confirming...' : 'Confirm Pickup'}
+                              </button>
+                            ) : r.status === 'claimed' ? (
+                              <span style={{ fontSize:11, color:'#6b7280' }}>Picked up {fmtDate(r.claimed_at)}</span>
+                            ) : (
+                              <span style={{ fontSize:11, color:'#9ca3af' }}>Cancelled</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══ LEADERBOARD TAB ══ */}
+          {activeTab === 'leaderboard' && <>
 
           {/* Tier cards */}
           <div className="off-rewards-tier-grid">
@@ -213,6 +406,8 @@ function Rewards() {
             </div>
 
           </div>
+          </> }
+
         </div>
       </div>
     </div>

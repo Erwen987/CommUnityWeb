@@ -329,8 +329,18 @@ function Reports() {
   const [flaggedReportIds, setFlaggedReportIds]  = useState(new Set());
   const [flaggedReports,   setFlaggedReports]    = useState([]);
 
+  // Resolve + award points modal
+  const [resolveModal,   setResolveModal]   = useState(null); // report object
+  const [resolvePoints,  setResolvePoints]  = useState('');
+  const [resolveLoading, setResolveLoading] = useState(false);
+  const [categories,     setCategories]     = useState([]);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setOfficialId(data.user?.id || null));
+  }, []);
+
+  useEffect(() => {
+    supabase.from('report_categories').select('name, points').order('sort_order').then(({ data }) => setCategories(data || []));
   }, []);
 
   const fetchReports = useCallback(async () => {
@@ -400,6 +410,49 @@ function Reports() {
     setUpdatingId(id);
     await supabase.from('reports').update({ status }).eq('id', id);
     setUpdatingId(null);
+    fetchReports();
+  };
+
+  const openResolveModal = (r) => {
+    const cat = categories.find(c => c.name === r.problem);
+    // If points already auto-awarded on submission, default to 0 (no double-award)
+    // If Others or not yet awarded, pre-fill with category default
+    const suggested = r.points_awarded != null ? 0 : (cat?.points ?? 0);
+    setResolvePoints(String(suggested));
+    setResolveModal(r);
+  };
+
+  const confirmResolve = async () => {
+    if (!resolveModal) return;
+    setResolveLoading(true);
+    const pts = parseInt(resolvePoints, 10) || 0;
+    const alreadyAwarded = resolveModal.points_awarded != null;
+
+    // Build report update
+    const reportUpdate = { status: 'resolved' };
+    if (!alreadyAwarded && pts > 0) reportUpdate.points_awarded = pts;
+
+    await supabase.from('reports').update(reportUpdate).eq('id', resolveModal.id);
+
+    // Award points if applicable and not already done
+    if (!alreadyAwarded && pts > 0) {
+      const { data: userData } = await supabase
+        .from('users').select('points').eq('auth_id', resolveModal.user_id).single();
+      const currentPts = userData?.points || 0;
+      await supabase.from('rewards').insert({
+        user_id:                resolveModal.user_id,
+        points:                 pts,
+        reason:                 `Official award: ${resolveModal.problem}`,
+        awarded_by_official_id: officialId,
+        report_id:              resolveModal.id,
+        type:                   'official_award',
+      });
+      await supabase.from('users')
+        .update({ points: currentPts + pts }).eq('auth_id', resolveModal.user_id);
+    }
+
+    setResolveLoading(false);
+    setResolveModal(null);
     fetchReports();
   };
 
@@ -662,7 +715,7 @@ function Reports() {
                                   </button>
                                 )}
                                 {r.status === 'in_progress' && (
-                                  <button onClick={() => updateStatus(r.id, 'resolved')} disabled={updatingId===r.id}
+                                  <button onClick={() => openResolveModal(r)} disabled={updatingId===r.id}
                                     style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'5px 10px', borderRadius:7, border:'1.5px solid #86efac', background:'#dcfce7', color:'#15803d', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', opacity:updatingId===r.id?0.5:1 }}>
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                     Resolve
@@ -913,6 +966,102 @@ function Reports() {
           onClose={() => { setFlagModal(null); setFlagReason(''); setFlagProofFile(null); setFlagProofPreview(null); }}
           loading={flagLoading}
         />
+      )}
+
+      {/* ── Resolve + Award Points modal ── */}
+      {resolveModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}
+          onClick={e => { if (e.target === e.currentTarget && !resolveLoading) setResolveModal(null); }}>
+          <div style={{ background:'#fff', borderRadius:20, width:440, maxWidth:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)', overflow:'hidden' }}>
+
+            {/* Header */}
+            <div style={{ background:'linear-gradient(135deg, #f0fdf4, #dcfce7)', padding:'20px 24px 16px', borderBottom:'1px solid #86efac' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:44, height:44, borderRadius:12, background:'#dcfce7', border:'1.5px solid #86efac', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:16, color:'#111827' }}>Resolve Report</div>
+                    <div style={{ fontSize:12, color:'#6b7280', marginTop:2 }}>Award points to the resident (optional)</div>
+                  </div>
+                </div>
+                <button onClick={() => !resolveLoading && setResolveModal(null)}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#9ca3af', padding:4 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              {/* Report pill */}
+              <div style={{ marginTop:12, display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #86efac', borderRadius:8, padding:'6px 12px' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span style={{ fontSize:12, fontWeight:700, color:'#374151' }}>{resolveModal.problem}</span>
+                <span style={{ fontSize:11, color:'#9ca3af' }}>• {resolveModal.residentName}</span>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding:'20px 24px' }}>
+              {resolveModal.points_awarded != null ? (
+                <div style={{ background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:12, padding:'12px 16px', display:'flex', alignItems:'center', gap:10 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#15803d' }}>
+                      🪙 {resolveModal.points_awarded} pts already awarded on submission
+                    </div>
+                    <div style={{ fontSize:11, color:'#6b7280', marginTop:2 }}>
+                      This category auto-awards points when submitted.
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+                    Points to award <span style={{ fontWeight:400, textTransform:'none', color:'#9ca3af' }}>(0 = no points)</span>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ position:'relative', flex:1 }}>
+                      <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🪙</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="500"
+                        value={resolvePoints}
+                        onChange={e => setResolvePoints(e.target.value)}
+                        style={{ width:'100%', padding:'10px 12px 10px 36px', border:'1.5px solid #d1d5db', borderRadius:10, fontSize:16, fontWeight:700, color:'#111827', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}
+                      />
+                    </div>
+                    <span style={{ fontSize:13, color:'#6b7280', fontWeight:600, whiteSpace:'nowrap' }}>pts</span>
+                  </div>
+                  {resolveModal.problem === 'Others' && (
+                    <div style={{ fontSize:11, color:'#d97706', marginTop:6, display:'flex', alignItems:'center', gap:5 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      "Others" reports require manual point award based on quality.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding:'12px 24px 20px', display:'flex', gap:10, justifyContent:'flex-end', borderTop:'1px solid #f1f5f9' }}>
+              <button onClick={() => !resolveLoading && setResolveModal(null)}
+                style={{ padding:'9px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={confirmResolve} disabled={resolveLoading}
+                style={{ padding:'9px 22px', borderRadius:10, border:'none', background:resolveLoading?'#86efac':'#16a34a', color:'#fff', fontSize:13, fontWeight:700, cursor:resolveLoading?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:6, opacity:resolveLoading?0.7:1 }}>
+                {resolveLoading
+                  ? <><div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />Resolving...</>
+                  : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    {(parseInt(resolvePoints,10)||0) > 0 && resolveModal.points_awarded == null
+                      ? `Resolve & Award ${parseInt(resolvePoints,10)} pts`
+                      : 'Resolve Report'}
+                  </>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
