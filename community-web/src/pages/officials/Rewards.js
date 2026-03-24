@@ -219,6 +219,7 @@ function Rewards() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadBudget(); }, [loadBudget]);
+  useEffect(() => { loadRedemptions(); }, [loadRedemptions]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const filtered = contributors.filter(c =>
