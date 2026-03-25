@@ -175,21 +175,110 @@ function UnbanModal({ target, type, onConfirm, onCancel, loading }) {
   );
 }
 
+// ── Revoke modal ──────────────────────────────────────────────────────────────
+function RevokeModal({ target, onConfirm, onCancel, loading }) {
+  const [reason, setReason] = useState('');
+  const QUICK = [
+    'No longer in position',
+    'Resigned or removed from office',
+    'Misconduct or violation of community guidelines',
+    'Position transferred to another official',
+    'Account registered under wrong barangay',
+  ];
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(15,23,42,0.55)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(2px)' }}>
+      <div style={{ background:'#fff', borderRadius:20, padding:32, width:'100%', maxWidth:460, boxShadow:'0 24px 64px rgba(0,0,0,0.18)', animation:'morphIn 0.25s ease-out' }}>
+
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:6 }}>
+          <div style={{ width:44, height:44, borderRadius:'50%', background:'#fef3c7', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <h3 style={{ fontSize:16, fontWeight:700, color:'#111827', margin:0 }}>Revoke Official</h3>
+            <p style={{ fontSize:12, color:'#9ca3af', margin:0 }}>Their account will be deleted and they can re-register</p>
+          </div>
+        </div>
+
+        {/* Account info */}
+        <div style={{ background:'#fffbeb', border:'1px solid #fde68a', borderRadius:10, padding:'12px 16px', margin:'16px 0', fontSize:13, color:'#374151' }}>
+          <span style={{ color:'#6b7280' }}>Official: </span>
+          <strong>{target?.full_name || target?.barangay_name}</strong>
+          {target?.position && <span style={{ marginLeft:8, fontSize:11, background:'#fef9c3', color:'#92400e', padding:'2px 8px', borderRadius:10, fontWeight:600 }}>{target.position}</span>}
+        </div>
+
+        {/* Quick reasons */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Quick Reasons</div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {QUICK.map(r => (
+              <button key={r} onClick={() => setReason(r)}
+                style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${reason===r?'#d97706':'#e5e7eb'}`, background:reason===r?'#fef3c7':'#f9fafb', color:reason===r?'#92400e':'#374151', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Poppins,sans-serif', transition:'all 0.15s' }}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom reason */}
+        <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+          Or write a custom reason <span style={{ color:'#d97706' }}>*</span>
+        </div>
+        <textarea
+          rows={3}
+          placeholder="Explain why this official's account is being revoked..."
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          maxLength={300}
+          style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1.5px solid #e5e7eb', fontFamily:'Poppins,sans-serif', fontSize:13, resize:'none', outline:'none', boxSizing:'border-box', color:'#374151', transition:'border-color 0.2s' }}
+          onFocus={e => e.target.style.borderColor = '#d97706'}
+          onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+        />
+        <div style={{ display:'flex', justifyContent:'space-between', marginTop:4, marginBottom:16 }}>
+          <p style={{ fontSize:11, color:'#9ca3af', margin:0 }}>This reason will be sent to the official via email.</p>
+          <span style={{ fontSize:11, color:reason.length>260?'#f59e0b':'#d1d5db' }}>{reason.length}/300</span>
+        </div>
+
+        {/* Note */}
+        <div style={{ background:'#f8fafc', border:'1px solid #e5e7eb', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#6b7280', marginBottom:20, lineHeight:1.5 }}>
+          ⚠️ Their account will be <strong style={{ color:'#374151' }}>permanently deleted</strong> from the system.
+        </div>
+
+        <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+          <button onClick={onCancel}
+            style={{ padding:'10px 22px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', fontFamily:'Poppins,sans-serif', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151' }}>
+            Cancel
+          </button>
+          <button onClick={() => onConfirm(reason.trim())} disabled={!reason.trim() || loading}
+            style={{ padding:'10px 22px', borderRadius:10, border:'none', background:!reason.trim()||loading?'#fcd34d':'#d97706', fontFamily:'Poppins,sans-serif', fontSize:13, fontWeight:600, cursor:!reason.trim()||loading?'not-allowed':'pointer', color:'#fff', display:'inline-flex', alignItems:'center', gap:7, transition:'background 0.2s' }}>
+            {loading
+              ? <><div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>Revoking…</>
+              : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Confirm Revoke</>
+            }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // ── Filter pills ──────────────────────────────────────────────────────────────
-function FilterPills({ value, onChange, bannedCount }) {
+function FilterPills({ value, onChange, bannedCount, pendingCount }) {
   return (
     <div style={{ display: 'flex', gap: 6 }}>
       {[
-        { k: 'all',    label: 'All' },
-        { k: 'active', label: 'Active' },
-        { k: 'banned', label: bannedCount > 0 ? `Banned (${bannedCount})` : 'Banned' },
+        { k: 'all',     label: 'All' },
+        { k: 'active',  label: 'Active' },
+        { k: 'banned',  label: bannedCount > 0 ? `Banned (${bannedCount})` : 'Banned' },
+        { k: 'pending', label: pendingCount > 0 ? `Pending (${pendingCount})` : 'Pending' },
       ].map(f => (
         <button key={f.k} onClick={() => onChange(f.k)} style={{
           padding: '7px 14px', borderRadius: 8, fontSize: 12,
           fontFamily: 'Poppins, sans-serif', fontWeight: 600, cursor: 'pointer',
           border: value === f.k ? 'none' : '1.5px solid #e5e7eb',
           background: value === f.k
-            ? f.k === 'banned' ? '#dc2626' : '#2563eb'
+            ? f.k === 'banned' ? '#dc2626' : f.k === 'pending' ? '#d97706' : '#2563eb'
             : '#fff',
           color: value === f.k ? '#fff' : '#6b7280',
           transition: 'all 0.15s',
@@ -363,6 +452,7 @@ function UserManagement() {
   const [banConfirmTarget, setBanConfirmTarget] = useState(null); // step 1
   const [banTarget,        setBanTarget]        = useState(null); // step 2
   const [unbanTarget,      setUnbanTarget]       = useState(null);
+  const [revokeTarget,     setRevokeTarget]      = useState(null);
   const [actionLoading,    setActionLoading]     = useState(false);
   const [toast,            setToast]             = useState(null);
   const [flagActionTarget, setFlagActionTarget]  = useState(null); // { flag, action: 'warn'|'ban'|'dismiss' }
@@ -376,7 +466,7 @@ function UserManagement() {
     const [{ data: p }, { data: o }, { data: r }, { data: d }, { data: f }, { data: a }] = await Promise.all([
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,full_name,position,id_image_url').eq('status','pending').order('created_at',{ascending:true}),
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,status,ban_reason').in('status',['approved','banned']).order('created_at',{ascending:true}),
-      supabase.from('users').select('id,auth_id,first_name,last_name,email,phone,barangay,created_at,avatar_url,is_banned,ban_reason,offense_count,suspended_until').eq('role','resident').order('created_at',{ascending:false}),
+      supabase.from('users').select('id,auth_id,first_name,last_name,email,phone,barangay,created_at,avatar_url,is_banned,ban_reason,offense_count,suspended_until,status').eq('role','resident').order('created_at',{ascending:false}),
       supabase.from('deleted_accounts').select('*').order('deleted_at',{ascending:false}),
       supabase.from('abuse_flags').select('*').eq('status','pending').order('created_at',{ascending:false}),
       supabase.from('appeals').select('*').order('created_at',{ascending:false}),
@@ -399,35 +489,47 @@ function UserManagement() {
 
   const updateStatus = async (id, status) => {
     setStatusId(id);
-
-    if (status === 'rejected') {
-      // Fetch email, barangay, and auth_id before deleting
-      const { data: official } = await supabase
-        .from('officials')
-        .select('email, barangay, auth_id')
-        .eq('id', id)
-        .single();
-
-      if (official) {
-        // Send rejection email first
-        await sendNotificationEmail({ type: 'rejection', toEmail: official.email, barangay: official.barangay });
-        // Delete the Supabase auth user so they can re-register with the same email
-        await supabase.functions.invoke('delete-auth-user', { body: { auth_id: official.auth_id } });
-        // Delete the officials row for a clean slate
-        await supabase.from('officials').delete().eq('id', id);
-      }
-
-      setStatusId(null);
-      fetchAll();
-      return;
-    }
-
     const { data: updated } = await supabase.from('officials').update({ status }).eq('id', id).select('email,barangay').single();
     if (updated && status === 'approved') {
       await sendNotificationEmail({ type: 'approval', toEmail: updated.email, barangay: updated.barangay });
     }
     setStatusId(null);
     fetchAll();
+  };
+
+  const handleRevoke = async (reason) => {
+    const { row } = revokeTarget;
+    setActionLoading(true);
+    try {
+      // Fetch auth_id (not in the officials list query)
+      const { data: official } = await supabase
+        .from('officials')
+        .select('auth_id, email, barangay, full_name')
+        .eq('id', row.id)
+        .single();
+
+      if (official) {
+        // Email the official with the reason
+        await sendNotificationEmail({
+          type: 'revoked',
+          toEmail: official.email,
+          officialName: official.full_name || row.full_name || 'Official',
+          reason,
+        });
+        // Delete auth user so they can sign up fresh and receive OTP
+        await supabase.functions.invoke('delete-auth-user', { body: { auth_id: official.auth_id } });
+        // Remove the officials row entirely
+        await supabase.from('officials').delete().eq('id', row.id);
+      }
+
+      setActionLoading(false);
+      setRevokeTarget(null);
+      showToast(`${row.full_name || row.barangay_name} has been revoked.`);
+      fetchAll();
+    } catch (e) {
+      setActionLoading(false);
+      showToast('Failed to revoke account. Please try again.', 'error');
+    }
   };
 
   const handleBan = async (reason) => {
@@ -582,11 +684,12 @@ function UserManagement() {
 
   const fResidents = residents
     .filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()) || r.email?.toLowerCase().includes(search.toLowerCase()) || r.barangay?.toLowerCase().includes(search.toLowerCase()))
-    .filter(r => resFilter === 'all' ? true : resFilter === 'active' ? !r.is_banned : r.is_banned);
+    .filter(r => resFilter === 'all' ? true : resFilter === 'active' ? (!r.is_banned && r.status !== 'pending') : resFilter === 'pending' ? r.status === 'pending' : r.is_banned);
 
-  const approvedCount  = officials.filter(o => o.status === 'approved').length;
-  const bannedOffCount = officials.filter(o => o.status === 'banned').length;
-  const bannedResCount = residents.filter(r => r.is_banned).length;
+  const approvedCount   = officials.filter(o => o.status === 'approved').length;
+  const bannedOffCount  = officials.filter(o => o.status === 'banned').length;
+  const bannedResCount  = residents.filter(r => r.is_banned).length;
+  const pendingResCount = residents.filter(r => r.status === 'pending').length;
 
   const fDeleted = deletedAccounts.filter(r => {
     const q = search.toLowerCase();
@@ -711,7 +814,7 @@ function UserManagement() {
                   />
                 </div>
                 {tab === 'officials' && <FilterPills value={offFilter} onChange={v => { setOffFilter(v); setPage(1); }} bannedCount={bannedOffCount} />}
-                {tab === 'residents' && <FilterPills value={resFilter} onChange={v => { setResFilter(v); setPage(1); }} bannedCount={bannedResCount} />}
+                {tab === 'residents' && <FilterPills value={resFilter} onChange={v => { setResFilter(v); setPage(1); }} bannedCount={bannedResCount} pendingCount={pendingResCount} />}
               </div>
 
               {/* ── PENDING ── */}
@@ -801,9 +904,9 @@ function UserManagement() {
                                           style={{ background:'#fff',color:'#dc2626',border:'1.5px solid #fca5a5',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
                                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Ban
                                         </button>
-                                        <button onClick={()=>updateStatus(row.id,'rejected')} disabled={statusId===row.id}
-                                          style={{ background:'#fff',color:'#6b7280',border:'1.5px solid #e2e8f0',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,opacity:statusId===row.id?0.6:1 }}>
-                                          Revoke
+                                        <button onClick={()=>setRevokeTarget({row})} disabled={statusId===row.id}
+                                          style={{ background:'#fff',color:'#d97706',border:'1.5px solid #fde68a',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Revoke
                                         </button>
                                       </>
                                     )
@@ -842,7 +945,7 @@ function UserManagement() {
                               <td style={TD}>{row.barangay ? <span style={{ background:'#f1f5f9',color:'#374151',padding:'3px 10px',borderRadius:6,fontSize:12,fontWeight:600 }}>{row.barangay}</span> : <span style={{ color:'#d1d5db' }}>—</span>}</td>
                               <td style={TD}>
                                 <div>
-                                  <StatusBadge status={row.is_banned ? 'banned' : 'active'} />
+                                  <StatusBadge status={row.status === 'pending' ? 'pending' : row.is_banned ? 'banned' : 'active'} />
                                   {row.is_banned && row.ban_reason && (
                                     <div style={{ fontSize:11,color:'#9ca3af',marginTop:4,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }} title={row.ban_reason}>{row.ban_reason}</div>
                                   )}
@@ -850,7 +953,11 @@ function UserManagement() {
                               </td>
                               <td style={{ ...TD,color:'#9ca3af',fontSize:12 }}>{fmt(row.created_at)}</td>
                               <td style={TD}>
-                                {isSuperAdmin ? (
+                                {row.status === 'pending' ? (
+                                  <span style={{ fontSize:11, color:'#d97706', fontWeight:600, background:'#fef3c7', padding:'6px 12px', borderRadius:8, display:'inline-block' }}>
+                                    Reviewed by officials
+                                  </span>
+                                ) : isSuperAdmin ? (
                                   row.is_banned ? (
                                     <button onClick={()=>setUnbanTarget({row,type:'resident'})}
                                       style={{ background:'#059669',color:'#fff',border:'none',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontWeight:600,fontSize:12,display:'inline-flex',alignItems:'center',gap:6 }}>
@@ -1136,6 +1243,7 @@ function UserManagement() {
       {/* Step 2 — Ban reason modal */}
       {banTarget && <BanModal target={banTarget.row} type={banTarget.type} onConfirm={handleBan} onCancel={()=>setBanTarget(null)} loading={actionLoading} />}
       {unbanTarget && <UnbanModal target={unbanTarget.row} type={unbanTarget.type} onConfirm={handleUnban} onCancel={()=>setUnbanTarget(null)} loading={actionLoading} />}
+      {revokeTarget && <RevokeModal target={revokeTarget.row} onConfirm={handleRevoke} onCancel={()=>setRevokeTarget(null)} loading={actionLoading} />}
 
       {/* Flag action confirmation modal */}
       {flagActionTarget && (() => {

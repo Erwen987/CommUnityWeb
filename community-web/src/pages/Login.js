@@ -66,7 +66,7 @@ function Login() {
       .from('officials').select('status, barangay, ban_reason').eq('auth_id', data.user.id).single();
     setLoading(false);
 
-    if (dbError || !official) { await supabase.auth.signOut(); setError('Access denied. This portal is for barangay officials only.'); return; }
+    if (dbError || !official) { await supabase.auth.signOut(); setError('No official account found for this email. Please sign up to register as a barangay official.'); return; }
     if (official.status === 'pending')  { await supabase.auth.signOut(); setError('Your account is under review. Please wait for admin approval.'); return; }
     if (official.status === 'rejected') { await supabase.auth.signOut(); setError('Your account was not approved. Please contact the admin.'); return; }
     if (official.status === 'banned')   { await supabase.auth.signOut(); setError(`Your account has been suspended.${official.ban_reason ? ` Reason: ${official.ban_reason}` : ''}`); return; }
