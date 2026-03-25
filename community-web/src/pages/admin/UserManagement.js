@@ -501,26 +501,35 @@ function UserManagement() {
     const { row } = revokeTarget;
     setActionLoading(true);
     try {
-      // Fetch auth_id (not in the officials list query)
-      const { data: official } = await supabase
+      // Fetch auth_id + contact info
+      const { data: official, error: fetchErr } = await supabase
         .from('officials')
         .select('auth_id, email, barangay, full_name')
         .eq('id', row.id)
         .single();
 
-      if (official) {
-        // Email the official with the reason
-        await sendNotificationEmail({
-          type: 'revoked',
-          toEmail: official.email,
-          officialName: official.full_name || row.full_name || 'Official',
-          reason,
+      if (fetchErr || !official) throw new Error('Could not fetch official data.');
+
+      // Send revocation email
+      await sendNotificationEmail({
+        type: 'revoked',
+        toEmail: official.email,
+        officialName: official.full_name || row.full_name || 'Official',
+        reason,
+      });
+
+      // Delete from Supabase Auth so they can re-register with same email + receive OTP
+      if (official.auth_id) {
+        const { data: delData, error: delErr } = await supabase.functions.invoke('delete-auth-user', {
+          body: { auth_id: official.auth_id },
         });
-        // Delete auth user so they can sign up fresh and receive OTP
-        await supabase.functions.invoke('delete-auth-user', { body: { auth_id: official.auth_id } });
-        // Remove the officials row entirely
-        await supabase.from('officials').delete().eq('id', row.id);
+        if (delErr) throw new Error(`Auth deletion failed: ${delErr.message}`);
+        if (delData?.error) throw new Error(`Auth deletion failed: ${delData.error}`);
       }
+
+      // Remove the officials row
+      const { error: rowErr } = await supabase.from('officials').delete().eq('id', row.id);
+      if (rowErr) throw new Error(`Failed to remove official record: ${rowErr.message}`);
 
       setActionLoading(false);
       setRevokeTarget(null);
@@ -528,7 +537,7 @@ function UserManagement() {
       fetchAll();
     } catch (e) {
       setActionLoading(false);
-      showToast('Failed to revoke account. Please try again.', 'error');
+      showToast(e.message || 'Failed to revoke account. Please try again.', 'error');
     }
   };
 
