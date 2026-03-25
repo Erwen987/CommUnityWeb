@@ -43,11 +43,19 @@ function Dashboard() {
   const [title,       setTitle]       = useState('');
   const [body,        setBody]        = useState('');
   const [expiryDays,  setExpiryDays]  = useState(10);
+  const [publishDate, setPublishDate] = useState('');   // '' = publish immediately
   const [imageFile,   setImageFile]   = useState(null);
   const [imagePreview,setImagePreview]= useState(null);
   const [posting,     setPosting]     = useState(false);
   const [postError,   setPostError]   = useState('');
   const fileRef = useRef();
+
+  // Min value for the date-time picker (now, rounded to minute)
+  const nowLocal = (() => {
+    const d = new Date();
+    d.setSeconds(0, 0);
+    return d.toISOString().slice(0, 16);
+  })();
 
   // Active announcements list
   const [announcements,   setAnnouncements]   = useState([]);
@@ -116,12 +124,13 @@ function Dashboard() {
     if (!barangay) return;
     setLoadingList(true);
     const now = new Date().toISOString();
+    // Include both active (published) and scheduled (future published_at) — exclude truly expired ones
     const { data } = await supabase
       .from('announcements')
       .select('*')
       .eq('barangay', barangay)
       .gt('expires_at', now)
-      .order('created_at', { ascending: false })
+      .order('published_at', { ascending: true })
       .limit(10);
     setAnnouncements(data || []);
     setLoadingList(false);
@@ -161,9 +170,11 @@ function Dashboard() {
         imageUrl = urlData.publicUrl;
       }
 
-      // Calculate expiry
-      const expiresAt = new Date();
+      // Calculate publish date and expiry
+      const publishedAt = publishDate ? new Date(publishDate) : new Date();
+      const expiresAt   = new Date(publishedAt);
       expiresAt.setDate(expiresAt.getDate() + expiryDays);
+      const isScheduled = publishedAt > new Date();
 
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -173,8 +184,8 @@ function Dashboard() {
         body:         body.trim(),
         image_url:    imageUrl,
         expires_at:   expiresAt.toISOString(),
-        is_published: true,
-        published_at: new Date().toISOString(),
+        is_published: !isScheduled,   // scheduled = not yet published
+        published_at: publishedAt.toISOString(),
         posted_by:    user?.id ?? null,
       });
       if (insertErr) throw insertErr;
@@ -186,6 +197,7 @@ function Dashboard() {
       setImagePreview(null);
       if (fileRef.current) fileRef.current.value = '';
       setExpiryDays(10);
+      setPublishDate('');
       fetchAnnouncements();
     } catch (err) {
       setPostError(err.message || 'Failed to post announcement.');
@@ -282,22 +294,48 @@ function Dashboard() {
                     )}
                   </div>
 
-                  {/* Bottom row: expiry + publish */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Expires in</label>
+                  {/* Announcement date + expiry row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    {/* Announcement Date */}
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Announcement Date <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={publishDate}
+                        min={nowLocal}
+                        onChange={e => setPublishDate(e.target.value)}
+                        style={{ width: '100%', padding: '8px 11px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: publishDate ? '#374151' : '#9ca3af', outline: 'none', background: '#f9fafb', boxSizing: 'border-box', cursor: 'pointer' }}
+                      />
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                        {publishDate && new Date(publishDate) > new Date()
+                          ? '⏰ Scheduled — will go live on this date'
+                          : 'Leave blank to publish immediately'}
+                      </div>
+                    </div>
+
+                    {/* Expires in */}
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Expires In</label>
                       <select value={expiryDays} onChange={e => setExpiryDays(Number(e.target.value))}
-                        style={{ padding: '7px 12px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', cursor: 'pointer' }}>
+                        style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 13, color: '#374151', outline: 'none', background: '#f9fafb', cursor: 'pointer', boxSizing: 'border-box' }}>
                         {EXPIRY_OPTIONS.map(o => (
                           <option key={o.days} value={o.days}>{o.label}</option>
                         ))}
                       </select>
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>After the announcement date</div>
                     </div>
+                  </div>
 
+                  {/* Publish button */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button onClick={handlePost} disabled={posting || !title.trim()}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: posting || !title.trim() ? '#9ca3af' : '#1E3A5F', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 20px', fontWeight: 600, fontSize: 13, cursor: posting || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                      {posting ? 'Publishing...' : 'Publish'}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: posting || !title.trim() ? '#9ca3af' : '#1E3A5F', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 24px', fontWeight: 600, fontSize: 13, cursor: posting || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+                      {publishDate && new Date(publishDate) > new Date()
+                        ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{posting ? 'Scheduling...' : 'Schedule'}</>
+                        : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>{posting ? 'Publishing...' : 'Publish'}</>
+                      }
                     </button>
                   </div>
 
@@ -313,7 +351,7 @@ function Dashboard() {
                     style={{ width: '100%', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Active Announcements</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Announcements</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: announcements.length >= 8 ? '#dc2626' : '#1E3A5F', background: announcements.length >= 8 ? '#fef2f2' : '#e0e7ef', padding: '2px 10px', borderRadius: 999 }}>
@@ -342,34 +380,44 @@ function Dashboard() {
                   ) : listExpanded ? (
                     <div style={{ padding: '8px 16px 16px' }}>
                       {announcements.map((a) => {
-                        const days = Math.ceil((new Date(a.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+                        const now = new Date();
+                        const isScheduled = new Date(a.published_at) > now;
+                        const days = Math.ceil((new Date(a.expires_at) - now) / (1000 * 60 * 60 * 24));
                         const expiryColor = days <= 1 ? '#dc2626' : days <= 3 ? '#f59e0b' : '#16a34a';
                         const expiryBg   = days <= 1 ? '#fef2f2' : days <= 3 ? '#fffbeb' : '#f0fdf4';
                         const expiryLabel = days <= 0 ? 'Expired' : days === 1 ? 'Last day' : `${days}d left`;
                         return (
                           <div key={a.id}
-                            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12, marginBottom: 6, background: '#fff', border: '1px solid #f1f5f9', transition: 'box-shadow 0.15s' }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12, marginBottom: 6, background: isScheduled ? '#fffbeb' : '#fff', border: `1px solid ${isScheduled ? '#fde68a' : '#f1f5f9'}`, transition: 'box-shadow 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)'}
                             onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
 
                             {/* Thumbnail */}
                             {a.image_url
                               ? <img src={a.image_url} alt="" style={{ width: 46, height: 46, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '1px solid #f1f5f9' }} />
-                              : <div style={{ width: 46, height: 46, borderRadius: 10, background: '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                              : <div style={{ width: 46, height: 46, borderRadius: 10, background: isScheduled ? '#fef3c7' : '#e0e7ef', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  {isScheduled
+                                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                  }
                                 </div>
                             }
 
                             {/* Info */}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontWeight: 600, fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
-                              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>Posted {fmtDate(a.created_at)}</div>
+                              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>
+                                {isScheduled
+                                  ? `⏰ Goes live: ${fmtDate(a.published_at)}`
+                                  : `Posted ${fmtDate(a.created_at)}`}
+                              </div>
                             </div>
 
-                            {/* Expiry pill */}
-                            <span style={{ fontSize: 11, fontWeight: 700, color: expiryColor, background: expiryBg, padding: '3px 10px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                              {expiryLabel}
-                            </span>
+                            {/* Status / Expiry pill */}
+                            {isScheduled
+                              ? <span style={{ fontSize: 11, fontWeight: 700, color: '#d97706', background: '#fef3c7', padding: '3px 10px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap' }}>Scheduled</span>
+                              : <span style={{ fontSize: 11, fontWeight: 700, color: expiryColor, background: expiryBg, padding: '3px 10px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap' }}>{expiryLabel}</span>
+                            }
 
                             {/* Delete icon button */}
                             <button onClick={() => handleDelete(a.id)} disabled={deletingId === a.id}

@@ -69,6 +69,44 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function CodeBadge({ code }) {
+  const [copied, setCopied] = useState(false);
+  if (!code) return <span style={{ color: '#9ca3af', fontSize: 11 }}>—</span>;
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  return (
+    <button onClick={handleCopy} title="Click to copy"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 7, border: '1.5px solid #c7d2fe', background: copied ? '#e0e7ff' : '#f5f3ff', cursor: 'pointer', fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: '#4338ca', letterSpacing: '0.08em' }}>
+      {code}
+      {copied
+        ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4338ca" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4338ca" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      }
+    </button>
+  );
+}
+
+function ExpiryBadge({ iso }) {
+  if (!iso) return <span style={{ color: '#9ca3af', fontSize: 11 }}>—</span>;
+  const ms   = new Date(iso) - new Date();
+  const days = Math.ceil(ms / 86400000);
+  const expired = days <= 0;
+  const urgent  = days <= 1 && !expired;
+  const bg    = expired ? '#fef2f2' : urgent ? '#fff7ed' : '#f0fdf4';
+  const color = expired ? '#dc2626' : urgent ? '#ea580c' : '#16a34a';
+  const label = expired ? 'Expired' : days === 1 ? 'Expires today' : `${days}d left`;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: bg, color }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+      {label}
+    </span>
+  );
+}
+
 const TH = { padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#f8fafc', borderBottom: '1px solid #e5e7eb', whiteSpace: 'nowrap' };
 const TD = { padding: '10px 16px', fontSize: 13, color: '#374151', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
 
@@ -143,9 +181,11 @@ function Rewards() {
   const [requestLoading, setRequestLoading]     = useState(false);
   const [requestSuccess, setRequestSuccess]     = useState(false);
 
+  const MAX_REQUEST_PTS = 50000;
+
   const submitPointRequest = async () => {
     const pts = parseInt(requestPoints);
-    if (!pts || pts <= 0 || !requestReason.trim()) return;
+    if (!pts || pts <= 0 || pts > MAX_REQUEST_PTS || !requestReason.trim()) return;
     setRequestLoading(true);
     await supabase.from('point_requests').insert({
       barangay,
@@ -386,6 +426,8 @@ function Rewards() {
                         <th style={TH}>Resident</th>
                         <th style={TH}>Reward Item</th>
                         <th style={TH}>Pts Spent</th>
+                        <th style={TH}>Code</th>
+                        <th style={TH}>Claim By</th>
                         <th style={TH}>Requested</th>
                         <th style={TH}>Status</th>
                         <th style={TH}>Action</th>
@@ -412,6 +454,8 @@ function Rewards() {
                           <td style={TD}>
                             <span style={{ fontWeight: 700, color: '#d97706' }}>🪙 {r.points_spent?.toLocaleString()} pts</span>
                           </td>
+                          <td style={TD}><CodeBadge code={r.redemption_code} /></td>
+                          <td style={TD}><ExpiryBadge iso={r.code_expires_at} /></td>
                           <td style={{ ...TD, color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(r.created_at)}</td>
                           <td style={TD}><RedemptionBadge status={r.status} /></td>
                           <td style={TD}>
@@ -823,8 +867,15 @@ function Rewards() {
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
                           Points to Request <span style={{ color: '#dc2626' }}>*</span>
                         </label>
-                        <input type="number" min="1" placeholder="e.g. 500" value={requestPoints} onChange={e => setRequestPoints(e.target.value)}
-                          style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 14, color: '#374151', outline: 'none', background: '#fff', boxSizing: 'border-box' }} />
+                        <input type="number" min="1" max={MAX_REQUEST_PTS} placeholder="e.g. 500"
+                          value={requestPoints}
+                          onChange={e => setRequestPoints(e.target.value)}
+                          style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${requestPoints && parseInt(requestPoints) > MAX_REQUEST_PTS ? '#dc2626' : '#e5e7eb'}`, borderRadius: 9, fontSize: 14, color: '#374151', outline: 'none', background: '#fff', boxSizing: 'border-box' }} />
+                        {requestPoints && parseInt(requestPoints) > MAX_REQUEST_PTS && (
+                          <div style={{ fontSize: 11, color: '#dc2626', marginTop: 5 }}>
+                            Maximum request is {MAX_REQUEST_PTS.toLocaleString()} points per request.
+                          </div>
+                        )}
                       </div>
 
                       <div style={{ marginBottom: 24 }}>
@@ -842,8 +893,8 @@ function Rewards() {
                           Cancel
                         </button>
                         <button onClick={submitPointRequest}
-                          disabled={requestLoading || !requestPoints || !requestReason.trim()}
-                          style={{ flex: 2, padding: '11px', borderRadius: 10, border: 'none', background: requestLoading || !requestPoints || !requestReason.trim() ? '#9ca3af' : '#1E3A5F', color: '#fff', fontSize: 13, fontWeight: 700, cursor: requestLoading ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                          disabled={requestLoading || !requestPoints || parseInt(requestPoints) > MAX_REQUEST_PTS || !requestReason.trim()}
+                          style={{ flex: 2, padding: '11px', borderRadius: 10, border: 'none', background: requestLoading || !requestPoints || parseInt(requestPoints) > MAX_REQUEST_PTS || !requestReason.trim() ? '#9ca3af' : '#1E3A5F', color: '#fff', fontSize: 13, fontWeight: 700, cursor: requestLoading ? 'default' : 'pointer', fontFamily: 'inherit' }}>
                           {requestLoading ? 'Submitting...' : `Submit Request for ${requestPoints ? parseInt(requestPoints).toLocaleString() : '—'} pts`}
                         </button>
                       </div>

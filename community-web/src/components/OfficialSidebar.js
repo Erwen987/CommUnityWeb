@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout, HiOutlineUserGroup, HiOutlineUser, HiOutlineShieldCheck } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout, HiOutlineUserGroup, HiOutlineUser, HiOutlineShieldCheck, HiOutlineOfficeBuilding } from 'react-icons/hi';
 import { supabase } from '../supabaseClient';
 import { useOfficialProfile } from '../hooks/useOfficialProfile';
 import Swal from 'sweetalert2';
@@ -14,6 +14,7 @@ const NAV = [
   { to: '/officials/analytics',   icon: HiOutlineChartBar,       label: 'Analytics'   },
   { to: '/officials/rewards',     icon: HiOutlineGift,           label: 'Rewards'     },
   { to: '/officials/residents',   icon: HiOutlineUserGroup,      label: 'Residents'   },
+  { to: '/officials/org-chart',   icon: HiOutlineOfficeBuilding, label: 'Org Chart'   },
   { to: '/officials/permissions', icon: HiOutlineShieldCheck,    label: 'Permissions', captainOnly: true },
   { to: '/officials/profile',     icon: HiOutlineUser,           label: 'Profile'     },
 ];

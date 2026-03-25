@@ -17,6 +17,7 @@ import Rewards           from './pages/officials/Rewards';
 import Residents         from './pages/officials/Residents';
 import OfficialProfile   from './pages/officials/Profile';
 import Permissions       from './pages/officials/Permissions';
+import OrgChart          from './pages/officials/OrgChart';
 import AdminDashboard    from './pages/admin/AdminDashboard';
 import UserManagement    from './pages/admin/UserManagement';
 import AdminReports      from './pages/admin/AdminReports';
@@ -393,6 +394,7 @@ function App() {
                 <Route path="rewards"     element={<Rewards />} />
                 <Route path="residents"   element={<Residents />} />
                 <Route path="permissions" element={<Permissions />} />
+                <Route path="org-chart"   element={<OrgChart />} />
                 <Route path="profile"     element={<OfficialProfile />} />
               </Routes>
             </OfficialProfileProvider>

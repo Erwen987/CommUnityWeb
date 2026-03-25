@@ -82,64 +82,94 @@ function exportCSV(rows, filename) {
   a.click();
 }
 
-// ── Detail Drawer ──────────────────────────────────────────────────────────────
-function RequestDrawer({ req, onClose }) {
+// ── Detail Modal (centered popup) ─────────────────────────────────────────────
+function RequestModal({ req, onClose }) {
   if (!req) return null;
+  const shortId = req.reference_number
+    ? 'REQ-' + req.reference_number.slice(-6).toUpperCase()
+    : '—';
   return (
-    <>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.25)', zIndex:900 }} />
-      <div style={{ position:'fixed', top:0, right:0, height:'100vh', width:400, maxWidth:'95vw', background:'#fff', zIndex:901, boxShadow:'-4px 0 32px rgba(0,0,0,0.12)', display:'flex', flexDirection:'column', overflowY:'auto' }}>
-        <div style={{ padding:'20px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1100, padding:16 }}>
+      <div style={{ background:'#fff', borderRadius:20, width:560, maxWidth:'100%', maxHeight:'90vh', boxShadow:'0 20px 60px rgba(0,0,0,0.2)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+
+        {/* Header */}
+        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
           <div>
-            <div style={{ fontWeight:800, fontSize:16, color:'#1f2937' }}>Request Details</div>
-            <div style={{ fontSize:11, color:'#9ca3af', marginTop:2, fontFamily:'monospace' }}>{req.reference_number || '—'}</div>
+            <div style={{ fontWeight:800, fontSize:17, color:'#1f2937' }}>Request Details</div>
+            <div style={{ fontSize:12, color:'#9ca3af', marginTop:2, fontFamily:'monospace', fontWeight:600 }}>{shortId}</div>
           </div>
-          <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280' }}>
+          <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', borderRadius:8, width:34, height:34, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#6b7280' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
-        <div style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:14 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12, background:'#f8fafc', borderRadius:12, padding:'12px 14px' }}>
-            <ResidentAvatar url={req.residentAvatar} name={req.residentName} size={44} />
-            <div>
-              <div style={{ fontWeight:700, fontSize:14, color:'#111827' }}>{req.residentName}</div>
-              <AccountStatusBadge status={req.accountStatus} />
+
+        {/* Scrollable body */}
+        <div style={{ padding:'20px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16 }}>
+
+          {/* Resident row */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#f8fafc', borderRadius:14, padding:'14px 16px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <ResidentAvatar url={req.residentAvatar} name={req.residentName} size={48} />
+              <div>
+                <div style={{ fontWeight:800, fontSize:15, color:'#111827' }}>{req.residentName}</div>
+                <AccountStatusBadge status={req.accountStatus} />
+              </div>
             </div>
+            <StatusBadge status={req.status} />
           </div>
-          <StatusBadge status={req.status} />
-          {[
-            { label:'Document Type',  value: req.document_type },
-            { label:'Purpose',        value: req.purpose },
-            { label:'Barangay',       value: req.barangay },
-            { label:'Payment Method', value: req.payment_method?.replace(/_/g,' ') },
-            { label:'Date Submitted', value: req.created_at ? fmt(req.created_at) : '—' },
-          ].filter(f => f.value).map(({ label, value }) => (
-            <div key={label} style={{ background:'#f8fafc', borderRadius:10, padding:'10px 14px' }}>
-              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>{label}</div>
-              <div style={{ fontSize:13, color:'#111827', lineHeight:1.5 }}>{value}</div>
-            </div>
-          ))}
-          {req.status === 'rejected' && req.rejection_reason && (
-            <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'10px 14px' }}>
-              <div style={{ fontSize:11, fontWeight:700, color:'#ef4444', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Rejection Reason</div>
-              <div style={{ fontSize:13, color:'#991b1b', lineHeight:1.5 }}>{req.rejection_reason}</div>
-            </div>
-          )}
+
+          {/* Fields grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {[
+              { label:'Document Type',  value: req.document_type },
+              { label:'Purpose',        value: req.purpose },
+              { label:'Barangay',       value: req.barangay },
+              { label:'Payment Method', value: req.payment_method?.replace(/_/g,' ') },
+              { label:'Date Submitted', value: req.created_at ? fmt(req.created_at) : '—' },
+              { label:'Ref Number',     value: req.reference_number || '—' },
+            ].filter(f => f.value).map(({ label, value }) => (
+              <div key={label} style={{ background:'#f8fafc', borderRadius:10, padding:'10px 14px' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{label}</div>
+                <div style={{ fontSize:13, color:'#111827', lineHeight:1.5, fontWeight:500 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Rating */}
           {req.rating ? (
             <div style={{ background:'#f8fafc', borderRadius:10, padding:'10px 14px' }}>
-              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Rating</div>
+              <div style={{ fontSize:10, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Rating</div>
               <StarDisplay rating={req.rating} />
             </div>
           ) : null}
+
+          {/* Rejection reason */}
+          {req.status === 'rejected' && req.rejection_reason && (
+            <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'12px 14px' }}>
+              <div style={{ fontSize:10, fontWeight:700, color:'#ef4444', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Rejection Reason</div>
+              <div style={{ fontSize:13, color:'#991b1b', lineHeight:1.6 }}>{req.rejection_reason}</div>
+            </div>
+          )}
+
+          {/* Proof image */}
           {req.proof_url && (
             <div>
-              <div style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Proof of Payment</div>
-              <img src={req.proof_url} alt="Proof" style={{ width:'100%', borderRadius:10, border:'1px solid #e5e7eb', maxHeight:220, objectFit:'cover' }} />
+              <div style={{ fontSize:10, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Proof of Payment</div>
+              <img src={req.proof_url} alt="Proof" style={{ width:'100%', borderRadius:12, border:'1px solid #e5e7eb', maxHeight:240, objectFit:'cover' }} />
             </div>
           )}
         </div>
+
+        {/* Footer */}
+        <div style={{ padding:'14px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', flexShrink:0 }}>
+          <button onClick={onClose}
+            style={{ padding:'9px 24px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+            Close
+          </button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -583,7 +613,7 @@ function Requests() {
           </div>
         </div>
       )}
-      <RequestDrawer req={drawerRequest} onClose={() => setDrawerRequest(null)} />
+      <RequestModal req={drawerRequest} onClose={() => setDrawerRequest(null)} />
     </>
   );
 }

@@ -19,8 +19,6 @@ const POSITIONS = [
   'Barangay Treasurer',
   'Barangay Councilor',
   'SK Chairperson',
-  'Barangay Health Worker',
-  'Barangay Tanod',
 ];
 
 const EyeIcon = ({ open }) => open ? (
