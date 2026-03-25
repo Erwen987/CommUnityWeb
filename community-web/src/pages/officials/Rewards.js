@@ -211,11 +211,89 @@ function Rewards() {
     loadRedemptions();
   };
 
+  // ── Reward Items ───────────────────────────────────────────────────────────
+  const [rewardItems,  setRewardItems]  = useState([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [itemModal,    setItemModal]    = useState({ open:false, item:null });
+  const [itemForm,     setItemForm]     = useState({ name:'', description:'', category:'food', points_required:'', stock:'', is_active:true });
+  const [itemSaving,   setItemSaving]   = useState(false);
+  const [stockModal,   setStockModal]   = useState({ open:false, item:null, newStock:0 });
+  const [deletingId,   setDeletingId]   = useState(null);
+
+  const CATEGORIES = [
+    { value:'food',            label:'🍱 Food' },
+    { value:'school_supplies', label:'🎒 School Supplies' },
+    { value:'hygiene',         label:'🧴 Hygiene' },
+    { value:'household',       label:'🏠 Household' },
+  ];
+
+  const loadRewardItems = useCallback(async () => {
+    if (!barangay) return;
+    setItemsLoading(true);
+    const { data } = await supabase.from('reward_items').select('*').eq('barangay', barangay).order('category').order('name');
+    setRewardItems(data || []);
+    setItemsLoading(false);
+  }, [barangay]);
+
+  const openAddModal = () => {
+    setItemForm({ name:'', description:'', category:'food', points_required:'', stock:'', is_active:true });
+    setItemModal({ open:true, item:null });
+  };
+  const openEditModal = (item) => {
+    setItemForm({ name:item.name, description:item.description||'', category:item.category, points_required:String(item.points_required), stock:String(item.stock), is_active:item.is_active });
+    setItemModal({ open:true, item });
+  };
+  const closeItemModal = () => { if (itemSaving) return; setItemModal({ open:false, item:null }); };
+
+  const saveItem = async () => {
+    if (!itemForm.name.trim() || !itemForm.points_required || !itemForm.stock) return;
+    setItemSaving(true);
+    const payload = {
+      name:            itemForm.name.trim(),
+      description:     itemForm.description.trim() || null,
+      category:        itemForm.category,
+      points_required: parseInt(itemForm.points_required),
+      stock:           parseInt(itemForm.stock),
+      is_active:       itemForm.is_active,
+      barangay,
+    };
+    if (itemModal.item) {
+      await supabase.from('reward_items').update(payload).eq('id', itemModal.item.id);
+    } else {
+      await supabase.from('reward_items').insert(payload);
+    }
+    setItemSaving(false);
+    closeItemModal();
+    loadRewardItems();
+  };
+
+  const toggleActive = async (item) => {
+    await supabase.from('reward_items').update({ is_active: !item.is_active }).eq('id', item.id);
+    loadRewardItems();
+  };
+
+  const openStockModal = (item) => setStockModal({ open:true, item, newStock:item.stock });
+  const closeStockModal = () => setStockModal({ open:false, item:null, newStock:0 });
+  const saveStock = async () => {
+    await supabase.from('reward_items').update({ stock: stockModal.newStock }).eq('id', stockModal.item.id);
+    closeStockModal();
+    loadRewardItems();
+  };
+
+  const deleteItem = async (item) => {
+    if (!window.confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+    setDeletingId(item.id);
+    await supabase.from('reward_items').delete().eq('id', item.id);
+    setDeletingId(null);
+    loadRewardItems();
+  };
+
   // ── Load on tab / barangay change ─────────────────────────────────────────
   useEffect(() => {
     if (activeTab === 'leaderboard') load();
     if (activeTab === 'redemptions') loadRedemptions();
-  }, [activeTab, load, loadRedemptions]);
+    if (activeTab === 'items') loadRewardItems();
+  }, [activeTab, load, loadRedemptions, loadRewardItems]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadBudget(); }, [loadBudget]);
@@ -252,6 +330,7 @@ function Rewards() {
             {[
               { key: 'leaderboard', label: '🏆 Leaderboard' },
               { key: 'redemptions', label: pendingCount > 0 ? `🎁 Redemptions (${pendingCount})` : '🎁 Redemptions' },
+              { key: 'items',       label: '🏷️ Reward Items' },
             ].map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
                 style={{ padding: '10px 20px', border: 'none', background: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
@@ -502,6 +581,202 @@ function Rewards() {
               </div>
             </div>
           </>}
+
+          {/* ══ REWARD ITEMS TAB ══ */}
+          {activeTab === 'items' && (
+            <>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:16, color:'#1f2937' }}>Reward Catalog — Barangay {barangay}</div>
+                  <div style={{ fontSize:12, color:'#9ca3af', marginTop:2 }}>Manage reward items residents can redeem with their points in your barangay</div>
+                </div>
+                <button onClick={openAddModal}
+                  style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:'none', background:'#1E3A5F', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Reward Item
+                </button>
+              </div>
+
+              <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
+                {[
+                  { label:'Total Items',  value: rewardItems.length,                        color:'#1E3A5F' },
+                  { label:'Active',       value: rewardItems.filter(i=>i.is_active).length, color:'#16a34a' },
+                  { label:'Out of Stock', value: rewardItems.filter(i=>i.stock===0).length, color:'#dc2626' },
+                ].map(s => (
+                  <div key={s.label} style={{ background:'#fff', borderRadius:10, padding:'10px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', gap:10, alignItems:'center' }}>
+                    <span style={{ fontSize:13, color:'#9ca3af', fontWeight:600 }}>{s.label}</span>
+                    <span style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {itemsLoading ? (
+                <div style={{ padding:'52px', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                  <div style={{ width:32, height:32, border:'3px solid #e0e7ef', borderTopColor:'#1E3A5F', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+                  <span style={{ fontSize:13, color:'#9ca3af' }}>Loading reward items...</span>
+                </div>
+              ) : rewardItems.length === 0 ? (
+                <div style={{ background:'#fff', borderRadius:16, padding:'52px 24px', textAlign:'center', boxShadow:'0 1px 4px rgba(0,0,0,0.07)' }}>
+                  <div style={{ fontSize:40, marginBottom:12 }}>🎁</div>
+                  <div style={{ fontWeight:700, fontSize:16, color:'#374151', marginBottom:6 }}>No reward items yet</div>
+                  <div style={{ fontSize:13, color:'#9ca3af', marginBottom:20 }}>Add items for your barangay's residents to redeem with their points.</div>
+                  <button onClick={openAddModal} style={{ padding:'9px 20px', borderRadius:9, border:'none', background:'#1E3A5F', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                    Add First Item
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:16 }}>
+                  {rewardItems.map(item => {
+                    const catColor = categoryColors[item.category] || '#9ca3af';
+                    const catLabel = { food:'🍱 Food', school_supplies:'🎒 School', hygiene:'🧴 Hygiene', household:'🏠 Household' }[item.category] || item.category;
+                    return (
+                      <div key={item.id} style={{ background:'#fff', borderRadius:14, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', overflow:'hidden', opacity:item.is_active?1:0.6, display:'flex', flexDirection:'column' }}>
+                        <div style={{ height:5, background:catColor }} />
+                        <div style={{ padding:'16px 18px', flex:1, display:'flex', flexDirection:'column', gap:8 }}>
+                          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8 }}>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontWeight:700, fontSize:14, color:'#111827' }}>{item.name}</div>
+                              {item.description && <div style={{ fontSize:12, color:'#6b7280', marginTop:3 }}>{item.description}</div>}
+                            </div>
+                            <span style={{ padding:'3px 9px', borderRadius:999, fontSize:10, fontWeight:700, background:item.is_active?'#dcfce7':'#f1f5f9', color:item.is_active?'#166534':'#6b7280', whiteSpace:'nowrap', flexShrink:0 }}>
+                              {item.is_active?'Active':'Inactive'}
+                            </span>
+                          </div>
+                          <div style={{ display:'flex', gap:8 }}>
+                            <div style={{ flex:1, background:'#fffbeb', borderRadius:9, padding:'8px 12px', textAlign:'center' }}>
+                              <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>POINTS</div>
+                              <div style={{ fontSize:16, fontWeight:800, color:'#d97706' }}>{item.points_required.toLocaleString()}</div>
+                            </div>
+                            <div style={{ flex:1, background: item.stock===0?'#fef2f2':'#f0fdf4', borderRadius:9, padding:'8px 12px', textAlign:'center' }}>
+                              <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>STOCK</div>
+                              <div style={{ fontSize:16, fontWeight:800, color: item.stock===0?'#dc2626':'#16a34a' }}>{item.stock}</div>
+                            </div>
+                            <div style={{ flex:1, background:'#f8fafc', borderRadius:9, padding:'8px 12px', textAlign:'center' }}>
+                              <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>CATEGORY</div>
+                              <div style={{ fontSize:12, fontWeight:700, color:catColor, marginTop:2 }}>{catLabel}</div>
+                            </div>
+                          </div>
+                          <div style={{ display:'flex', gap:6, marginTop:4, flexWrap:'wrap' }}>
+                            <button onClick={() => openEditModal(item)}
+                              style={{ flex:1, padding:'6px', borderRadius:8, border:'1.5px solid #e5e7eb', background:'#f9fafb', color:'#374151', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                              ✏️ Edit
+                            </button>
+                            <button onClick={() => openStockModal(item)}
+                              style={{ flex:1, padding:'6px', borderRadius:8, border:'1.5px solid #bfdbfe', background:'#eff6ff', color:'#1d4ed8', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                              📦 Stock
+                            </button>
+                            <button onClick={() => toggleActive(item)}
+                              style={{ flex:1, padding:'6px', borderRadius:8, border:`1.5px solid ${item.is_active?'#fde68a':'#bbf7d0'}`, background:item.is_active?'#fefce8':'#f0fdf4', color:item.is_active?'#92400e':'#15803d', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                              {item.is_active?'⏸ Pause':'▶ Activate'}
+                            </button>
+                            <button onClick={() => deleteItem(item)} disabled={deletingId===item.id}
+                              style={{ padding:'6px 10px', borderRadius:8, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', opacity:deletingId===item.id?0.5:1 }}>
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Item Modal */}
+              {itemModal.open && (
+                <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+                  <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:480, boxShadow:'0 20px 60px rgba(0,0,0,0.2)', overflow:'hidden' }}>
+                    <div style={{ background:'linear-gradient(135deg,#1E3A5F,#2563eb)', padding:'18px 24px', display:'flex', alignItems:'center', gap:10 }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🏷️</div>
+                      <div>
+                        <div style={{ fontWeight:800, fontSize:15, color:'#fff' }}>{itemModal.item ? 'Edit Reward Item' : 'Add Reward Item'}</div>
+                        <div style={{ fontSize:12, color:'rgba(255,255,255,0.75)', marginTop:1 }}>Barangay {barangay}</div>
+                      </div>
+                      <button onClick={closeItemModal} style={{ marginLeft:'auto', background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', borderRadius:8, padding:'5px 8px', cursor:'pointer', fontSize:15 }}>✕</button>
+                    </div>
+                    <div style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:14 }}>
+                      <div>
+                        <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Item Name <span style={{ color:'#dc2626' }}>*</span></label>
+                        <input value={itemForm.name} onChange={e => setItemForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Rice Pack (5kg)"
+                          style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                      </div>
+                      <div>
+                        <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Description</label>
+                        <textarea value={itemForm.description} onChange={e => setItemForm(f=>({...f,description:e.target.value}))} rows={2} placeholder="Optional description..."
+                          style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+                      </div>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                        <div>
+                          <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Category <span style={{ color:'#dc2626' }}>*</span></label>
+                          <select value={itemForm.category} onChange={e => setItemForm(f=>({...f,category:e.target.value}))}
+                            style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, outline:'none', background:'#fff' }}>
+                            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Points Required <span style={{ color:'#dc2626' }}>*</span></label>
+                          <input type="number" min="1" value={itemForm.points_required} onChange={e => setItemForm(f=>({...f,points_required:e.target.value}))} placeholder="e.g. 100"
+                            style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                        </div>
+                      </div>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                        <div>
+                          <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Initial Stock <span style={{ color:'#dc2626' }}>*</span></label>
+                          <input type="number" min="0" value={itemForm.stock} onChange={e => setItemForm(f=>({...f,stock:e.target.value}))} placeholder="e.g. 20"
+                            style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Status</label>
+                          <button onClick={() => setItemForm(f=>({...f,is_active:!f.is_active}))}
+                            style={{ width:'100%', padding:'9px 12px', borderRadius:9, border:`1.5px solid ${itemForm.is_active?'#86efac':'#e5e7eb'}`, background:itemForm.is_active?'#dcfce7':'#f9fafb', color:itemForm.is_active?'#15803d':'#6b7280', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                            {itemForm.is_active ? '✅ Active' : '⏸ Inactive'}
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ display:'flex', gap:10, marginTop:4 }}>
+                        <button onClick={closeItemModal}
+                          style={{ flex:1, padding:'10px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f9fafb', color:'#374151', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                          Cancel
+                        </button>
+                        <button onClick={saveItem} disabled={itemSaving || !itemForm.name.trim() || !itemForm.points_required || !itemForm.stock}
+                          style={{ flex:2, padding:'10px', borderRadius:10, border:'none', background: itemSaving || !itemForm.name.trim() || !itemForm.points_required || !itemForm.stock ? '#9ca3af' : '#1E3A5F', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                          {itemSaving ? 'Saving...' : itemModal.item ? 'Save Changes' : 'Add Item'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Stock Modal */}
+              {stockModal.open && (
+                <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+                  <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:360, boxShadow:'0 20px 60px rgba(0,0,0,0.2)', overflow:'hidden' }}>
+                    <div style={{ background:'linear-gradient(135deg,#0369a1,#0284c7)', padding:'16px 20px', display:'flex', alignItems:'center', gap:10 }}>
+                      <div style={{ width:34, height:34, borderRadius:9, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>📦</div>
+                      <div style={{ fontWeight:800, fontSize:14, color:'#fff' }}>Adjust Stock — {stockModal.item?.name}</div>
+                      <button onClick={closeStockModal} style={{ marginLeft:'auto', background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', borderRadius:7, padding:'4px 7px', cursor:'pointer', fontSize:14 }}>✕</button>
+                    </div>
+                    <div style={{ padding:'20px 24px' }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, marginBottom:20 }}>
+                        <button onClick={() => setStockModal(m=>({...m, newStock:Math.max(0,m.newStock-1)}))}
+                          style={{ width:40, height:40, borderRadius:'50%', border:'1.5px solid #e5e7eb', background:'#f9fafb', fontSize:20, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+                        <input type="number" min="0" value={stockModal.newStock} onChange={e => setStockModal(m=>({...m,newStock:Math.max(0,parseInt(e.target.value)||0)}))}
+                          style={{ width:80, textAlign:'center', padding:'10px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:22, fontWeight:800, outline:'none' }} />
+                        <button onClick={() => setStockModal(m=>({...m, newStock:m.newStock+1}))}
+                          style={{ width:40, height:40, borderRadius:'50%', border:'1.5px solid #e5e7eb', background:'#f9fafb', fontSize:20, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                      </div>
+                      <div style={{ display:'flex', gap:10 }}>
+                        <button onClick={closeStockModal}
+                          style={{ flex:1, padding:'10px', borderRadius:10, border:'1.5px solid #e5e7eb', background:'#f9fafb', color:'#374151', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>Cancel</button>
+                        <button onClick={saveStock}
+                          style={{ flex:2, padding:'10px', borderRadius:10, border:'none', background:'#0369a1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>Save Stock</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* ══ REQUEST POINTS MODAL ══ */}
           {showRequestModal && (

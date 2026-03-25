@@ -436,19 +436,27 @@ function Reports() {
 
     // Award points if applicable and not already done
     if (!alreadyAwarded && pts > 0) {
-      const { data: userData } = await supabase
-        .from('users').select('points').eq('auth_id', resolveModal.user_id).single();
-      const currentPts = userData?.points || 0;
-      await supabase.from('rewards').insert({
-        user_id:                resolveModal.user_id,
-        points:                 pts,
-        reason:                 `Official award: ${resolveModal.problem}`,
-        awarded_by_official_id: officialId,
-        report_id:              resolveModal.id,
-        type:                   'official_award',
-      });
-      await supabase.from('users')
-        .update({ points: currentPts + pts }).eq('auth_id', resolveModal.user_id);
+      const [{ data: userData }, { data: budgetData }] = await Promise.all([
+        supabase.from('users').select('points').eq('auth_id', resolveModal.user_id).single(),
+        supabase.from('barangay_budgets').select('used_points').eq('barangay', barangay).single(),
+      ]);
+      const currentPts   = userData?.points || 0;
+      const currentUsed  = budgetData?.used_points || 0;
+      await Promise.all([
+        supabase.from('rewards').insert({
+          user_id:                resolveModal.user_id,
+          points:                 pts,
+          reason:                 `Official award: ${resolveModal.problem}`,
+          awarded_by_official_id: officialId,
+          report_id:              resolveModal.id,
+          type:                   'official_award',
+        }),
+        supabase.from('users')
+          .update({ points: currentPts + pts }).eq('auth_id', resolveModal.user_id),
+        supabase.from('barangay_budgets')
+          .update({ used_points: currentUsed + pts, updated_at: new Date().toISOString() })
+          .eq('barangay', barangay),
+      ]);
     }
 
     setResolveLoading(false);
