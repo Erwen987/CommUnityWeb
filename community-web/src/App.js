@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import './App.css';
 import ProtectedRoute    from './components/ProtectedRoute';
+import { OfficialProfileProvider } from './contexts/OfficialProfileContext';
 import useSessionTimeout from './hooks/useSessionTimeout';
 import Login             from './pages/Login';
 import Signup            from './pages/Signup';
@@ -381,14 +382,22 @@ function App() {
         <Route path="/reset-password"  element={<ResetPassword />} />
         <Route path="/admin-portal"    element={<AdminPortal />} />
 
-        <Route path="/officials/dashboard" element={<ProtectedRoute role="official"><Dashboard /></ProtectedRoute>} />
-        <Route path="/officials/reports"   element={<ProtectedRoute role="official"><Reports /></ProtectedRoute>} />
-        <Route path="/officials/requests"  element={<ProtectedRoute role="official"><Requests /></ProtectedRoute>} />
-        <Route path="/officials/analytics" element={<ProtectedRoute role="official"><Analytics /></ProtectedRoute>} />
-        <Route path="/officials/rewards"   element={<ProtectedRoute role="official"><Rewards /></ProtectedRoute>} />
-        <Route path="/officials/residents" element={<ProtectedRoute role="official"><Residents /></ProtectedRoute>} />
-        <Route path="/officials/permissions" element={<ProtectedRoute role="official"><Permissions /></ProtectedRoute>} />
-        <Route path="/officials/profile"    element={<ProtectedRoute role="official"><OfficialProfile /></ProtectedRoute>} />
+        <Route path="/officials/*" element={
+          <ProtectedRoute role="official">
+            <OfficialProfileProvider>
+              <Routes>
+                <Route path="dashboard"   element={<Dashboard />} />
+                <Route path="reports"     element={<Reports />} />
+                <Route path="requests"    element={<Requests />} />
+                <Route path="analytics"   element={<Analytics />} />
+                <Route path="rewards"     element={<Rewards />} />
+                <Route path="residents"   element={<Residents />} />
+                <Route path="permissions" element={<Permissions />} />
+                <Route path="profile"     element={<OfficialProfile />} />
+              </Routes>
+            </OfficialProfileProvider>
+          </ProtectedRoute>
+        } />
 
         <Route path="/admin/dashboard"       element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/user-management" element={<ProtectedRoute role="admin"><UserManagement /></ProtectedRoute>} />

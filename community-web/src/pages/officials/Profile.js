@@ -129,7 +129,7 @@ function OfficialProfile() {
     if (!user) { setLoading(false); return; }
     const { data } = await supabase
       .from('officials')
-      .select('id, email, barangay, barangay_name, status, created_at, avatar_url')
+      .select('id, email, barangay, barangay_name, status, created_at, avatar_url, full_name, position')
       .eq('auth_id', user.id)
       .single();
     if (data) {
@@ -156,7 +156,7 @@ function OfficialProfile() {
 
   const fmt = d => d ? new Date(d).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
   const statusStyle = STATUS_COLORS[profile?.status] || STATUS_COLORS.pending;
-  const initials = (profile?.email || 'OF').slice(0, 2).toUpperCase();
+  const initials = (profile?.full_name || profile?.email || 'OF').slice(0, 2).toUpperCase();
   const barangayLabel = profile?.barangay_name ? `Barangay ${profile.barangay_name}` : profile?.barangay || '—';
 
   /* ── Avatar Picker Modal ── */
@@ -271,8 +271,8 @@ function OfficialProfile() {
 
                     {/* Name + role */}
                     <div style={{ textAlign: 'center', zIndex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: 17, color: '#fff', letterSpacing: '-0.01em' }}>{barangayLabel}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: 500 }}>Barangay Official</div>
+                      <div style={{ fontWeight: 800, fontSize: 17, color: '#fff', letterSpacing: '-0.01em' }}>{profile.full_name || '—'}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: 500 }}>{profile.position || 'Barangay Official'}</div>
                     </div>
 
                     {/* Status badge */}

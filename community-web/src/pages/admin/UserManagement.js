@@ -399,10 +399,32 @@ function UserManagement() {
 
   const updateStatus = async (id, status) => {
     setStatusId(id);
+
+    if (status === 'rejected') {
+      // Fetch email, barangay, and auth_id before deleting
+      const { data: official } = await supabase
+        .from('officials')
+        .select('email, barangay, auth_id')
+        .eq('id', id)
+        .single();
+
+      if (official) {
+        // Send rejection email first
+        await sendNotificationEmail({ type: 'rejection', toEmail: official.email, barangay: official.barangay });
+        // Delete the Supabase auth user so they can re-register with the same email
+        await supabase.functions.invoke('delete-auth-user', { body: { auth_id: official.auth_id } });
+        // Delete the officials row for a clean slate
+        await supabase.from('officials').delete().eq('id', id);
+      }
+
+      setStatusId(null);
+      fetchAll();
+      return;
+    }
+
     const { data: updated } = await supabase.from('officials').update({ status }).eq('id', id).select('email,barangay').single();
-    if (updated) {
-      if (status === 'approved') await sendNotificationEmail({ type: 'approval',  toEmail: updated.email, barangay: updated.barangay });
-      if (status === 'rejected') await sendNotificationEmail({ type: 'rejection', toEmail: updated.email, barangay: updated.barangay });
+    if (updated && status === 'approved') {
+      await sendNotificationEmail({ type: 'approval', toEmail: updated.email, barangay: updated.barangay });
     }
     setStatusId(null);
     fetchAll();
