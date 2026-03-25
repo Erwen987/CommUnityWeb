@@ -22,9 +22,20 @@ const medals = ['🥇','🥈','🥉'];
 const categoryColors = { food:'#FF7043', school_supplies:'#1565C0', hygiene:'#2E7D32', household:'#6A1B9A' };
 
 const REDEMPTION_STATUS = {
-  pending:   { bg:'#fef9c3', color:'#92400e', dot:'#f59e0b', label:'Pending'   },
-  claimed:   { bg:'#dcfce7', color:'#166534', dot:'#22c55e', label:'Claimed'   },
-  cancelled: { bg:'#f1f5f9', color:'#6b7280', dot:'#9ca3af', label:'Cancelled' },
+  pending:         { bg:'#fef9c3', color:'#92400e', dot:'#f59e0b', label:'Pending'   },
+  queued:          { bg:'#fff7ed', color:'#9a3412', dot:'#f97316', label:'Queued'    },
+  claimed:         { bg:'#dcfce7', color:'#166534', dot:'#22c55e', label:'Claimed'   },
+  cancelled:       { bg:'#f1f5f9', color:'#6b7280', dot:'#9ca3af', label:'Cancelled' },
+  pending_pickup:  { bg:'#fef9c3', color:'#92400e', dot:'#f59e0b', label:'Pending'   },
+};
+
+const ACTION_META = {
+  created:         { icon:'📥', label:'Submitted',       color:'#2563eb' },
+  queued:          { icon:'🕐', label:'Waitlisted',      color:'#f97316' },
+  stock_allocated: { icon:'📦', label:'Stock Allocated', color:'#7c3aed' },
+  claimed:         { icon:'✅', label:'Claimed',         color:'#16a34a' },
+  cancelled:       { icon:'❌', label:'Cancelled',       color:'#dc2626' },
+  status_changed:  { icon:'🔄', label:'Status Changed',  color:'#6b7280' },
 };
 
 function resolveAvatar(url) {
@@ -147,13 +158,14 @@ function Rewards() {
     setFetching(true);
     const { data } = await supabase
       .from('users')
-      .select('auth_id, first_name, last_name, points, avatar_url')
+      .select('auth_id, first_name, last_name, points, reward_points, avatar_url')
       .eq('barangay', barangay)
-      .order('points', { ascending: false });
+      .order('reward_points', { ascending: false });
     setContributors((data || []).map((u, i) => ({
       ...u,
       name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown',
       rank: i + 1,
+      totalHeld: (u.reward_points || 0) + (u.points || 0),
     })));
     setFetching(false);
   }, [barangay]);
@@ -218,6 +230,10 @@ function Rewards() {
   const [processingId, setProcessingId]             = useState(null);
   const [redemptionFilter, setRedemptionFilter]     = useState('pending');
 
+  // ── Audit Logs ─────────────────────────────────────────────────────────────
+  const [auditLogs, setAuditLogs]         = useState([]);
+  const [auditLoading, setAuditLoading]   = useState(false);
+
   const loadRedemptions = useCallback(async () => {
     if (!barangay) return;
     setRedemptionsLoading(true);
@@ -250,7 +266,42 @@ function Rewards() {
     }).eq('id', r.id);
     setProcessingId(null);
     loadRedemptions();
+    if (activeTab === 'audit') loadAuditLogs();
   };
+
+  const loadAuditLogs = useCallback(async () => {
+    if (!barangay) return;
+    setAuditLoading(true);
+    const { data: uData } = await supabase.from('users').select('auth_id, first_name, last_name').eq('barangay', barangay);
+    const authIds = (uData || []).map(u => u.auth_id);
+    if (!authIds.length) { setAuditLogs([]); setAuditLoading(false); return; }
+    const userMap = {};
+    (uData || []).forEach(u => { userMap[u.auth_id] = `${u.first_name || ''} ${u.last_name || ''}`.trim(); });
+
+    const { data: rData } = await supabase.from('redemptions').select('id, reward_item_id').in('user_id', authIds);
+    const redIds = (rData || []).map(r => r.id);
+    if (!redIds.length) { setAuditLogs([]); setAuditLoading(false); return; }
+
+    const { data: iData } = await supabase.from('reward_items').select('id, name').eq('barangay', barangay);
+    const itemMap = {}; (iData || []).forEach(i => { itemMap[i.id] = i.name; });
+
+    const { data: logs } = await supabase
+      .from('redemption_audit_logs')
+      .select('*')
+      .in('redemption_id', redIds)
+      .order('created_at', { ascending: false })
+      .limit(300);
+
+    const itemByRedemption = {};
+    (rData || []).forEach(r => { itemByRedemption[r.id] = r.reward_item_id; });
+
+    setAuditLogs((logs || []).map(l => ({
+      ...l,
+      residentName: userMap[l.user_id] || 'Unknown',
+      itemName:     itemMap[itemByRedemption[l.redemption_id]] || 'Unknown Item',
+    })));
+    setAuditLoading(false);
+  }, [barangay]);
 
   // ── Reward Items ───────────────────────────────────────────────────────────
   const [rewardItems,  setRewardItems]  = useState([]);
@@ -334,6 +385,7 @@ function Rewards() {
     if (activeTab === 'leaderboard') load();
     if (activeTab === 'redemptions') loadRedemptions();
     if (activeTab === 'items') loadRewardItems();
+    if (activeTab === 'audit') loadAuditLogs();
   }, [activeTab, load, loadRedemptions, loadRewardItems]);
 
   useEffect(() => { load(); }, [load]);
@@ -344,9 +396,22 @@ function Rewards() {
   const filtered = contributors.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase())
   );
-  const pendingCount   = redemptions.filter(r => r.status === 'pending').length;
-  const totalPtsEarned = contributors.reduce((s, c) => s + (c.points || 0), 0);
-  const activeContributors = contributors.filter(c => (c.points || 0) > 0).length;
+  const pendingCount   = redemptions.filter(r => r.status === 'pending' || r.status === 'pending_pickup').length;
+  const queuedCount    = redemptions.filter(r => r.status === 'queued').length;
+
+  // Compute queue positions for queued items (FIFO by created_at per item)
+  const queuePositions = {};
+  const queuedByItem = {};
+  redemptions.filter(r => r.status === 'queued').forEach(r => {
+    if (!queuedByItem[r.reward_item_id]) queuedByItem[r.reward_item_id] = [];
+    queuedByItem[r.reward_item_id].push(r);
+  });
+  Object.values(queuedByItem).forEach(arr => {
+    arr.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    arr.forEach((r, i) => { queuePositions[r.id] = i + 1; });
+  });
+  const totalPtsEarned = contributors.reduce((s, c) => s + (c.reward_points || 0) + (c.points || 0), 0);
+  const activeContributors = contributors.filter(c => ((c.reward_points || 0) + (c.points || 0)) > 0).length;
   const allocated = budget?.allocated_points || 0;
   const used      = budget?.used_points || 0;
   const remaining = Math.max(0, allocated - used);
@@ -370,8 +435,9 @@ function Rewards() {
           <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
             {[
               { key: 'leaderboard', label: '🏆 Leaderboard' },
-              { key: 'redemptions', label: pendingCount > 0 ? `🎁 Redemptions (${pendingCount})` : '🎁 Redemptions' },
+              { key: 'redemptions', label: (pendingCount + queuedCount) > 0 ? `🎁 Redemptions (${pendingCount + queuedCount})` : '🎁 Redemptions' },
               { key: 'items',       label: '🏷️ Reward Items' },
+              { key: 'audit',       label: '📋 Audit Log' },
             ].map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
                 style={{ padding: '10px 20px', border: 'none', background: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
@@ -393,7 +459,8 @@ function Rewards() {
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {[
-                    { key: 'pending', label: `Pending (${redemptions.filter(r => r.status === 'pending').length})` },
+                    { key: 'pending', label: `Pending (${pendingCount})` },
+                    { key: 'queued',  label: `Queued (${queuedCount})` },
                     { key: 'claimed', label: `Claimed (${redemptions.filter(r => r.status === 'claimed').length})` },
                     { key: 'all',     label: 'All' },
                   ].map(f => (
@@ -434,7 +501,11 @@ function Rewards() {
                       </tr>
                     </thead>
                     <tbody>
-                      {redemptions.filter(r => redemptionFilter === 'all' || r.status === redemptionFilter).map((r, i) => (
+                      {redemptions.filter(r => {
+                        if (redemptionFilter === 'all') return true;
+                        if (redemptionFilter === 'pending') return r.status === 'pending' || r.status === 'pending_pickup';
+                        return r.status === redemptionFilter;
+                      }).map((r, i) => (
                         <tr key={r.id}
                           style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f8fafc' }}
                           onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f7ff'}
@@ -459,7 +530,7 @@ function Rewards() {
                           <td style={{ ...TD, color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(r.created_at)}</td>
                           <td style={TD}><RedemptionBadge status={r.status} /></td>
                           <td style={TD}>
-                            {r.status === 'pending' ? (
+                            {(r.status === 'pending' || r.status === 'pending_pickup') ? (
                               canAct ? (
                               <button onClick={() => confirmPickup(r)} disabled={processingId === r.id}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, border: '1.5px solid #86efac', background: '#dcfce7', color: '#15803d', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: processingId === r.id ? 0.5 : 1 }}>
@@ -467,6 +538,10 @@ function Rewards() {
                                 {processingId === r.id ? 'Confirming...' : 'Confirm Pickup'}
                               </button>
                               ) : <span style={{ fontSize: 11, color: '#9ca3af' }}>View Only</span>
+                            ) : r.status === 'queued' ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 8, background: '#fff7ed', border: '1.5px solid #fed7aa', fontSize: 11, fontWeight: 700, color: '#9a3412' }}>
+                                🕐 #{queuePositions[r.id] || '?'} in queue
+                              </span>
                             ) : r.status === 'claimed' ? (
                               <span style={{ fontSize: 11, color: '#6b7280' }}>Picked up {fmtDate(r.claimed_at)}</span>
                             ) : (
@@ -537,12 +612,15 @@ function Rewards() {
                           <ResidentAvatar url={c.avatar_url} name={c.name} size={36} index={i} />
                           <div>
                             <div style={{ fontWeight: 600, fontSize: 13, color: '#111827' }}>{c.name}</div>
-                            <TierBadge points={c.points || 0} />
+                            <TierBadge points={c.totalHeld} />
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 800, fontSize: 15, color: rankColors[Math.min(i, 4)] }}>{(c.points || 0).toLocaleString()}</div>
-                          <div style={{ fontSize: 10, color: '#9ca3af' }}>points</div>
+                          <div style={{ fontWeight: 800, fontSize: 15, color: rankColors[Math.min(i, 4)] }}>{(c.reward_points || 0).toLocaleString()}</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af' }}>redeemable pts</div>
+                          {(c.points || 0) > 0 && (
+                            <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 600 }}>+{c.points.toLocaleString()} unclaimed</div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -699,6 +777,7 @@ function Rewards() {
                             <div style={{ flex:1, background: item.stock===0?'#fef2f2':'#f0fdf4', borderRadius:9, padding:'8px 12px', textAlign:'center' }}>
                               <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>STOCK</div>
                               <div style={{ fontSize:16, fontWeight:800, color: item.stock===0?'#dc2626':'#16a34a' }}>{item.stock}</div>
+                              {(() => { const wl = redemptions.filter(r => r.reward_item_id === item.id && r.status === 'queued').length; return wl > 0 ? <div style={{ fontSize:10, color:'#f97316', fontWeight:700, marginTop:2 }}>{wl} waiting</div> : null; })()}
                             </div>
                             <div style={{ flex:1, background:'#f8fafc', borderRadius:9, padding:'8px 12px', textAlign:'center' }}>
                               <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>CATEGORY</div>
@@ -902,6 +981,83 @@ function Rewards() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ══ AUDIT LOG TAB ══ */}
+          {activeTab === 'audit' && (
+            <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+              <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>Redemption Audit Log</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Full history of all reward redemption activity for Barangay {barangay}</div>
+                </div>
+                <button onClick={loadAuditLogs}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', border: '1.5px solid #e5e7eb', borderRadius: 9, background: '#f9fafb', color: '#374151', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-9.5"/></svg>
+                  Refresh
+                </button>
+              </div>
+
+              {auditLoading ? (
+                <div style={{ padding: '52px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, border: '3px solid #e0e7ef', borderTopColor: '#1E3A5F', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  <span style={{ fontSize: 13, color: '#9ca3af' }}>Loading audit log...</span>
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div style={{ padding: '52px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontSize: 40 }}>📋</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#374151' }}>No audit entries yet</div>
+                  <div style={{ fontSize: 13, color: '#9ca3af' }}>Audit entries are created automatically when residents redeem rewards.</div>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={TH}>Timestamp</th>
+                        <th style={TH}>Resident</th>
+                        <th style={TH}>Reward Item</th>
+                        <th style={TH}>Event</th>
+                        <th style={TH}>From</th>
+                        <th style={TH}>To</th>
+                        <th style={TH}>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs.map((log, i) => {
+                        const meta = ACTION_META[log.action] || { icon: '🔄', label: log.action, color: '#6b7280' };
+                        const StatusPill = ({ s }) => {
+                          const sc = REDEMPTION_STATUS[s] || { bg: '#f1f5f9', color: '#6b7280', dot: '#9ca3af', label: s };
+                          return s ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: sc.bg, color: sc.color }}>
+                              <span style={{ width: 5, height: 5, borderRadius: '50%', background: sc.dot }} />{sc.label}
+                            </span>
+                          ) : <span style={{ color: '#d1d5db', fontSize: 11 }}>—</span>;
+                        };
+                        return (
+                          <tr key={log.id}
+                            style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f8fafc' }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f7ff'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = i % 2 === 0 ? '#fff' : '#f8fafc'}>
+                            <td style={{ ...TD, fontSize: 12, color: '#9ca3af', whiteSpace: 'nowrap' }}>{fmtDate(log.created_at)}</td>
+                            <td style={{ ...TD, fontWeight: 600 }}>{log.residentName}</td>
+                            <td style={{ ...TD, color: '#374151' }}>{log.itemName}</td>
+                            <td style={TD}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: meta.color + '18', color: meta.color }}>
+                                {meta.icon} {meta.label}
+                              </span>
+                            </td>
+                            <td style={TD}><StatusPill s={log.old_status} /></td>
+                            <td style={TD}><StatusPill s={log.new_status} /></td>
+                            <td style={{ ...TD, fontSize: 12, color: '#6b7280', maxWidth: 220 }}>{log.notes || '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
