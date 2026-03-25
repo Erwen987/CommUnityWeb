@@ -90,7 +90,8 @@ function StatCard({ icon, label, value, color, sub }) {
 
 // ── Main Component ──────────────────────────────────────────────────────────
 function Rewards() {
-  const { barangay, loading } = useOfficialProfile();
+  const { barangay, isCapitan, canManage, loading } = useOfficialProfile();
+  const canAct = isCapitan || canManage;
   const [activeTab, setActiveTab] = useState('leaderboard');
   const [officialId, setOfficialId] = useState(null);
 
@@ -415,11 +416,13 @@ function Rewards() {
                           <td style={TD}><RedemptionBadge status={r.status} /></td>
                           <td style={TD}>
                             {r.status === 'pending' ? (
+                              canAct ? (
                               <button onClick={() => confirmPickup(r)} disabled={processingId === r.id}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 8, border: '1.5px solid #86efac', background: '#dcfce7', color: '#15803d', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: processingId === r.id ? 0.5 : 1 }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                 {processingId === r.id ? 'Confirming...' : 'Confirm Pickup'}
                               </button>
+                              ) : <span style={{ fontSize: 11, color: '#9ca3af' }}>View Only</span>
                             ) : r.status === 'claimed' ? (
                               <span style={{ fontSize: 11, color: '#6b7280' }}>Picked up {fmtDate(r.claimed_at)}</span>
                             ) : (
@@ -590,11 +593,13 @@ function Rewards() {
                   <div style={{ fontWeight:700, fontSize:16, color:'#1f2937' }}>Reward Catalog — Barangay {barangay}</div>
                   <div style={{ fontSize:12, color:'#9ca3af', marginTop:2 }}>Manage reward items residents can redeem with their points in your barangay</div>
                 </div>
+                {canAct && (
                 <button onClick={openAddModal}
                   style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:'none', background:'#1E3A5F', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Add Reward Item
                 </button>
+                )}
               </div>
 
               <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
@@ -656,6 +661,7 @@ function Rewards() {
                               <div style={{ fontSize:12, fontWeight:700, color:catColor, marginTop:2 }}>{catLabel}</div>
                             </div>
                           </div>
+                          {canAct && (
                           <div style={{ display:'flex', gap:6, marginTop:4, flexWrap:'wrap' }}>
                             <button onClick={() => openEditModal(item)}
                               style={{ flex:1, padding:'6px', borderRadius:8, border:'1.5px solid #e5e7eb', background:'#f9fafb', color:'#374151', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
@@ -674,6 +680,7 @@ function Rewards() {
                               🗑
                             </button>
                           </div>
+                          )}
                         </div>
                       </div>
                     );

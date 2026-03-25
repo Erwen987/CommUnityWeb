@@ -15,6 +15,7 @@ import Analytics         from './pages/officials/Analytics';
 import Rewards           from './pages/officials/Rewards';
 import Residents         from './pages/officials/Residents';
 import OfficialProfile   from './pages/officials/Profile';
+import Permissions       from './pages/officials/Permissions';
 import AdminDashboard    from './pages/admin/AdminDashboard';
 import UserManagement    from './pages/admin/UserManagement';
 import AdminReports      from './pages/admin/AdminReports';
@@ -386,7 +387,8 @@ function App() {
         <Route path="/officials/analytics" element={<ProtectedRoute role="official"><Analytics /></ProtectedRoute>} />
         <Route path="/officials/rewards"   element={<ProtectedRoute role="official"><Rewards /></ProtectedRoute>} />
         <Route path="/officials/residents" element={<ProtectedRoute role="official"><Residents /></ProtectedRoute>} />
-        <Route path="/officials/profile"   element={<ProtectedRoute role="official"><OfficialProfile /></ProtectedRoute>} />
+        <Route path="/officials/permissions" element={<ProtectedRoute role="official"><Permissions /></ProtectedRoute>} />
+        <Route path="/officials/profile"    element={<ProtectedRoute role="official"><OfficialProfile /></ProtectedRoute>} />
 
         <Route path="/admin/dashboard"       element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/user-management" element={<ProtectedRoute role="admin"><UserManagement /></ProtectedRoute>} />

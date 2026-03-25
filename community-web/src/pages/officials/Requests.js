@@ -144,7 +144,8 @@ function RequestDrawer({ req, onClose }) {
 }
 
 function Requests() {
-  const { barangay, isCapitan, loading: profileLoading } = useOfficialProfile();
+  const { barangay, isCapitan, canManage, loading: profileLoading } = useOfficialProfile();
+  const canAct = isCapitan || canManage;
   const [requests, setRequests]         = useState([]);
   const [loading, setLoading]           = useState(false);
   const [updatingId, setUpdatingId]     = useState(null);
@@ -382,7 +383,7 @@ function Requests() {
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                               Closed
                             </span>
-                          ) : isCapitan ? (
+                          ) : canAct ? (
                             <>
                               {r.status === 'pending' && (
                                 <button onClick={() => handleStatusChange(r.id, 'ready_for_pickup')} disabled={updatingId===r.id}

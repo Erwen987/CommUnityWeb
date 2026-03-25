@@ -300,7 +300,8 @@ function FlagModal({ target, reason, onChangeReason, proofPreview, onChangeProof
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 function Reports() {
-  const { barangay, isCapitan, loading: profileLoading } = useOfficialProfile();
+  const { barangay, isCapitan, canManage, loading: profileLoading } = useOfficialProfile();
+  const canAct = isCapitan || canManage;
   const [reports, setReports]         = useState([]);
   const [loading, setLoading]         = useState(false);
   const [updatingId, setUpdatingId]   = useState(null);
@@ -713,7 +714,7 @@ function Reports() {
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                               View
                             </button>
-                            {r.status === 'resolved' || r.status === 'rejected' ? null : isCapitan ? (
+                            {r.status === 'resolved' || r.status === 'rejected' ? null : canAct ? (
                               <>
                                 {r.status === 'pending' && (
                                   <button onClick={() => updateStatus(r.id, 'in_progress')} disabled={updatingId===r.id}

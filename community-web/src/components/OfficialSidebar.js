@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout, HiOutlineUserGroup, HiOutlineUser } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineDocumentText, HiOutlineClipboardList, HiOutlineChartBar, HiOutlineGift, HiOutlineLogout, HiOutlineUserGroup, HiOutlineUser, HiOutlineShieldCheck } from 'react-icons/hi';
 import { supabase } from '../supabaseClient';
+import { useOfficialProfile } from '../hooks/useOfficialProfile';
 import Swal from 'sweetalert2';
 
 const IMG = process.env.PUBLIC_URL + '/images';
 
 const NAV = [
-  { to: '/officials/dashboard', icon: HiOutlineHome,          label: 'Home'      },
-  { to: '/officials/reports',   icon: HiOutlineDocumentText,   label: 'Reports'   },
-  { to: '/officials/requests',  icon: HiOutlineClipboardList,  label: 'Requests'  },
-  { to: '/officials/analytics', icon: HiOutlineChartBar,       label: 'Analytics' },
-  { to: '/officials/rewards',   icon: HiOutlineGift,           label: 'Rewards'   },
-  { to: '/officials/residents', icon: HiOutlineUserGroup,      label: 'Residents' },
-  { to: '/officials/profile',   icon: HiOutlineUser,           label: 'Profile'   },
+  { to: '/officials/dashboard',   icon: HiOutlineHome,          label: 'Home'        },
+  { to: '/officials/reports',     icon: HiOutlineDocumentText,   label: 'Reports'     },
+  { to: '/officials/requests',    icon: HiOutlineClipboardList,  label: 'Requests'    },
+  { to: '/officials/analytics',   icon: HiOutlineChartBar,       label: 'Analytics'   },
+  { to: '/officials/rewards',     icon: HiOutlineGift,           label: 'Rewards'     },
+  { to: '/officials/residents',   icon: HiOutlineUserGroup,      label: 'Residents'   },
+  { to: '/officials/permissions', icon: HiOutlineShieldCheck,    label: 'Permissions', captainOnly: true },
+  { to: '/officials/profile',     icon: HiOutlineUser,           label: 'Profile'     },
 ];
 
 const closeSidebar = () => document.body.classList.remove('sidebar-open');
@@ -22,6 +24,7 @@ function OfficialSidebar() {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
   const [loggingOut, setLoggingOut]   = useState(false);
+  const { isCapitan } = useOfficialProfile();
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -43,7 +46,7 @@ function OfficialSidebar() {
         </div>
 
         <nav className="off-nav">
-          {NAV.map(({ to, icon: Icon, label }) => (
+          {NAV.filter(({ captainOnly }) => !captainOnly || isCapitan).map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
