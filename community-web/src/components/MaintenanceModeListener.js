@@ -7,6 +7,25 @@ function MaintenanceModeListener() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    // Check current maintenance mode status on mount
+    const checkMaintenanceMode = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'maintenance_mode')
+          .single();
+
+        if (!error && data && data.value === 'true') {
+          setShowModal(true);
+        }
+      } catch (err) {
+        console.error('Error checking maintenance mode:', err);
+      }
+    };
+
+    checkMaintenanceMode();
+
     // Subscribe to system_settings changes
     const channel = supabase
       .channel('maintenance-mode-changes')
