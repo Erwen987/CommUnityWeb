@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import '../../officials.css';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
+import MaintenanceModeListener from '../../components/MaintenanceModeListener';
 import { supabase } from '../../supabaseClient';
 
 /* ── Toast ── */
@@ -197,6 +198,7 @@ function OfficialProfile() {
 
   return (
     <div className="off-layout">
+      <MaintenanceModeListener />
       <OfficialSidebar />
       <div className="off-main">
         <OfficialTopbar />

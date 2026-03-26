@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import '../../officials.css';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
+import MaintenanceModeListener from '../../components/MaintenanceModeListener';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import { supabase } from '../../supabaseClient';
 
@@ -23,7 +24,6 @@ const categoryColors = { food:'#FF7043', school_supplies:'#1565C0', hygiene:'#2E
 
 const REDEMPTION_STATUS = {
   pending:         { bg:'#fef9c3', color:'#92400e', dot:'#f59e0b', label:'Pending'   },
-  queued:          { bg:'#fff7ed', color:'#9a3412', dot:'#f97316', label:'Queued'    },
   claimed:         { bg:'#dcfce7', color:'#166534', dot:'#22c55e', label:'Claimed'   },
   cancelled:       { bg:'#f1f5f9', color:'#6b7280', dot:'#9ca3af', label:'Cancelled' },
   pending_pickup:  { bg:'#fef9c3', color:'#92400e', dot:'#f59e0b', label:'Pending'   },
@@ -213,6 +213,7 @@ function Rewards() {
       setRequestSuccess(false);
       setRequestPoints('');
       setRequestReason('');
+      loadPointRequests();
     }, 2500);
   };
 
@@ -223,6 +224,29 @@ function Rewards() {
     setRequestReason('');
     setRequestSuccess(false);
   };
+
+  // ── Point Requests ─────────────────────────────────────────────────────────
+  const [pointRequests, setPointRequests]       = useState([]);
+  const [requestsLoading, setRequestsLoading]   = useState(false);
+  const [requestsFilter, setRequestsFilter]     = useState('pending');
+
+  const REQUEST_STATUS = {
+    pending:  { bg:'#eff6ff', color:'#1e40af', dot:'#3b82f6', label:'Pending'  },
+    approved: { bg:'#dcfce7', color:'#166534', dot:'#22c55e', label:'Approved' },
+    rejected: { bg:'#fee2e2', color:'#991b1b', dot:'#ef4444', label:'Rejected' },
+  };
+
+  const loadPointRequests = useCallback(async () => {
+    if (!barangay) return;
+    setRequestsLoading(true);
+    const { data } = await supabase
+      .from('point_requests')
+      .select('*')
+      .eq('barangay', barangay)
+      .order('created_at', { ascending: false });
+    setPointRequests(data || []);
+    setRequestsLoading(false);
+  }, [barangay]);
 
   // ── Redemptions ────────────────────────────────────────────────────────────
   const [redemptions, setRedemptions]               = useState([]);
@@ -310,7 +334,6 @@ function Rewards() {
   const [itemForm,     setItemForm]     = useState({ name:'', description:'', category:'food', points_required:'', stock:'', is_active:true });
   const [itemSaving,   setItemSaving]   = useState(false);
   const [stockModal,   setStockModal]   = useState({ open:false, item:null, newStock:0 });
-  const [deletingId,   setDeletingId]   = useState(null);
 
   const CATEGORIES = [
     { value:'food',            label:'🍱 Food' },
@@ -372,21 +395,14 @@ function Rewards() {
     loadRewardItems();
   };
 
-  const deleteItem = async (item) => {
-    if (!window.confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
-    setDeletingId(item.id);
-    await supabase.from('reward_items').delete().eq('id', item.id);
-    setDeletingId(null);
-    loadRewardItems();
-  };
-
   // ── Load on tab / barangay change ─────────────────────────────────────────
   useEffect(() => {
     if (activeTab === 'leaderboard') load();
     if (activeTab === 'redemptions') loadRedemptions();
     if (activeTab === 'items') loadRewardItems();
     if (activeTab === 'audit') loadAuditLogs();
-  }, [activeTab, load, loadRedemptions, loadRewardItems]);
+    if (activeTab === 'point_requests') loadPointRequests();
+  }, [activeTab, load, loadRedemptions, loadRewardItems, loadPointRequests]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadBudget(); }, [loadBudget]);
@@ -397,7 +413,7 @@ function Rewards() {
     !search || c.name.toLowerCase().includes(search.toLowerCase())
   );
   const pendingCount   = redemptions.filter(r => r.status === 'pending' || r.status === 'pending_pickup').length;
-  const queuedCount    = redemptions.filter(r => r.status === 'queued').length;
+  const pendingRequestsCount = pointRequests.filter(r => r.status === 'pending').length;
 
   // Compute queue positions for queued items (FIFO by created_at per item)
   const queuePositions = {};
@@ -419,6 +435,7 @@ function Rewards() {
 
   return (
     <div className="off-layout">
+      <MaintenanceModeListener />
       <OfficialSidebar />
       <div className="off-main">
         <OfficialTopbar />
@@ -435,7 +452,8 @@ function Rewards() {
           <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '2px solid #e5e7eb' }}>
             {[
               { key: 'leaderboard', label: '🏆 Leaderboard' },
-              { key: 'redemptions', label: (pendingCount + queuedCount) > 0 ? `🎁 Redemptions (${pendingCount + queuedCount})` : '🎁 Redemptions' },
+              { key: 'redemptions', label: pendingCount > 0 ? `🎁 Redemptions (${pendingCount})` : '🎁 Redemptions' },
+              { key: 'point_requests', label: pendingRequestsCount > 0 ? `📬 Point Requests (${pendingRequestsCount})` : '📬 Point Requests' },
               { key: 'items',       label: '🏷️ Reward Items' },
               { key: 'audit',       label: '📋 Audit Log' },
             ].map(t => (
@@ -460,7 +478,6 @@ function Rewards() {
                 <div style={{ display: 'flex', gap: 6 }}>
                   {[
                     { key: 'pending', label: `Pending (${pendingCount})` },
-                    { key: 'queued',  label: `Queued (${queuedCount})` },
                     { key: 'claimed', label: `Claimed (${redemptions.filter(r => r.status === 'claimed').length})` },
                     { key: 'all',     label: 'All' },
                   ].map(f => (
@@ -538,10 +555,6 @@ function Rewards() {
                                 {processingId === r.id ? 'Confirming...' : 'Confirm Pickup'}
                               </button>
                               ) : <span style={{ fontSize: 11, color: '#9ca3af' }}>View Only</span>
-                            ) : r.status === 'queued' ? (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 8, background: '#fff7ed', border: '1.5px solid #fed7aa', fontSize: 11, fontWeight: 700, color: '#9a3412' }}>
-                                🕐 #{queuePositions[r.id] || '?'} in queue
-                              </span>
                             ) : r.status === 'claimed' ? (
                               <span style={{ fontSize: 11, color: '#6b7280' }}>Picked up {fmtDate(r.claimed_at)}</span>
                             ) : (
@@ -707,6 +720,95 @@ function Rewards() {
             </div>
           </>}
 
+          {/* ══ POINT REQUESTS TAB ══ */}
+          {activeTab === 'point_requests' && (
+            <div style={{ background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', overflow:'hidden' }}>
+              <div style={{ padding:'18px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:15, color:'#1f2937' }}>Official Point Requests</div>
+                  <div style={{ fontSize:12, color:'#9ca3af', marginTop:2 }}>Officials request more points to award residents in their barangay</div>
+                </div>
+                <div style={{ display:'flex', gap:6 }}>
+                  {[
+                    { key:'pending',  label:`Pending (${pointRequests.filter(r=>r.status==='pending').length})` },
+                    { key:'approved', label:'Approved' },
+                    { key:'rejected', label:'Rejected' },
+                    { key:'all',      label:'All' },
+                  ].map(f => (
+                    <button key={f.key} onClick={() => setRequestsFilter(f.key)}
+                      style={{ padding:'5px 14px', borderRadius:20, border:`1.5px solid ${requestsFilter===f.key?'#1E3A5F':'#e5e7eb'}`, background:requestsFilter===f.key?'#1E3A5F':'#f9fafb', color:requestsFilter===f.key?'#fff':'#374151', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {requestsLoading ? (
+                <div style={{ padding:'52px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                  <div style={{ width:32, height:32, border:'3px solid #e0e7ef', borderTopColor:'#1E3A5F', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+                  <span style={{ fontSize:13, color:'#9ca3af' }}>Loading requests...</span>
+                </div>
+              ) : (() => {
+                const filteredRequests = requestsFilter === 'all' ? pointRequests : pointRequests.filter(r => r.status === requestsFilter);
+                return filteredRequests.length === 0 ? (
+                  <div style={{ padding:'52px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+                    <div style={{ width:52, height:52, borderRadius:14, background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24 }}>📬</div>
+                    <div style={{ fontWeight:700, fontSize:15, color:'#374151' }}>No {requestsFilter !== 'all' ? requestsFilter : ''} requests</div>
+                    <div style={{ fontSize:13, color:'#9ca3af' }}>When you request more awarding points, they'll appear here.</div>
+                  </div>
+                ) : (
+                  <div style={{ overflowX:'auto' }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={TH}>Barangay</th>
+                          <th style={TH}>Points Requested</th>
+                          <th style={TH}>Reason</th>
+                          <th style={TH}>Submitted</th>
+                          <th style={TH}>Status</th>
+                          <th style={TH}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredRequests.map((r,i) => (
+                          <tr key={r.id}
+                            style={{ backgroundColor: i%2===0?'#fff':'#f8fafc' }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor='#f0f7ff'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor= i%2===0?'#fff':'#f8fafc'}>
+                            <td style={{ ...TD, color:'#6b7280' }}>Brgy. {r.barangay}</td>
+                            <td style={TD}>
+                              <span style={{ fontWeight:800, fontSize:14, color:'#1E3A5F' }}>+{r.points_requested?.toLocaleString()} pts</span>
+                            </td>
+                            <td style={{ ...TD, color:'#6b7280', fontSize:12, maxWidth:240 }}>
+                              <div style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.reason || '—'}</div>
+                              {r.admin_note && <div style={{ color:'#ef4444', marginTop:2, fontSize:11 }}>Note: {r.admin_note}</div>}
+                            </td>
+                            <td style={{ ...TD, color:'#9ca3af', fontSize:12, whiteSpace:'nowrap' }}>{fmtDate(r.created_at)}</td>
+                            <td style={TD}>
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:REQUEST_STATUS[r.status]?.bg || '#f1f5f9', color:REQUEST_STATUS[r.status]?.color || '#6b7280' }}>
+                                <span style={{ width:6, height:6, borderRadius:'50%', background:REQUEST_STATUS[r.status]?.dot || '#9ca3af', flexShrink:0 }} />
+                                {REQUEST_STATUS[r.status]?.label || r.status}
+                              </span>
+                            </td>
+                            <td style={TD}>
+                              {r.status === 'pending' ? (
+                                <span style={{ fontSize:11, color:'#9ca3af' }}>Awaiting admin review</span>
+                              ) : r.status === 'approved' ? (
+                                <span style={{ fontSize:11, color:'#16a34a', fontWeight:600 }}>✅ Budget updated {fmtDate(r.reviewed_at)}</span>
+                              ) : (
+                                <span style={{ fontSize:11, color:'#9ca3af' }}>Rejected {fmtDate(r.reviewed_at)}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* ══ REWARD ITEMS TAB ══ */}
           {activeTab === 'items' && (
             <>
@@ -777,7 +879,6 @@ function Rewards() {
                             <div style={{ flex:1, background: item.stock===0?'#fef2f2':'#f0fdf4', borderRadius:9, padding:'8px 12px', textAlign:'center' }}>
                               <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>STOCK</div>
                               <div style={{ fontSize:16, fontWeight:800, color: item.stock===0?'#dc2626':'#16a34a' }}>{item.stock}</div>
-                              {(() => { const wl = redemptions.filter(r => r.reward_item_id === item.id && r.status === 'queued').length; return wl > 0 ? <div style={{ fontSize:10, color:'#f97316', fontWeight:700, marginTop:2 }}>{wl} waiting</div> : null; })()}
                             </div>
                             <div style={{ flex:1, background:'#f8fafc', borderRadius:9, padding:'8px 12px', textAlign:'center' }}>
                               <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>CATEGORY</div>
@@ -797,10 +898,6 @@ function Rewards() {
                             <button onClick={() => toggleActive(item)}
                               style={{ flex:1, padding:'6px', borderRadius:8, border:`1.5px solid ${item.is_active?'#fde68a':'#bbf7d0'}`, background:item.is_active?'#fefce8':'#f0fdf4', color:item.is_active?'#92400e':'#15803d', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                               {item.is_active?'⏸ Pause':'▶ Activate'}
-                            </button>
-                            <button onClick={() => deleteItem(item)} disabled={deletingId===item.id}
-                              style={{ padding:'6px 10px', borderRadius:8, border:'1.5px solid #fca5a5', background:'#fee2e2', color:'#dc2626', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit', opacity:deletingId===item.id?0.5:1 }}>
-                              🗑
                             </button>
                           </div>
                           )}

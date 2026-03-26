@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../../officials.css';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar  from '../../components/OfficialTopbar';
+import MaintenanceModeListener from '../../components/MaintenanceModeListener';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import { supabase } from '../../supabaseClient';
 
@@ -149,6 +150,7 @@ function OrgChart() {
 
   return (
     <div className="off-layout">
+      <MaintenanceModeListener />
       <OfficialSidebar />
       <div className="off-main">
         <OfficialTopbar />

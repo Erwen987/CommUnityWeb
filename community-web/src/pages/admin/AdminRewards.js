@@ -166,16 +166,15 @@ function AdminRewards() {
 
   const loadPointRequests = useCallback(async () => {
     setRequestsLoading(true);
-    const [{ data: reqData }, { data: uData }] = await Promise.all([
+    const [{ data: reqData }, { data: officialsData }] = await Promise.all([
       supabase.from('point_requests').select('*').order('created_at', { ascending:false }),
-      supabase.from('users').select('auth_id, first_name, last_name'),
+      supabase.from('officials').select('auth_id, full_name, avatar_url'),
     ]);
-    const userMap = {}; (uData||[]).forEach(u => { userMap[u.auth_id] = u; });
+    const officialMap = {}; (officialsData||[]).forEach(o => { officialMap[o.auth_id] = o; });
     setPointRequests((reqData||[]).map(r => ({
       ...r,
-      officialName: userMap[r.requested_by_official_id]
-        ? `${userMap[r.requested_by_official_id].first_name||''} ${userMap[r.requested_by_official_id].last_name||''}`.trim()
-        : 'Unknown Official',
+      officialName: officialMap[r.requested_by_official_id]?.full_name || 'Unknown Official',
+      officialAvatar: officialMap[r.requested_by_official_id]?.avatar_url || null,
     })));
     setRequestsLoading(false);
   }, []);
@@ -542,7 +541,12 @@ const filteredLog = pointLog.filter(r => {
                           style={{ backgroundColor: i%2===0?'#fff':'#f8fafc' }}
                           onMouseEnter={e => e.currentTarget.style.backgroundColor='#f0f7ff'}
                           onMouseLeave={e => e.currentTarget.style.backgroundColor= i%2===0?'#fff':'#f8fafc'}>
-                          <td style={TD}><span style={{ fontWeight:600, fontSize:13 }}>{r.officialName}</span></td>
+                          <td style={TD}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                              <ResidentAvatar url={r.officialAvatar} name={r.officialName} size={32} index={i} />
+                              <span style={{ fontWeight:600, fontSize:13 }}>{r.officialName}</span>
+                            </div>
+                          </td>
                           <td style={{ ...TD, color:'#6b7280' }}>Brgy. {r.barangay}</td>
                           <td style={TD}>
                             <span style={{ fontWeight:800, fontSize:14, color:'#1E3A5F' }}>+{r.points_requested?.toLocaleString()} pts</span>

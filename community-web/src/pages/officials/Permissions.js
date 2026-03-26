@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar  from '../../components/OfficialTopbar';
+import MaintenanceModeListener from '../../components/MaintenanceModeListener';
 import { useOfficialProfile }  from '../../hooks/useOfficialProfile';
 import { supabase } from '../../supabaseClient';
 import { Navigate } from 'react-router-dom';
@@ -110,6 +111,7 @@ export default function Permissions() {
 
   return (
     <div className="off-layout">
+      <MaintenanceModeListener />
       <OfficialSidebar />
       <div className="off-main">
         <OfficialTopbar title="Permissions" />

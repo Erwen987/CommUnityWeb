@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import '../../officials.css';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
+import MaintenanceModeListener from '../../components/MaintenanceModeListener';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import { supabase } from '../../supabaseClient';
 
@@ -278,6 +279,7 @@ function Requests() {
 
   return (
     <>
+    <MaintenanceModeListener />
     <div className="off-layout">
       <OfficialSidebar />
       <div className="off-main">

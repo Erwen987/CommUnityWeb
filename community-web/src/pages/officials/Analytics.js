@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import '../../officials.css';
 import OfficialSidebar from '../../components/OfficialSidebar';
 import OfficialTopbar from '../../components/OfficialTopbar';
+import MaintenanceModeListener from '../../components/MaintenanceModeListener';
 import { useOfficialProfile } from '../../hooks/useOfficialProfile';
 import {
   PieChart, Pie, Cell, Tooltip as PieTooltip,
@@ -141,6 +142,7 @@ function Analytics() {
 
   return (
     <div className="off-layout">
+      <MaintenanceModeListener />
       <OfficialSidebar />
       <div className="off-main">
         <OfficialTopbar />

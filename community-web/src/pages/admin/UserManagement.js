@@ -465,7 +465,7 @@ function UserManagement() {
   const fetchAll = useCallback(async () => {
     const [{ data: p }, { data: o }, { data: r }, { data: d }, { data: f }, { data: a }] = await Promise.all([
       supabase.from('officials').select('id,barangay_name,barangay,email,created_at,full_name,position,id_image_url').eq('status','pending').order('created_at',{ascending:true}),
-      supabase.from('officials').select('id,barangay_name,barangay,email,created_at,status,ban_reason').in('status',['approved','banned']).order('created_at',{ascending:true}),
+      supabase.from('officials').select('id,barangay_name,barangay,email,created_at,status,ban_reason,avatar_url').in('status',['approved','banned']).order('created_at',{ascending:true}),
       supabase.from('users').select('id,auth_id,first_name,last_name,email,phone,barangay,created_at,avatar_url,is_banned,ban_reason,offense_count,suspended_until,status').eq('role','resident').order('created_at',{ascending:false}),
       supabase.from('deleted_accounts').select('*').order('deleted_at',{ascending:false}),
       supabase.from('abuse_flags').select('*').eq('status','pending').order('created_at',{ascending:false}),
@@ -887,7 +887,7 @@ function UserManagement() {
                             <tr key={row.id} style={{ backgroundColor: i%2===0?'#fff':'#f9fafb' }}
                               onMouseEnter={e=>e.currentTarget.style.backgroundColor='#eff6ff'}
                               onMouseLeave={e=>e.currentTarget.style.backgroundColor=i%2===0?'#fff':'#f9fafb'}>
-                              <td style={TD}><div style={{ display:'flex',alignItems:'center',gap:12 }}><OfficialAvatar name={row.barangay_name} color={row.status==='banned'?'#dc2626':'#16a34a'} /><div><div style={{ fontWeight:600,color:'#111827',fontSize:13 }}>{row.barangay_name}</div><div style={{ fontSize:11,color:'#9ca3af' }}>Official account</div></div></div></td>
+                              <td style={TD}><div style={{ display:'flex',alignItems:'center',gap:12 }}><ResidentAvatar url={row.avatar_url} name={row.barangay_name} size={38} index={i} /><div><div style={{ fontWeight:600,color:'#111827',fontSize:13 }}>{row.barangay_name}</div><div style={{ fontSize:11,color:'#9ca3af' }}>Official account</div></div></div></td>
                               <td style={TD}><span style={{ background:'#f1f5f9',color:'#374151',padding:'3px 10px',borderRadius:6,fontSize:12,fontWeight:600 }}>{row.barangay}</span></td>
                               <td style={{ ...TD,color:'#6b7280' }}>{row.email}</td>
                               <td style={TD}>
