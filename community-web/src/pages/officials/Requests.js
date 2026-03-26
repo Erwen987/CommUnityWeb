@@ -124,6 +124,7 @@ function RequestModal({ req, onClose }) {
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             {[
               { label:'Document Type',  value: req.document_type },
+              { label:'Quantity',       value: req.quantity || 1 },
               { label:'Purpose',        value: req.purpose },
               { label:'Barangay',       value: req.barangay },
               { label:'Payment Method', value: req.payment_method?.replace(/_/g,' ') },

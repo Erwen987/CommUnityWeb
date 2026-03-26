@@ -101,6 +101,7 @@ function RequestModal({ req, onClose }) {
           {/* Core fields */}
           {[
             { label: 'Document Type',   value: req.document_type },
+            { label: 'Quantity',        value: req.quantity || 1 },
             { label: 'Resident',        value: req.residentName },
             { label: 'Barangay',        value: req.barangay },
             { label: 'Purpose',         value: req.purpose },
